@@ -20,6 +20,8 @@ export function errorText(e: unknown): string {
   if (auth[code]) return auth[code];
   if (msg.includes('goal_category_limit')) return '목표 카테고리는 최대 6개예요';
   if (msg.includes('need_goal_category')) return '목표 카테고리를 1개 이상 골라 주세요';
+  if (code === '23503' && (msg.includes('year_cells') || msg.includes('month_cells') || msg.includes('practices'))) return '계획 표에 배치된 세부목표는 지울 수 없어요';
+  if (code === '23P01') return '그 자리에는 이미 다른 칸이 있어요';
   if (code === '23503' && msg.includes('goals')) return '목표가 들어 있는 카테고리는 지울 수 없어요. 목표를 다른 카테고리로 옮기거나 지운 뒤 지워 주세요';
   if (msg.includes('goal_category_invalid')) return '목표는 목표 카테고리에만 둘 수 있어요';
   if (code === '23505' && msg.includes('color')) return '이미 다른 카테고리가 쓰는 색이에요';

@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { errorText } from '../lib/errors';
 import type { CategoryColor } from '../lib/palette';
+import { DEFAULT_DAY_START_HOUR, DEFAULT_TIMEZONE, userDayKey } from '../lib/day';
 
 export type Profile = {
   id: string;
@@ -46,9 +47,16 @@ export type Goal = {
   status: GoalStatus;
   started_at: string | null;
   created_at: string;
+  table_position: number;
+  table_hidden: boolean;
 };
 
 export type Subgoal = { id: string; goal_id: string; name: string; position: number };
+
+export type YearCell = { id: string; goal_id: string; subgoal_id: string; start_month: string; end_month: string; memo: string };
+export type MonthCell = { id: string; goal_id: string; subgoal_id: string; year_month: string; start_week: number; end_week: number; comment: string };
+export type Note = { id: string; scope: 'month' | 'week'; period_key: string; start_index: number; end_index: number; text: string };
+export type Practice = { id: string; goal_id: string; subgoal_id: string; week_start_date: string; name: string; kind: 'repeat' | 'once'; weekdays: number[]; created_at: string };
 
 /** loading: 확인 중 / signedOut: 로그인 전 / onboarding: 가입 2~4단계 남음 / ready: 사용 가능 */
 export type AccountStatus = 'loading' | 'signedOut' | 'onboarding' | 'ready';
@@ -62,9 +70,15 @@ type AccountValue = {
   keywords: Keyword[];
   goals: Goal[];
   subgoals: Subgoal[];
+  yearCells: YearCell[];
+  monthCells: MonthCell[];
+  notes: Note[];
+  practices: Practice[];
   reload: () => Promise<void>;
   /** 서버 호출을 감싸서, 실패하면 알림을 띄우고 데이터를 다시 읽는다. 성공하면 true */
   run: (fn: () => PromiseLike<{ error: unknown }>) => Promise<boolean>;
+  /** 새 행을 만들고 그 id를 돌려준다. 실패하면 알림 후 null */
+  create: (fn: () => PromiseLike<{ data: { id: string } | null; error: unknown }>) => Promise<string | null>;
   toast: (message: string) => void;
 };
 
@@ -76,8 +90,8 @@ export function useAccount() {
   return v;
 }
 
-type Data = { profile: Profile | null; categories: Category[]; keywords: Keyword[]; goals: Goal[]; subgoals: Subgoal[] };
-const EMPTY: Data = { profile: null, categories: [], keywords: [], goals: [], subgoals: [] };
+type Data = { profile: Profile | null; categories: Category[]; keywords: Keyword[]; goals: Goal[]; subgoals: Subgoal[]; yearCells: YearCell[]; monthCells: MonthCell[]; notes: Note[]; practices: Practice[] };
+const EMPTY: Data = { profile: null, categories: [], keywords: [], goals: [], subgoals: [], yearCells: [], monthCells: [], notes: [], practices: [] };
 
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -100,14 +114,18 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   const reload = useCallback(async () => {
     if (!userId) return;
-    const [p, c, k, g, sg] = await Promise.all([
+    const [p, c, k, g, sg, yc, mc, nt, pr] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
       supabase.from('categories').select('id, kind, name, color, aspiration, position').order('position'),
       supabase.from('daily_keywords').select('id, category_id, name, position').order('position').order('created_at'),
-      supabase.from('goals').select('id, category_id, name, position, due_month, reason, importance, fallback, status, started_at, created_at').order('position').order('created_at'),
+      supabase.from('goals').select('id, category_id, name, position, due_month, reason, importance, fallback, status, started_at, created_at, table_position, table_hidden').order('position').order('created_at'),
       supabase.from('subgoals').select('id, goal_id, name, position').order('position').order('created_at'),
+      supabase.from('year_cells').select('id, goal_id, subgoal_id, start_month, end_month, memo'),
+      supabase.from('month_cells').select('id, goal_id, subgoal_id, year_month, start_week, end_week, comment'),
+      supabase.from('notes').select('id, scope, period_key, start_index, end_index, text'),
+      supabase.from('practices').select('id, goal_id, subgoal_id, week_start_date, name, kind, weekdays, created_at').order('created_at'),
     ]);
-    const err = p.error ?? c.error ?? k.error ?? g.error ?? sg.error;
+    const err = p.error ?? c.error ?? k.error ?? g.error ?? sg.error ?? yc.error ?? mc.error ?? nt.error ?? pr.error;
     if (err) {
       toast(errorText(err));
       setData(d => d ?? EMPTY);
@@ -119,6 +137,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       keywords: (k.data ?? []) as Keyword[],
       goals: (g.data ?? []) as Goal[],
       subgoals: (sg.data ?? []) as Subgoal[],
+      yearCells: (yc.data ?? []) as YearCell[],
+      monthCells: (mc.data ?? []) as MonthCell[],
+      notes: (nt.data ?? []) as Note[],
+      practices: (pr.data ?? []) as Practice[],
     });
   }, [userId, toast]);
 
@@ -146,6 +168,24 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     [reload, toast],
   );
 
+  const create = useCallback(
+    async (fn: () => PromiseLike<{ data: { id: string } | null; error: unknown }>) => {
+      try {
+        const { data, error } = await fn();
+        await reload();
+        if (error || !data) {
+          toast(errorText(error));
+          return null;
+        }
+        return data.id;
+      } catch (e) {
+        toast(errorText(e));
+        return null;
+      }
+    },
+    [reload, toast],
+  );
+
   const value = useMemo<AccountValue>(() => {
     const d = data ?? EMPTY;
     let status: AccountStatus;
@@ -162,11 +202,16 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       keywords: d.keywords,
       goals: d.goals,
       subgoals: d.subgoals,
+      yearCells: d.yearCells,
+      monthCells: d.monthCells,
+      notes: d.notes,
+      practices: d.practices,
       reload,
       run,
+      create,
       toast,
     };
-  }, [session, data, reload, run, toast]);
+  }, [session, data, reload, run, create, toast]);
 
   return (
     <AccountContext.Provider value={value}>
@@ -178,4 +223,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       )}
     </AccountContext.Provider>
   );
+}
+
+/** R-D1: 사용자 시간대 + 하루 시작 시각 기준 오늘 */
+export function useToday() {
+  const { profile } = useAccount();
+  return userDayKey(new Date(), profile?.timezone ?? DEFAULT_TIMEZONE, profile?.day_start_hour ?? DEFAULT_DAY_START_HOUR);
 }

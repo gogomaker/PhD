@@ -33,3 +33,17 @@ h1, h2, h3 { word-break: keep-all; }
 .goal-card:hover { box-shadow: var(--shadow-md); }
 .add-dashed:hover { background: var(--color-neutral-200); }
 .traits-toggle:hover { background: var(--color-neutral-200) !important; }
+
+/* 계획 표 */
+.menu-item:hover:not(:disabled) { background: var(--color-neutral-200) !important; }
+.mini-btn { width: 22px; height: 22px; padding: 0; color: var(--color-neutral-600); }
+.mini-btn:hover { background: var(--color-neutral-200); }
+.plan-empty { background: var(--color-neutral-100); border: 2px dashed transparent; border-radius: 16px; cursor: pointer; }
+.plan-empty:hover { background: var(--color-neutral-200); }
+.plan-empty.drop-ok { border-color: var(--color-accent-400); }
+.plan-empty.pop-on { border-color: var(--color-accent); }
+.plan-tool { width: 26px; height: 26px; padding: 0; color: var(--color-neutral-700); }
+.plan-tool:hover { background: var(--color-neutral-200); }
+.plan-stack:hover { box-shadow: inset 0 0 0 2px var(--color-neutral-300); }
+.stack-add { opacity: 0; transition: opacity .12s; }
+.plan-stack:hover .stack-add, .plan-stack:focus-within .stack-add, .stack-add:focus-visible { opacity: 1; }

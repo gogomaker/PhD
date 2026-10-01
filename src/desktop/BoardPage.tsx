@@ -90,7 +90,9 @@ export default function BoardPage() {
 }
 
 function EditPanel({ goal: g, subs, onClose }: { goal: Goal; subs: Subgoal[]; onClose: () => void }) {
-  const { goalCategories, goals, run, toast } = useAccount();
+  const { goalCategories, goals, yearCells, monthCells, practices, run, toast } = useAccount();
+  // R-G9: 계획 표에 배치된 세부목표는 삭제 불가
+  const placed = new Set([...yearCells, ...monthCells, ...practices].map(c => c.subgoal_id));
   const [traitsOpen, setTraitsOpen] = useState(false);
   const [drag, setDrag] = useState<number | null>(null);
   const [due, setDue] = useState(dueValue(g.due_month));
@@ -154,10 +156,11 @@ function EditPanel({ goal: g, subs, onClose }: { goal: Goal; subs: Subgoal[]; on
               <span title="끌어서 순서 변경" draggable={!closed} onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', s.id); setDrag(i); }} onDragEnd={() => setDrag(null)} style={{ flex: 'none', width: 24, height: 30, display: 'grid', placeItems: 'center', cursor: closed ? 'default' : 'grab', color: 'var(--color-neutral-500)' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" aria-hidden="true"><path d="M9 5h.01M9 12h.01M9 19h.01M15 5h.01M15 12h.01M15 19h.01" /></svg>
               </span>
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                 <BlurInput label="세부목표 이름" maxLength={MAX_SUBGOAL_NAME} value={s.name} onSave={name => run(() => supabase.from('subgoals').update({ name }).eq('id', s.id))} style={{ width: '100%', background: 'transparent', border: 0, outline: 'none', font: 'inherit', fontSize: 14, fontWeight: 600, color: 'var(--color-text)', padding: '2px 0' }} />
+                {placed.has(s.id) && <span style={{ fontSize: 11, fontWeight: 700, color: p.ink }}>계획 표에 배치됨</span>}
               </div>
-              <button title="삭제" aria-label={s.name + ' 삭제'} onClick={() => run(() => supabase.from('subgoals').delete().eq('id', s.id))} className="btn" style={{ flex: 'none', width: 30, height: 30, padding: 0, color: 'var(--color-accent-700)' }}>
+              <button title={placed.has(s.id) ? '계획 표에 배치된 세부목표는 삭제할 수 없어요' : '삭제'} aria-label={s.name + ' 삭제'} disabled={placed.has(s.id)} onClick={() => run(() => supabase.from('subgoals').delete().eq('id', s.id))} className="btn" style={{ flex: 'none', width: 30, height: 30, padding: 0, color: 'var(--color-accent-700)' }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
               </button>
             </div>

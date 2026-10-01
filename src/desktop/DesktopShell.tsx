@@ -5,6 +5,9 @@ import CategoriesPage from './CategoriesPage';
 import DreamPage from './DreamPage';
 import GoalsPage from './GoalsPage';
 import BoardPage from './BoardPage';
+import YearPlan from './plan/YearPlan';
+import MonthPlan from './plan/MonthPlan';
+import WeekPlan from './plan/WeekPlan';
 import AccountPage from './AccountPage';
 import { initials } from '../lib/initials';
 
@@ -43,7 +46,10 @@ export default function DesktopShell() {
           <Route path="/dream" element={<DreamPage />} />
           <Route path="/goals" element={<GoalsPage />} />
           <Route path="/board" element={<BoardPage />} />
-          {PAGES.filter(p => p.stage !== 'M1' && p.stage !== 'M2').map(p => (
+          <Route path="/plan/year" element={<YearPlan />} />
+          <Route path="/plan/month" element={<MonthPlan />} />
+          <Route path="/plan/week" element={<WeekPlan />} />
+          {PAGES.filter(p => !['M1', 'M2', 'M3'].includes(p.stage)).map(p => (
             <Route key={p.path} path={p.path} element={<Placeholder {...p} />} />
           ))}
           <Route path="*" element={<Navigate to="/board" replace />} />
