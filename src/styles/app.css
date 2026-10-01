@@ -28,3 +28,8 @@ h1, h2, h3 { word-break: keep-all; }
 
 /* 로그인 상태 유지 체크 상자: 키보드 초점 표시 */
 .remember-check input:focus-visible + span { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* 꿈 보드 */
+.goal-card:hover { box-shadow: var(--shadow-md); }
+.add-dashed:hover { background: var(--color-neutral-200); }
+.traits-toggle:hover { background: var(--color-neutral-200) !important; }

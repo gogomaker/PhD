@@ -42,7 +42,7 @@ function NameInput({ value, onSave, label, maxLength }: { value: string; onSave:
 }
 
 export default function CategoriesPage() {
-  const { profile, goalCategories: cats, dailyCategory: daily, keywords, run } = useAccount();
+  const { profile, goalCategories: cats, dailyCategory: daily, keywords, goals, run, toast } = useAccount();
   const full = cats.length >= MAX_GOAL_CATEGORIES;
   const stage = lifeStageOf(profile?.life_stage);
   const suggest = stage.cats.filter(n => !cats.some(c => c.name === n));
@@ -61,8 +61,12 @@ export default function CategoriesPage() {
     const position = cats.length ? Math.max(...cats.map(c => c.position)) + 1 : 0;
     run(() => supabase.from('categories').insert({ kind: 'goal', name, color: 'red', position }));
   };
-  // M1: 목표 카테고리는 1개 이상 남긴다 (가입 때와 같은 기준). 목표가 든 카테고리 삭제 규칙은 M2에서
-  const remove = (c: Category) => run(() => supabase.from('categories').delete().eq('id', c.id));
+  // 목표 카테고리는 1개 이상 남긴다 (가입 때와 같은 기준). 목표가 든 카테고리는 지울 수 없다 (기획 결정, DB도 막음)
+  const goalCount = (c: Category) => goals.filter(g => g.category_id === c.id).length;
+  const remove = (c: Category) => {
+    if (goalCount(c) > 0) return toast('목표가 들어 있는 카테고리는 지울 수 없어요. 목표를 다른 카테고리로 옮기거나 지운 뒤 지워 주세요');
+    run(() => supabase.from('categories').delete().eq('id', c.id));
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28, maxWidth: 920 }}>
@@ -85,8 +89,9 @@ export default function CategoriesPage() {
               <div style={{ flex: '1 1 220px', display: 'flex', alignItems: 'center', background: p.bg, borderRadius: 999, padding: '0 20px', height: 48, transform: 'rotate(-0.6deg)' }}>
                 <NameInput value={c.name} label="카테고리 이름" maxLength={MAX_CATEGORY_NAME} onSave={name => update(c, { name })} />
               </div>
+              <span style={{ flex: 'none', minWidth: 58, fontSize: 12.5, fontWeight: 600, color: 'var(--color-neutral-700)' }}>목표 {goalCount(c)}개</span>
               <button
-                title={cats.length <= 1 ? '목표 카테고리는 1개 이상 있어야 해요' : '삭제'}
+                title={cats.length <= 1 ? '목표 카테고리는 1개 이상 있어야 해요' : goalCount(c) > 0 ? '목표가 들어 있어 지울 수 없어요' : '삭제'}
                 aria-label="삭제"
                 disabled={cats.length <= 1}
                 onClick={() => remove(c)}

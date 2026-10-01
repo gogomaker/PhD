@@ -31,6 +31,25 @@ export type Category = {
 
 export type Keyword = { id: string; category_id: string; name: string; position: number };
 
+export type GoalStatus = 'not_started' | 'in_progress' | 'completed' | 'dropped';
+
+export type Goal = {
+  id: string;
+  category_id: string;
+  name: string;
+  position: number;
+  /** 'YYYY-MM-01' */
+  due_month: string;
+  reason: string | null;
+  importance: 'high' | 'mid' | 'low' | null;
+  fallback: string | null;
+  status: GoalStatus;
+  started_at: string | null;
+  created_at: string;
+};
+
+export type Subgoal = { id: string; goal_id: string; name: string; position: number };
+
 /** loading: 확인 중 / signedOut: 로그인 전 / onboarding: 가입 2~4단계 남음 / ready: 사용 가능 */
 export type AccountStatus = 'loading' | 'signedOut' | 'onboarding' | 'ready';
 
@@ -41,6 +60,8 @@ type AccountValue = {
   goalCategories: Category[];
   dailyCategory: Category | null;
   keywords: Keyword[];
+  goals: Goal[];
+  subgoals: Subgoal[];
   reload: () => Promise<void>;
   /** 서버 호출을 감싸서, 실패하면 알림을 띄우고 데이터를 다시 읽는다. 성공하면 true */
   run: (fn: () => PromiseLike<{ error: unknown }>) => Promise<boolean>;
@@ -55,8 +76,8 @@ export function useAccount() {
   return v;
 }
 
-type Data = { profile: Profile | null; categories: Category[]; keywords: Keyword[] };
-const EMPTY: Data = { profile: null, categories: [], keywords: [] };
+type Data = { profile: Profile | null; categories: Category[]; keywords: Keyword[]; goals: Goal[]; subgoals: Subgoal[] };
+const EMPTY: Data = { profile: null, categories: [], keywords: [], goals: [], subgoals: [] };
 
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -79,18 +100,26 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   const reload = useCallback(async () => {
     if (!userId) return;
-    const [p, c, k] = await Promise.all([
+    const [p, c, k, g, sg] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
       supabase.from('categories').select('id, kind, name, color, aspiration, position').order('position'),
       supabase.from('daily_keywords').select('id, category_id, name, position').order('position').order('created_at'),
+      supabase.from('goals').select('id, category_id, name, position, due_month, reason, importance, fallback, status, started_at, created_at').order('position').order('created_at'),
+      supabase.from('subgoals').select('id, goal_id, name, position').order('position').order('created_at'),
     ]);
-    const err = p.error ?? c.error ?? k.error;
+    const err = p.error ?? c.error ?? k.error ?? g.error ?? sg.error;
     if (err) {
       toast(errorText(err));
       setData(d => d ?? EMPTY);
       return;
     }
-    setData({ profile: p.data as Profile | null, categories: (c.data ?? []) as Category[], keywords: (k.data ?? []) as Keyword[] });
+    setData({
+      profile: p.data as Profile | null,
+      categories: (c.data ?? []) as Category[],
+      keywords: (k.data ?? []) as Keyword[],
+      goals: (g.data ?? []) as Goal[],
+      subgoals: (sg.data ?? []) as Subgoal[],
+    });
   }, [userId, toast]);
 
   useEffect(() => {
@@ -131,6 +160,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       goalCategories: d.categories.filter(c => c.kind === 'goal'),
       dailyCategory: d.categories.find(c => c.kind === 'daily') ?? null,
       keywords: d.keywords,
+      goals: d.goals,
+      subgoals: d.subgoals,
       reload,
       run,
       toast,

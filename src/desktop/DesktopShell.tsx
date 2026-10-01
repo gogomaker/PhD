@@ -2,6 +2,9 @@ import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { Icon, ICON } from '../Icon';
 import { useAccount } from '../account/AccountProvider';
 import CategoriesPage from './CategoriesPage';
+import DreamPage from './DreamPage';
+import GoalsPage from './GoalsPage';
+import BoardPage from './BoardPage';
 import AccountPage from './AccountPage';
 import { initials } from '../lib/initials';
 
@@ -37,7 +40,10 @@ export default function DesktopShell() {
         <Routes>
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/account" element={<AccountPage />} />
-          {PAGES.filter(p => p.stage !== 'M1').map(p => (
+          <Route path="/dream" element={<DreamPage />} />
+          <Route path="/goals" element={<GoalsPage />} />
+          <Route path="/board" element={<BoardPage />} />
+          {PAGES.filter(p => p.stage !== 'M1' && p.stage !== 'M2').map(p => (
             <Route key={p.path} path={p.path} element={<Placeholder {...p} />} />
           ))}
           <Route path="*" element={<Navigate to="/board" replace />} />

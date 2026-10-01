@@ -98,7 +98,7 @@ Claude Code가 BaaS에 맞게 다듬되, **아래 관계와 제약은 유지**�
 ### 3.3 목표
 **goals**
 - `category_id` (goal 카테고리만), `name`, `position`
-- 특성: `due_month` (필수), `reason`, `importance` (high / mid / low), `fallback` (대안) — reason·importance·fallback은 선택
+- 특성: `due_month` (필수 — 목표를 적을 때 바로 받는다, 2026-10-01 기획 결정), `reason`, `importance` (high / mid / low), `fallback` (대안) — reason·importance·fallback은 선택
 - `status`: `not_started` | `in_progress` | `completed` | `dropped`
 - `started_at` — 이 목표의 실천이 처음 주간 표에 배치된 시각
 - 마무리: `finished_at`, `finish_photo_path`(완성일 때만), `retro_achieved`, `retro_regret`, `retro_next`
@@ -156,6 +156,7 @@ Claude Code가 BaaS에 맞게 다듬되, **아래 관계와 제약은 유지**�
 - **R-C1** 목표 카테고리 최대 6개 + 일상 1개 = 최대 7색, 색은 겹치지 않는다. 일상 카테고리 색만 직접 고르고, 목표 카테고리 색은 **순서대로** 정해진다(빨강→주황→노랑→초록→파랑→보라→분홍, 일상 색은 건너뜀). 순서를 바꾸거나 지우면 색도 따라 바뀐다. (2026-10-01 기획 결정)
 - **R-C2** 일상 카테고리는 목표 설정·꿈 보드·계획 표에 **나타나지 않는다.**
 - **R-C3** 목표는 카테고리 1개에만 속한다. 색은 카테고리 색을 따른다.
+- **R-C4** 목표가 들어 있는 카테고리는 지울 수 없다. 목표를 다른 카테고리로 옮기거나 지운 뒤 지운다. (2026-10-01 기획 결정)
 - **R-G1** 세부목표는 반드시 목표 1개에 속한다.
 - **R-G2** 세부목표가 0개인 목표는 계획 표 열로 추가할 수 없다. (안내: "꿈 보드에서 세부목표를 먼저 추가해 주세요")
 - **R-G3** 목표의 "시작" = 그 목표의 실천이 **주간 표에 처음 배치된 시점.** 그때 `not_started → in_progress`.
