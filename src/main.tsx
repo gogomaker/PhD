@@ -4,11 +4,14 @@ import { BrowserRouter } from 'react-router-dom';
 import './styles/organic.css';
 import './styles/app.css';
 import App from './App';
+import { AccountProvider } from './account/AccountProvider';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <AccountProvider>
+        <App />
+      </AccountProvider>
     </BrowserRouter>
   </StrictMode>,
 );

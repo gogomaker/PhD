@@ -22,3 +22,6 @@ input::placeholder, textarea::placeholder { color: var(--color-neutral-600); }
 .dream-card:hover { background: var(--color-accent-300); color: var(--color-text); }
 .account-card { background: transparent; }
 .account-card:hover, .account-card.active { background: var(--color-neutral-100); color: var(--color-text); }
+
+/* 한글 제목은 낱말 중간에서 줄바꿈하지 않는다 */
+h1, h2, h3 { word-break: keep-all; }

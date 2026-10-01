@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon } from '../Icon';
-import { DEFAULT_DAY_START_HOUR, addDays, dayLabel, dayRelation, userDayKey, type DayRelation } from '../lib/day';
+import { useAccount } from '../account/AccountProvider';
+import { DEFAULT_DAY_START_HOUR, DEFAULT_TIMEZONE, addDays, dayLabel, dayRelation, userDayKey, type DayRelation } from '../lib/day';
 
 const BADGE: Record<DayRelation, [string, string]> = {
   today: ['오늘', 'tag tag-accent'],
@@ -15,9 +16,10 @@ const BANNER: Partial<Record<DayRelation, string>> = {
 };
 
 export default function DayPlanner() {
-  // TODO(M1): 계정 설정의 시간대·하루 시작 시각을 쓴다
-  const dayStartHour = DEFAULT_DAY_START_HOUR;
-  const today = userDayKey(new Date());
+  // R-D1: 계정 설정의 시간대·하루 시작 시각 기준
+  const { profile } = useAccount();
+  const dayStartHour = profile?.day_start_hour ?? DEFAULT_DAY_START_HOUR;
+  const today = userDayKey(new Date(), profile?.timezone ?? DEFAULT_TIMEZONE, dayStartHour);
   const [day, setDay] = useState(today);
   const rel = dayRelation(day, today);
   const { md, dow } = dayLabel(day);

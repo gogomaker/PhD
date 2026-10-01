@@ -1,5 +1,9 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { Icon, ICON } from '../Icon';
+import { useAccount } from '../account/AccountProvider';
+import CategoriesPage from './CategoriesPage';
+import AccountPage from './AccountPage';
+import { initials } from '../lib/initials';
 
 type ScreenKey = keyof typeof ICON;
 
@@ -31,7 +35,9 @@ export default function DesktopShell() {
       <Sidebar />
       <main style={{ flex: 1, minWidth: 0, padding: '36px 44px 56px', display: 'flex', flexDirection: 'column', gap: 28 }}>
         <Routes>
-          {PAGES.map(p => (
+          <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="/account" element={<AccountPage />} />
+          {PAGES.filter(p => p.stage !== 'M1').map(p => (
             <Route key={p.path} path={p.path} element={<Placeholder {...p} />} />
           ))}
           <Route path="*" element={<Navigate to="/board" replace />} />
@@ -42,6 +48,9 @@ export default function DesktopShell() {
 }
 
 function Sidebar() {
+  const { profile } = useAccount();
+  const dream = profile?.dream?.trim();
+  const name = profile?.name ?? '';
   return (
     <aside style={{ flex: 'none', width: 236, position: 'sticky', top: 0, height: '100vh', padding: 14, boxSizing: 'border-box' }}>
       <div style={{ height: '100%', background: 'var(--color-surface)', borderRadius: 32, padding: '24px 14px 14px', display: 'flex', flexDirection: 'column', gap: 22, boxSizing: 'border-box', overflowY: 'auto' }}>
@@ -64,14 +73,18 @@ function Sidebar() {
         </nav>
         <NavLink to="/dream" title="꿈 작성으로 이동" className="side-card dream-card" style={{ marginTop: 'auto', borderRadius: 24, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: 'var(--color-accent-800)' }}>나의 꿈</span>
-          <span style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.4, color: 'var(--color-accent-900)' }}>
-            아직 꿈을 적지 않았어요 · <span style={{ textDecoration: 'underline', textUnderlineOffset: 3 }}>쓰기</span>
-          </span>
+          {dream ? (
+            <span style={{ fontFamily: 'var(--font-heading)', fontSize: 16, lineHeight: 1.3 }}>{dream}</span>
+          ) : (
+            <span style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.4, color: 'var(--color-accent-900)' }}>
+              아직 꿈을 적지 않았어요 · <span style={{ textDecoration: 'underline', textUnderlineOffset: 3 }}>쓰기</span>
+            </span>
+          )}
         </NavLink>
         <NavLink to="/account" className={({ isActive }) => 'side-card account-card' + (isActive ? ' active' : '')} style={{ borderRadius: 24, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ flex: 'none', width: 38, height: 38, borderRadius: '50%', background: 'var(--color-accent-2)', color: 'var(--color-neutral-100)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 13 }}>?</span>
+          <span style={{ flex: 'none', width: 38, height: 38, borderRadius: '50%', background: 'var(--color-accent-2)', color: 'var(--color-neutral-100)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 13 }}>{initials(name)}</span>
           <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            <span style={{ fontWeight: 700, fontSize: 14 }}>로그인 전</span>
+            <span style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
             <span style={{ fontSize: 12, color: 'var(--color-neutral-700)' }}>계정 관리</span>
           </span>
         </NavLink>
