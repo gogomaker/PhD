@@ -1,0 +1,75 @@
+/* 화면 테마 (2026-10-01 기획 결정: 시스템 설정 / 라이트 / 다크, 기기마다 따로).
+   <html data-theme="light|dark"> 는 src/lib/theme.ts 가 정한다 (index.html 첫 줄에서 깜빡임 없이 먼저).
+   다크는 자동 반전이 아니라 같은 단계 이름에 다크용 값을 따로 정했다:
+   - 중립·강조 단계는 뒤집는다 (100 = 카드보다 살짝 밝은 면, 900 = 가장 밝은 글자)
+   - 카테고리 색: bg = 어두운 색조 면, ink = 밝은 글자, dot = 칠하기용 중간 밝기 */
+
+/* 카테고리 7색 (SPEC 6장) */
+:root {
+  /* 시트·팝업 뒤 어둡게 */
+  --scrim: color-mix(in oklch, #201e1d 32%, transparent);
+  --cat-red-bg: oklch(0.9 0.055 25); --cat-red-ink: oklch(0.42 0.11 25); --cat-red-dot: oklch(0.7 0.13 25);
+  --cat-orange-bg: oklch(0.91 0.06 60); --cat-orange-ink: oklch(0.44 0.1 55); --cat-orange-dot: oklch(0.74 0.13 60);
+  --cat-yellow-bg: oklch(0.93 0.07 95); --cat-yellow-ink: oklch(0.44 0.09 85); --cat-yellow-dot: oklch(0.82 0.13 92);
+  --cat-green-bg: oklch(0.91 0.06 145); --cat-green-ink: oklch(0.4 0.08 145); --cat-green-dot: oklch(0.72 0.12 145);
+  --cat-blue-bg: oklch(0.91 0.045 245); --cat-blue-ink: oklch(0.4 0.09 250); --cat-blue-dot: oklch(0.7 0.1 245);
+  --cat-purple-bg: oklch(0.9 0.05 300); --cat-purple-ink: oklch(0.42 0.1 300); --cat-purple-dot: oklch(0.7 0.11 300);
+  --cat-pink-bg: oklch(0.91 0.05 350); --cat-pink-ink: oklch(0.43 0.1 350); --cat-pink-dot: oklch(0.74 0.11 350);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --scrim: rgb(0 0 0 / 0.55);
+  --color-bg: #1b1916;
+  --color-surface: #262320;
+  --color-text: #f1e8da;
+  --color-accent: #d9814a;
+  --color-accent-2: #93a476;
+  --color-divider: color-mix(in srgb, #f1e8da 16%, transparent);
+
+  --color-neutral-100: #322e29;
+  --color-neutral-200: #3b3631;
+  --color-neutral-300: #49433c;
+  --color-neutral-400: #5f584f;
+  --color-neutral-500: #7b7367;
+  --color-neutral-600: #9a9184;
+  --color-neutral-700: #b7ae9f;
+  --color-neutral-800: #d4cbbd;
+  --color-neutral-900: #ece4d7;
+
+  --color-accent-100: #2f2118;
+  --color-accent-200: #3e2a1b;
+  --color-accent-300: #58361e;
+  --color-accent-400: #7b4925;
+  --color-accent-500: #a65f30;
+  --color-accent-600: #c4743f;
+  --color-accent-700: #e0975f;
+  --color-accent-800: #f0b58a;
+  --color-accent-900: #fad6bd;
+
+  --color-accent-2-100: #20271a;
+  --color-accent-2-200: #2a3320;
+  --color-accent-2-300: #38432a;
+  --color-accent-2-400: #4d5b39;
+  --color-accent-2-500: #66784b;
+  --color-accent-2-600: #83966a;
+  --color-accent-2-700: #a2b386;
+  --color-accent-2-800: #c1d0a6;
+  --color-accent-2-900: #dde8c8;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-md: 0 3px 10px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.5), 0 0 0 1px color-mix(in srgb, #f1e8da 8%, transparent);
+
+  --cat-red-bg: oklch(0.33 0.045 25); --cat-red-ink: oklch(0.87 0.07 25); --cat-red-dot: oklch(0.7 0.12 25);
+  --cat-orange-bg: oklch(0.33 0.045 60); --cat-orange-ink: oklch(0.87 0.07 55); --cat-orange-dot: oklch(0.72 0.12 60);
+  --cat-yellow-bg: oklch(0.33 0.045 95); --cat-yellow-ink: oklch(0.87 0.07 90); --cat-yellow-dot: oklch(0.78 0.12 92);
+  --cat-green-bg: oklch(0.33 0.045 145); --cat-green-ink: oklch(0.87 0.07 145); --cat-green-dot: oklch(0.7 0.12 145);
+  --cat-blue-bg: oklch(0.33 0.045 245); --cat-blue-ink: oklch(0.87 0.07 250); --cat-blue-dot: oklch(0.7 0.12 245);
+  --cat-purple-bg: oklch(0.33 0.045 300); --cat-purple-ink: oklch(0.87 0.07 300); --cat-purple-dot: oklch(0.7 0.12 300);
+  --cat-pink-bg: oklch(0.33 0.045 350); --cat-pink-ink: oklch(0.87 0.07 350); --cat-pink-dot: oklch(0.72 0.12 350);
+}
+
+/* 다크에서 뒤집으면 안 되는 곳 */
+.dialog-backdrop { background: var(--scrim); }
+:root:not([data-theme="dark"]) { color-scheme: light; }

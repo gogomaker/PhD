@@ -6,8 +6,17 @@
     <meta name="theme-color" content="#f5ead8" />
     <title>PhD · Plan Higher Dream</title>
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <script>
+      // 화면 테마를 그리기 전에 먼저 정한다 (깜빡임 방지). 자세한 건 src/lib/theme.ts
+      try {
+        var t = localStorage.getItem('phd-theme');
+        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+        if (t === 'dark') document.querySelector('meta[name="theme-color"]').content = '#1b1916';
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
