@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/organic-3e1f4d66-d352-4b6d-a8c7-4fe059ed8ce4/styles.css">
+<script src="_ds/organic-3e1f4d66-d352-4b6d-a8c7-4fe059ed8ce4/_ds_bundle.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>:root{--font-heading:"Caprasimo","Jua",system-ui,sans-serif;--font-body:"Figtree","Pretendard",system-ui,sans-serif}body{margin:0;background:var(--color-surface)}a{color:var(--color-accent-700)}a:hover{color:var(--color-accent-800)}input::placeholder,textarea::placeholder{color:var(--color-neutral-600)}.todo-scroll{scrollbar-width:none;-ms-overflow-style:none}.todo-scroll::-webkit-scrollbar{display:none}</style>
+</helmet>
+<div style="min-height:100vh; display:flex; flex-wrap:wrap; gap:56px; align-items:flex-start; padding:48px 52px; box-sizing:border-box; font-family:var(--font-body); color:var(--color-text)">
+  <div style="flex:1 1 320px; max-width:420px; display:flex; flex-direction:column; gap:26px; padding-top:12px">
+    <div style="display:flex; flex-direction:column; gap:10px">
+      <span class="tag tag-accent" style="align-self:flex-start; font-weight:700">모바일 · 하루 플래너</span>
+      <h1 style="margin:0; font-size:40px">하루를 한 화면에</h1>
+      <p style="margin:0; font-size:15px; color:var(--color-neutral-700); text-wrap:pretty">데스크톱 주간 표의 실천이 그날의 할 일로 들어와요. 계획은 회색으로 그리고, 실제로 쓴 시간은 할 일 색으로 칠해요.</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px">
+      <h4 style="margin:0; font-size:19px">할 일 왼쪽 표시</h4>
+      <sc-for list="{{ legend }}" as="lg">
+        <div style="display:flex; gap:12px; align-items:flex-start">
+          <span style="flex:none; width:28px; height:28px; border-radius:50%; background:var(--color-neutral-100); color:var(--color-neutral-700); display:grid; place-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="{{ lg.icon }}"></path></svg></span>
+          <div style="display:flex; flex-direction:column; gap:2px; padding-top:3px">
+            <span style="font-weight:700; font-size:14.5px">{{ lg.t }}</span>
+            <span style="font-size:13.5px; color:var(--color-neutral-700); text-wrap:pretty">{{ lg.d }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="background:var(--color-accent-2-200); color:var(--color-accent-2-900); border-radius:28px; padding:20px 22px; display:flex; flex-direction:column; gap:10px">
+      <h4 style="margin:0; font-size:19px">날짜별로 할 수 있는 일</h4>
+      <ul style="margin:0; padding-left:18px; font-size:13.5px; line-height:1.65">
+        <li>오늘: 체크, 담기·추가, 계획 그리기, 실제 칠하기, 하루 기록</li>
+        <li>내일: 담기·추가, 계획 그리기</li>
+        <li>모레 이후: 배정된 실천 보기만</li>
+        <li>지난 날: 읽기 전용</li>
+      </ul>
+    </div>
+  </div>
+
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+    <div style="position:relative; height:874px; overflow:hidden; background:var(--color-bg); display:flex; flex-direction:column; padding:56px 12px 28px; box-sizing:border-box; gap:8px; font-family:var(--font-body); color:var(--color-text)">
+
+      <div onPointerDown="{{ swDown }}" onPointerUp="{{ swUp }}" style="flex:none; height:46px; display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap:4px; touch-action:pan-y; user-select:none">
+        <span class="{{ d.badgeCls }}" style="justify-self:start; font-weight:700; font-size:11.5px">{{ d.badge }}</span>
+        <div style="display:flex; align-items:center; gap:2px">
+          <button onClick="{{ prevDay }}" aria-label="전날" class="btn" style="width:36px; height:36px; padding:0; color:var(--color-neutral-700)" style-hover="background:var(--color-neutral-200)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+          <button onClick="{{ openCal }}" style="border:0; background:transparent; cursor:pointer; font:inherit; color:var(--color-text); padding:4px 10px; border-radius:999px; display:flex; align-items:baseline; gap:6px" style-hover="background:var(--color-neutral-200)">
+            <span style="font-family:var(--font-heading); font-size:26px; line-height:1">{{ d.md }}</span>
+            <span style="font-family:var(--font-heading); font-size:17px; color:var(--color-accent-700)">{{ d.dow }}</span>
+          </button>
+          <button onClick="{{ nextDay }}" aria-label="다음 날" class="btn" style="width:36px; height:36px; padding:0; color:var(--color-neutral-700)" style-hover="background:var(--color-neutral-200)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+        </div>
+        <sc-if value="{{ d.notToday }}">
+          <button onClick="{{ goToday }}" class="btn btn-secondary" style="justify-self:end; height:30px; padding:0 12px; font-family:var(--font-body); font-weight:700; font-size:12px">오늘</button>
+        </sc-if>
+      </div>
+
+      <div style="flex:none; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 4px">
+        <sc-if value="{{ hasDday }}"><span class="tag" style="flex:0 1 auto; background:var(--color-text); color:var(--color-neutral-100); font-weight:700; font-size:11.5px; gap:5px; min-width:0; overflow:hidden; white-space:nowrap"><span>{{ dday.n }}</span><span style="overflow:hidden; text-overflow:ellipsis">{{ dday.goal }}</span></span></sc-if>
+        <div style="flex:none; display:flex; gap:10px; font-size:12px; color:var(--color-neutral-700); white-space:nowrap">
+          <span style="display:flex; align-items:center; gap:4px"><span style="width:9px; height:9px; border-radius:3px; background:var(--color-neutral-400)"></span>계획 <b style="color:var(--color-text)">{{ planned }}</b></span>
+          <span style="display:flex; align-items:center; gap:4px"><span style="width:9px; height:9px; border-radius:3px; background:var(--color-accent)"></span>실제 <b style="color:var(--color-accent-700)">{{ actual }}</b></span>
+        </div>
+      </div>
+
+      <sc-if value="{{ d.hasBanner }}">
+        <div style="flex:none; display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:999px; background:var(--color-neutral-200); color:var(--color-neutral-800); font-size:12.5px; font-weight:600"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4"></path></svg>{{ d.banner }}</div>
+      </sc-if>
+
+      <div style="flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) 166px; gap:8px">
+        <div style="position:relative; min-height:0; background:var(--color-surface); border-radius:24px; overflow:hidden">
+        <div class="todo-scroll" ref="{{ listRef }}" onScroll="{{ onListScroll }}" style="position:absolute; inset:0; padding:8px 6px; display:flex; flex-direction:column; gap:3px; overflow-y:auto">
+          <div style="display:flex; align-items:baseline; justify-content:space-between; padding:2px 8px 4px">
+            <span style="font-size:12px; font-weight:700; color:var(--color-neutral-700)">반복</span>
+            <span style="font-size:10.5px; font-weight:600; color:var(--color-neutral-600)">다음 날로 넘어가지 않아요</span>
+          </div>
+          <sc-for list="{{ reps }}" as="td" hint-placeholder-count="3">
+            <div onClick="{{ td.pick }}" style="flex:none; display:flex; align-items:center; gap:5px; padding:6px 6px 6px 3px; border-radius:16px; background:{{ td.rowBg }}; box-shadow:{{ td.ring }}; cursor:{{ td.cursor }}; opacity:{{ td.op }}">
+              <span style="flex:none; width:12px; text-align:right; font-family:var(--font-heading); font-size:12px; line-height:1; color:var(--color-neutral-700)">{{ td.num }}</span>
+              <span title="{{ td.srcLabel }}" style="flex:none; width:14px; display:grid; place-items:center; color:var(--color-neutral-600)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="{{ td.srcIcon }}"></path></svg></span>
+              <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px">
+                <div style="display:flex; align-items:center; gap:4px; min-width:0">
+                  <span style="flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10.5px; font-weight:700; line-height:1.2; padding:2px 7px; border-radius:999px; background:{{ td.bg }}; color:{{ td.ink }}">{{ td.tag }}</span>
+                </div>
+                <span style="font-size:12.5px; font-weight:600; line-height:1.25; text-decoration:{{ td.strike }}; color:{{ td.fg }}; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical">{{ td.name }}</span>
+              </div>
+              <sc-if value="{{ td.showCircle }}">
+                <button onClick="{{ td.toggle }}" disabled="{{ td.locked }}" aria-label="완료" style="flex:none; width:24px; height:24px; border-radius:50%; border:2px solid {{ td.dot }}; background:{{ td.checkBg }}; display:grid; place-items:center; padding:0; cursor:{{ td.checkCursor }}; color:var(--color-neutral-100)"><sc-if value="{{ td.done }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if></button>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noReps }}"><span style="font-size:12px; color:var(--color-neutral-600); padding:4px 8px 6px">반복 실천이 없어요</span></sc-if>
+
+          <div style="display:flex; align-items:baseline; justify-content:space-between; padding:10px 8px 4px">
+            <span style="font-size:12px; font-weight:700; color:var(--color-neutral-700)">오늘 할 일</span>
+            <span style="font-size:10.5px; font-weight:600; color:var(--color-neutral-600); white-space:nowrap">{{ dayCount }}</span>
+          </div>
+          <sc-for list="{{ days }}" as="td" hint-placeholder-count="6">
+            <div onClick="{{ td.pick }}" style="flex:none; display:flex; align-items:center; gap:5px; padding:6px 6px 6px 3px; border-radius:16px; background:{{ td.rowBg }}; box-shadow:{{ td.ring }}; cursor:{{ td.cursor }}; opacity:{{ td.op }}">
+              <span style="flex:none; width:12px; text-align:right; font-family:var(--font-heading); font-size:12px; line-height:1; color:var(--color-neutral-700)">{{ td.num }}</span>
+              <span title="{{ td.srcLabel }}" style="flex:none; width:14px; display:grid; place-items:center; color:var(--color-neutral-600)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="{{ td.srcIcon }}"></path></svg></span>
+              <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px">
+                <div style="display:flex; align-items:center; gap:4px; min-width:0">
+                  <span style="flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10.5px; font-weight:700; line-height:1.2; padding:2px 7px; border-radius:999px; background:{{ td.bg }}; color:{{ td.ink }}">{{ td.tag }}</span>
+                  <sc-if value="{{ td.carried }}"><span style="flex:none; font-size:10px; font-weight:700; color:var(--color-accent-700); white-space:nowrap">어제에서</span></sc-if>
+                  <sc-if value="{{ td.hasPeriod }}"><span style="flex:none; font-size:10px; font-weight:700; color:var(--color-neutral-700); white-space:nowrap">{{ td.period }}</span></sc-if>
+                  <sc-if value="{{ td.timed }}"><span style="flex:none; display:flex; align-items:center; gap:2px; font-size:10px; font-weight:700; color:var(--color-neutral-700); white-space:nowrap"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 9v4l2 2M5 3 2 6M22 6l-3-3"></path></svg>{{ td.time }}</span></sc-if>
+                </div>
+                <span style="font-size:12.5px; font-weight:600; line-height:1.25; text-decoration:{{ td.strike }}; color:{{ td.fg }}; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical">{{ td.name }}</span>
+              </div>
+              <sc-if value="{{ td.showCircle }}">
+                <button onClick="{{ td.toggle }}" disabled="{{ td.locked }}" aria-label="완료" style="flex:none; width:24px; height:24px; border-radius:50%; border:2px solid {{ td.dot }}; background:{{ td.checkBg }}; display:grid; place-items:center; padding:0; cursor:{{ td.checkCursor }}; color:var(--color-neutral-100)"><sc-if value="{{ td.done }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if></button>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noDays }}"><span style="font-size:12px; color:var(--color-neutral-600); padding:4px 8px 6px">{{ noDaysText }}</span></sc-if>
+          <sc-if value="{{ d.canAdd }}">
+            <div style="display:flex; flex-direction:column; gap:5px; padding:8px 2px 2px">
+              <button onClick="{{ openPick }}" class="btn" style="height:36px; border:2px dashed var(--color-neutral-400); color:var(--color-neutral-800); font-family:var(--font-body); font-weight:700; font-size:12.5px; border-radius:16px; padding:0 10px" style-hover="background:var(--color-neutral-200)">+ 이번 주에서 담기</button>
+              <button onClick="{{ openAdd }}" class="btn" style="height:36px; border:2px dashed var(--color-neutral-400); color:var(--color-neutral-800); font-family:var(--font-body); font-weight:700; font-size:12.5px; border-radius:16px; padding:0 10px" style-hover="background:var(--color-neutral-200)">+ 직접 추가</button>
+            </div>
+          </sc-if>
+        </div>
+          <div style="position:absolute; left:0; right:0; top:0; height:24px; pointer-events:none; background:linear-gradient(var(--color-surface), transparent); opacity:{{ fadeTop }}; transition:opacity .15s"></div>
+          <div style="position:absolute; left:0; right:0; bottom:0; height:24px; pointer-events:none; background:linear-gradient(transparent, var(--color-surface)); opacity:{{ fadeBottom }}; transition:opacity .15s"></div>
+        </div>
+
+        <div style="background:var(--color-surface); border-radius:24px; padding:6px 6px 6px 4px; display:flex; flex-direction:column; gap:4px; min-height:0">
+          <div style="display:flex; gap:3px; padding:0 0 0 2px">
+            <sc-for list="{{ modes }}" as="m">
+              <button onClick="{{ m.pick }}" disabled="{{ m.off }}" style="flex:1; height:28px; border:0; border-radius:999px; cursor:{{ m.cursor }}; font:inherit; font-size:11.5px; font-weight:700; padding:0; background:{{ m.bg }}; color:{{ m.fg }}; opacity:{{ m.op }}">{{ m.k }}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ showKw }}"><div style="display:flex; gap:3px; padding:0 0 0 2px"><sc-for list="{{ kwBrush }}" as="kb"><button onClick="{{ kb.pick }}" style="flex:1; height:22px; border:0; border-radius:999px; cursor:pointer; font:inherit; font-size:10px; font-weight:700; padding:0; background:{{ kb.bg }}; color:{{ kb.fg }}; box-shadow:{{ kb.ring }}">{{ kb.k }}</button></sc-for></div></sc-if>
+          <span style="font-size:10.5px; font-weight:600; color:var(--color-neutral-700); padding:0 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ brushHint }}</span>
+          <div style="display:grid; grid-template-columns:20px repeat(6, minmax(0,1fr)); gap:0; font-size:9px; font-weight:700; color:var(--color-neutral-600); text-align:center; height:12px; align-items:center">
+            <span></span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span><span>60</span>
+          </div>
+          <div onPointerDown="{{ down }}" onPointerMove="{{ move }}" onPointerUp="{{ up }}" onPointerCancel="{{ up }}" style="flex:1; min-height:0; display:grid; grid-template-columns:20px repeat(6, minmax(0,1fr)); grid-template-rows:repeat(24, minmax(0,1fr)); gap:0; border-top:1px solid var(--color-neutral-400); touch-action:none; user-select:none; cursor:{{ gridCursor }}">
+            <sc-for list="{{ hours }}" as="h">
+              <span style="grid-column:1; grid-row:{{ h.row }}; font-size:9.5px; font-weight:700; color:{{ h.color }}; display:flex; align-items:center; justify-content:center">{{ h.label }}</span>
+            </sc-for>
+            <sc-for list="{{ cells }}" as="c">
+              <div data-i="{{ c.i }}" style="grid-column:{{ c.col }}; grid-row:{{ c.row }}; border-right:{{ c.br }}; border-bottom:1px solid var(--color-neutral-400)"></div>
+            </sc-for>
+            <sc-for list="{{ actBands }}" as="ab">
+              <div style="grid-row:{{ ab.row }}; grid-column:{{ ab.col }}; pointer-events:none; z-index:1; align-self:center; height:70%; background:{{ ab.bg }}"></div>
+            </sc-for>
+            <sc-for list="{{ actMarks }}" as="am">
+              <div style="grid-row:{{ am.row }}; grid-column:{{ am.col }}; pointer-events:none; z-index:3; display:flex; align-items:center; padding-left:2px"><span style="flex:none; width:14px; height:14px; box-sizing:border-box; border-radius:50%; border:1.5px solid {{ am.dot }}; background:var(--color-surface); display:grid; place-items:center; font-size:8px; font-weight:800; line-height:1; color:var(--color-text)">{{ am.mark }}</span></div>
+            </sc-for>
+            <sc-for list="{{ planBoxes }}" as="pb">
+              <div style="grid-row:{{ pb.row }}; grid-column:{{ pb.col }}; pointer-events:none; z-index:2; margin:2px 1px; box-sizing:border-box; border:1.5px solid var(--color-neutral-600); border-radius:4px; background:color-mix(in oklch, var(--color-neutral-400) 18%, transparent); display:flex; align-items:center; gap:2px; padding:0 3px 0 {{ pb.padL }}; min-width:0; overflow:hidden; font-size:10px; font-weight:700; line-height:1; color:var(--color-neutral-900)">
+                <sc-if value="{{ pb.hasDot }}"><span style="flex:none; width:5px; height:5px; border-radius:50%; background:{{ pb.dot }}"></span></sc-if>
+                <sc-if value="{{ pb.alarm }}"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 9v4l2 2M5 3 2 6M22 6l-3-3"></path></svg></sc-if>
+                <sc-if value="{{ pb.hasName }}"><span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ pb.name }}</span></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <button onClick="{{ openJournal }}" disabled="{{ j.off }}" style="flex:none; height:46px; border:0; border-radius:999px; background:var(--color-surface); cursor:{{ j.cursor }}; font:inherit; color:var(--color-text); display:flex; align-items:center; gap:10px; padding:0 8px 0 18px; opacity:{{ j.op }}" style-hover="background:var(--color-neutral-100)">
+        <span style="font-size:13px; font-weight:700">하루 기록</span>
+        <span style="flex:1; min-width:0; text-align:left; font-size:12.5px; color:var(--color-neutral-700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ j.summary }}</span>
+        <span style="flex:none; width:30px; height:30px; border-radius:50%; background:var(--color-accent-200); color:var(--color-accent-800); display:grid; place-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"></path></svg></span>
+      </button>
+
+      <sc-if value="{{ sheetOpen }}">
+        <div onClick="{{ closeSheet }}" style="position:absolute; inset:0; z-index:10; background:color-mix(in oklch, var(--color-text) 32%, transparent)"></div>
+        <div style="position:absolute; left:0; right:0; bottom:0; z-index:11; max-height:78%; overflow-y:auto; background:var(--color-neutral-100); border-radius:32px 32px 0 0; padding:10px 20px 34px; box-sizing:border-box; display:flex; flex-direction:column; gap:16px; box-shadow:var(--shadow-lg)">
+          <span style="align-self:center; width:40px; height:5px; border-radius:99px; background:var(--color-neutral-300)"></span>
+
+          <sc-if value="{{ sh.cal }}">
+            <div style="display:flex; align-items:center; justify-content:space-between">
+              <button onClick="{{ cal.prev }}" aria-label="이전 달" class="btn" style="width:34px; height:34px; padding:0" style-hover="background:var(--color-neutral-200)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+              <span style="font-family:var(--font-heading); font-size:22px">{{ cal.title }}</span>
+              <button onClick="{{ cal.next }}" aria-label="다음 달" class="btn" style="width:34px; height:34px; padding:0" style-hover="background:var(--color-neutral-200)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:4px; text-align:center">
+              <sc-for list="{{ cal.heads }}" as="ch"><span style="font-size:11px; font-weight:700; color:var(--color-neutral-600); padding-bottom:4px">{{ ch }}</span></sc-for>
+              <sc-for list="{{ cal.days }}" as="cd">
+                <button onClick="{{ cd.pick }}" disabled="{{ cd.blank }}" style="height:40px; border:0; border-radius:50%; cursor:pointer; font:inherit; font-size:14px; font-weight:{{ cd.fw }}; background:{{ cd.bg }}; color:{{ cd.fg }}; box-shadow:{{ cd.ring }}; opacity:{{ cd.op }}">{{ cd.n }}</button>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ sh.pick }}">
+            <div style="display:flex; flex-direction:column; gap:4px">
+              <span style="font-family:var(--font-heading); font-size:22px">이번 주에서 담기</span>
+              <span style="font-size:13px; color:var(--color-neutral-700); text-wrap:pretty">주간 표 '이번 주' 줄의 기간 단발 실천이에요. 기간 안에 한 번 하면 돼요.</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px">
+              <sc-for list="{{ pickList }}" as="pk">
+                <button onClick="{{ pk.toggle }}" style="border:0; cursor:pointer; font:inherit; color:var(--color-text); text-align:left; display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:20px; background:{{ pk.bg }}; box-shadow:{{ pk.ring }}">
+                  <span style="flex:none; width:22px; height:22px; border-radius:7px; border:2px solid {{ pk.dot }}; background:{{ pk.checkBg }}; display:grid; place-items:center; color:var(--color-neutral-100); box-sizing:border-box"><sc-if value="{{ pk.on }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if></span>
+                  <span style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px">
+                    <span style="display:flex; align-items:center; gap:6px"><span style="font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:999px; background:{{ pk.chipBg }}; color:{{ pk.ink }}">{{ pk.tag }}</span><span style="font-size:11.5px; color:var(--color-neutral-700)">{{ pk.goal }}</span></span>
+                    <span style="font-size:14.5px; font-weight:700">{{ pk.name }}</span>
+                  </span>
+                  <span style="flex:none; font-size:12px; font-weight:700; color:{{ pk.ink }}">{{ pk.period }}</span>
+                </button>
+              </sc-for>
+              <sc-if value="{{ noPick }}"><span style="font-size:13px; color:var(--color-neutral-700); padding:8px 4px">이 날 담을 수 있는 실천이 없어요.</span></sc-if>
+            </div>
+            <button onClick="{{ closeSheet }}" class="btn btn-primary" style="height:46px">완료</button>
+          </sc-if>
+
+          <sc-if value="{{ sh.add }}">
+            <span style="font-family:var(--font-heading); font-size:22px">직접 추가</span>
+            <div class="field"><label>이름</label><input class="input" value="{{ draft.name }}" onChange="{{ setDraftName }}" placeholder="예: 장보기"></div>
+            <div class="field"><label>일상 키워드</label>
+              <div style="display:flex; gap:6px; flex-wrap:wrap">
+                <sc-for list="{{ draftCats }}" as="dc">
+                  <button onClick="{{ dc.pick }}" style="height:36px; padding:0 16px; border-radius:999px; border:0; cursor:pointer; font:inherit; font-size:13px; font-weight:700; background:{{ dc.bg }}; color:{{ dc.fg }}; box-shadow:{{ dc.ring }}">{{ dc.name }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px">
+              <div style="display:flex; flex-direction:column; gap:2px">
+                <span style="font-weight:700; font-size:14px">시간 지정</span>
+                <span style="font-size:12px; color:var(--color-neutral-700)">시간표에 계획으로 놓이고 알람이 울려요</span>
+              </div>
+              <button onClick="{{ toggleTimed }}" aria-label="시간 지정" style="flex:none; width:52px; height:30px; border-radius:999px; border:0; padding:3px; cursor:pointer; background:{{ timedSw.bg }}; display:flex; justify-content:{{ timedSw.justify }}"><span style="width:24px; height:24px; border-radius:50%; background:var(--color-neutral-100); box-shadow:var(--shadow-sm)"></span></button>
+            </div>
+            <sc-if value="{{ draft.timed }}">
+              <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px">
+                <div class="field"><label>시작</label><input class="input" type="time" step="600" value="{{ draft.start }}" onChange="{{ setDraftStart }}"></div>
+                <div class="field"><label>끝</label><input class="input" type="time" step="600" value="{{ draft.end }}" onChange="{{ setDraftEnd }}"></div>
+              </div>
+              <span style="font-size:12px; color:var(--color-neutral-700); margin-top:-6px">예약 할 일은 다음 날로 넘어가지 않아요.</span>
+            </sc-if>
+            <button onClick="{{ submitDraft }}" disabled="{{ draftOff }}" class="btn btn-primary" style="height:46px">추가</button>
+          </sc-if>
+
+          <sc-if value="{{ sh.plan }}">
+            <div style="display:flex; flex-direction:column; gap:4px">
+              <span style="font-family:var(--font-heading); font-size:22px">{{ pe.title }}</span>
+              <span style="font-size:13px; font-weight:600; color:var(--color-neutral-700)">{{ pe.range }}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px">
+              <span style="font-size:12px; font-weight:700; color:var(--color-neutral-700)">할 일에서 고르기</span>
+              <div class="todo-scroll" style="display:flex; flex-direction:column; gap:4px; max-height:200px; overflow-y:auto">
+                <sc-for list="{{ pe.todos }}" as="pt">
+                  <button onClick="{{ pt.pick }}" style="flex:none; border:0; cursor:pointer; font:inherit; text-align:left; display:flex; align-items:center; gap:8px; padding:9px 12px; border-radius:16px; background:{{ pt.bg }}; box-shadow:{{ pt.ring }}; color:var(--color-text)">
+                    <span style="flex:none; max-width:45%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:999px; background:{{ pt.chipBg }}; color:{{ pt.ink }}">{{ pt.tag }}</span>
+                    <span style="flex:1; min-width:0; font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ pt.name }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px">
+              <span style="font-size:12px; font-weight:700; color:var(--color-neutral-700)">또는 키워드</span>
+              <div style="display:flex; gap:6px; flex-wrap:wrap"><sc-for list="{{ pe.kws }}" as="pk"><button onClick="{{ pk.pick }}" style="height:34px; padding:0 14px; border-radius:999px; border:0; cursor:pointer; font:inherit; font-size:13px; font-weight:700; background:{{ pk.bg }}; color:{{ pk.fg }}; box-shadow:{{ pk.ring }}">{{ pk.k }}</button></sc-for></div>
+              <div style="display:flex; gap:8px"><input class="input" value="{{ pe.text }}" onChange="{{ pe.setText }}" onKeyDown="{{ pe.textKey }}" placeholder="직접 입력 (예: 장보기)"><button class="btn btn-secondary" onClick="{{ pe.applyText }}" disabled="{{ pe.textOff }}" style="flex:none; font-family:var(--font-body); font-weight:700">적용</button></div>
+            </div>
+            <div style="display:flex; gap:8px"><button class="btn btn-ghost" onClick="{{ pe.secondary }}" style="flex:1; height:46px; font-family:var(--font-body); font-weight:700">{{ pe.secondaryLabel }}</button><button class="btn btn-primary" onClick="{{ closeSheet }}" style="flex:1; height:46px">완료</button></div>
+          </sc-if>
+
+          <sc-if value="{{ sh.journal }}">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px">
+              <span style="font-family:var(--font-heading); font-size:22px">하루 기록</span>
+              <span style="font-size:12.5px; font-weight:700; color:var(--color-neutral-700)">{{ d.md }} {{ d.dow }}{{ j.roLabel }}</span>
+            </div>
+            <div class="field"><label>오늘 하루 점수</label>
+              <div style="display:flex; gap:8px"><sc-for list="{{ j.scores }}" as="sc"><button onClick="{{ sc.pick }}" disabled="{{ j.ro }}" aria-label="{{ sc.label }}" style="width:44px; height:44px; border-radius:50%; border:0; padding:0; cursor:{{ sc.cursor }}; font-family:var(--font-heading); font-size:18px; background:{{ sc.bg }}; color:{{ sc.fg }}; box-shadow:{{ sc.ring }}">{{ sc.n }}</button></sc-for></div>
+            </div>
+            <div class="field"><label>이유 한 줄</label><input class="input" value="{{ j.review }}" onChange="{{ setReview }}" readOnly="{{ j.ro }}" placeholder="왜 이 점수인가요?"></div>
+            <div class="field"><label>감사</label>
+              <div style="display:flex; flex-direction:column; gap:6px">
+                <sc-for list="{{ j.thanks }}" as="tk">
+                  <div style="display:flex; align-items:center; gap:8px">
+                    <span style="flex:none; width:16px; font-family:var(--font-heading); font-size:15px; color:var(--color-accent-700)">{{ tk.n }}</span>
+                    <input class="input" value="{{ tk.v }}" onChange="{{ tk.set }}" readOnly="{{ j.ro }}" placeholder="감사한 일">
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div class="field"><label>메모</label><textarea class="input" rows="3" value="{{ j.memo }}" onChange="{{ setMemo }}" readOnly="{{ j.ro }}" placeholder="자유롭게 적어요" style="resize:none; height:auto; padding-top:10px; padding-bottom:10px; line-height:1.5; border-radius:20px"></textarea></div>
+            <button onClick="{{ closeSheet }}" class="btn btn-primary" style="height:46px">{{ j.closeLabel }}</button>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+  </x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;data&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;sample&quot;,&quot;empty&quot;],&quot;default&quot;:&quot;empty&quot;,&quot;tsType&quot;:&quot;'sample'|'empty'&quot;},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;today&quot;,&quot;tomorrow&quot;,&quot;past&quot;,&quot;pick&quot;,&quot;add&quot;,&quot;journal&quot;],&quot;default&quot;:&quot;today&quot;,&quot;tsType&quot;:&quot;'today'|'tomorrow'|'past'|'pick'|'add'|'journal'&quot;}}">
+const PAL = {
+  red: { bg: 'oklch(0.9 0.055 25)', ink: 'oklch(0.42 0.11 25)', dot: 'oklch(0.7 0.13 25)' },
+  orange: { bg: 'oklch(0.91 0.06 60)', ink: 'oklch(0.44 0.1 55)', dot: 'oklch(0.74 0.13 60)' },
+  yellow: { bg: 'oklch(0.93 0.07 95)', ink: 'oklch(0.44 0.09 85)', dot: 'oklch(0.82 0.13 92)' },
+  green: { bg: 'oklch(0.91 0.06 145)', ink: 'oklch(0.4 0.08 145)', dot: 'oklch(0.72 0.12 145)' },
+  blue: { bg: 'oklch(0.91 0.045 245)', ink: 'oklch(0.4 0.09 250)', dot: 'oklch(0.7 0.1 245)' },
+  purple: { bg: 'oklch(0.9 0.05 300)', ink: 'oklch(0.42 0.1 300)', dot: 'oklch(0.7 0.11 300)' },
+  pink: { bg: 'oklch(0.91 0.05 350)', ink: 'oklch(0.43 0.1 350)', dot: 'oklch(0.74 0.11 350)' },
+};
+const CATS = {
+  health: { name: '건강', color: 'red' }, career: { name: '커리어', color: 'orange' }, lang: { name: '어학', color: 'yellow' },
+  major: { name: '전공', color: 'green' }, hobby: { name: '취미', color: 'blue' },
+  daily: { name: '일상', color: 'purple', daily: 1 },
+};
+const KEYWORDS = ['업무', '생활', '이동', '휴식'];
+const GOALS = {
+  linalg: { name: '선형대수 복습', cat: 'major', due: [2027, 5] }, talk: { name: '영어 회화', cat: 'lang', due: [2027, 6] }, read: { name: '책 24권 읽기', cat: 'hobby', due: [2027, 9] },
+  toeic: { name: '토익 850', cat: 'lang', due: [2027, 3] }, cert: { name: '정보처리기사', cat: 'career', due: [2027, 5] },
+  app: { name: '사이드 앱 ‘모아’', cat: 'career', due: [2027, 2] }, photo: { name: '사진전', cat: 'hobby', due: [2027, 7] },
+  paper: { name: '논문 읽기', cat: 'major', due: [2027, 4] }, run: { name: '체력 만들기', cat: 'health', due: [2027, 9] },
+};
+const ALL = [0, 1, 2, 3, 4, 5, 6];
+const ACTS = [
+  { id: 'w1', goal: 'toeic', sub: '매일 단어 40개', name: '매일 단어 40개', days: ALL, repeat: 1 },
+  { id: 'w17', goal: 'run', sub: '매일 운동', name: '러닝 5km', days: [0, 2, 4], repeat: 1 },
+  { id: 'w18', goal: 'run', sub: '매일 운동', name: '근력 20분', days: [1, 3], repeat: 1 },
+  { id: 'w19', goal: 'linalg', sub: '1–6장', name: '하루 1절 읽기', days: [0, 1, 2, 3, 4], repeat: 1 },
+  { id: 'w21', goal: 'photo', sub: '주제 기획', name: '레퍼런스 1장 저장', days: ALL, repeat: 1 },
+  { id: 'w20', goal: 'linalg', sub: '1–6장', name: '1장 연습문제', days: [6] },
+  { id: 'w22', goal: 'cert', sub: '필기 기출', name: '오답 노트', days: [5] },
+  { id: 'w2', goal: 'cert', sub: '필기 이론', name: '개념 1챕터씩', days: [0, 1, 2, 3, 4], repeat: 1 },
+  { id: 'w3', goal: 'app', sub: '기획', name: '아이디어 메모 5분', days: ALL, repeat: 1 },
+  { id: 'w4', goal: 'toeic', sub: 'RC', name: '문법 파트 정리', days: [2, 3, 4] },
+  { id: 'w5', goal: 'paper', sub: '관심 분야 탐색', name: '관심 랩 홈페이지 보기', days: [1, 3] },
+  { id: 'w6', goal: 'toeic', sub: 'LC', name: 'Part 1 사진', days: [1] },
+  { id: 'w7', goal: 'toeic', sub: 'LC', name: 'Part 2 응답', days: [3] },
+  { id: 'w8', goal: 'cert', sub: '필기 기출', name: 'SQL 문제 30', days: [2] },
+  { id: 'w9', goal: 'cert', sub: '필기 이론', name: '1주 복습', days: [5] },
+  { id: 'w10', goal: 'cert', sub: '필기 기출', name: '기출 1회 풀기', days: [5] },
+  { id: 'w11', goal: 'app', sub: '기획', name: '인터뷰 질문지', days: [1] },
+  { id: 'w12', goal: 'app', sub: '기획', name: '사용자 인터뷰 2명', days: [3] },
+  { id: 'w13', goal: 'app', sub: '기획', name: '문제 정의서', days: [5] },
+  { id: 'w14', goal: 'photo', sub: '주제 기획', name: '전시 레퍼런스 정리', days: [3] },
+  { id: 'w15', goal: 'photo', sub: '주제 기획', name: '갤러리 탐방', days: [6] },
+  { id: 'w16', goal: 'run', sub: '하프 마라톤 준비', name: '10km 페이스 측정', days: [6] },
+];
+const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
+const BASE = new Date(2026, 8, 28);
+const TODAY = 3;
+const dateOf = o => new Date(2026, 8, 28 + o);
+const dowOf = o => (dateOf(o).getDay() + 6) % 7;
+const offOf = dt => Math.round((dt - BASE) / 864e5);
+const IDX = (hm) => { const [h, m] = hm.split(':').map(Number); return ((h - 5 + 24) % 24) * 6 + Math.floor(m / 10); };
+const fmtDays = ds => { const d = ds.slice().sort((a, b) => a - b); if (d.length === 7) return '매일'; const run = d.every((x, i) => i === 0 || x === d[i - 1] + 1); return run && d.length >= 3 ? DAYS[d[0]] + '–' + DAYS[d[d.length - 1]] : d.map(x => DAYS[x]).join('·'); };
+const ICON = {
+  repeat: 'M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8M21 3v5h-5',
+  auto: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
+  pick: 'M12 3v12M7 10l5 5 5-5M5 21h14',
+  direct: 'M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z',
+};
+const SRC = { repeat: '반복', auto: '자동 배정', pick: '담은 일', direct: '직접 추가' };
+const pgrid = (ranges) => { const a = Array(144).fill(null), info = {}; ranges.forEach(([s, e, id, inf]) => { for (let i = IDX(s); i < IDX(e); i++) a[i] = id; info[id] = inf || {}; }); return [a, info]; };
+const PG2 = pgrid([['07:00', '08:00', 'q1', { todo: 'r:w1' }], ['09:00', '12:00', 'q2', { todo: 'a:w8' }], ['14:00', '16:00', 'q3', { kw: '업무' }], ['20:00', '22:00', 'q4']]);
+const PG3 = pgrid([['06:30', '08:00', 'p1', { todo: 'r:w1' }], ['09:00', '10:00', 'p2', { todo: 'a:w7' }], ['10:00', '12:00', 'p3', { todo: 'a:w12' }], ['13:00', '14:00', 'p4'], ['14:20', '14:30', 'p7', { kw: '휴식' }], ['18:00', '19:00', 'p5', { kw: '장보기' }], ['19:00', '22:00', 'p6', { todo: 'p:w4' }]]);
+const PG4 = pgrid([['07:00', '08:00', 'r1', { todo: 'r:w1' }], ['09:00', '12:00', 'r2', { kw: '업무' }], ['12:00', '12:30', 'r3', { todo: 'd3' }], ['13:00', '15:00', 'r4', { todo: 'p:w4' }], ['18:00', '19:00', 'r5', { kw: '이동' }], ['20:00', '21:30', 'r6', { kw: '휴식' }]]);
+const grid = (ranges) => { const a = Array(144).fill(null); ranges.forEach(([s, e, v]) => { for (let i = IDX(s); i < IDX(e); i++) a[i] = v === undefined ? true : v; }); return a; };
+
+const initFor = (screen) => {
+  const map = { today: [3, null], tomorrow: [4, null], past: [2, null], pick: [3, 'pick'], add: [3, 'add'], journal: [3, 'journal'] };
+  const [date, sheet] = map[screen] || map.today;
+  return {
+    date, sheet, mode: date === TODAY ? 'actual' : 'plan', brush: date === TODAY ? 'p:w4' : null,
+    draft: screen === 'add' ? { name: '택배 찾기', cat: 'daily', kw: '생활', timed: true, start: '18:00', end: '18:30' } : { name: '', cat: 'daily', kw: '생활', timed: false, start: '18:00', end: '18:30' },
+    planEdit: null,
+    calMonth: [dateOf(date).getFullYear(), dateOf(date).getMonth()],
+  };
+};
+
+class Component extends DCLogic {
+  seed(screen, data) { const o = {
+    ...initFor(screen),
+    done: { 2: { 'r:w1': 1, 'a:w8': 1 }, 3: { 'r:w1': 1, 'r:w3': 1, 'a:w7': 1 } },
+    picks: { 2: ['w4'], 3: ['w4', 'w5'], 4: ['w4'] },
+    direct: {
+      2: [{ id: 'd1', name: '샴푸 사기', cat: 'daily', kw: '생활' }],
+      3: [{ id: 'd2', name: '치과', cat: 'daily', kw: '생활', time: ['15:00', '16:00'] }, { id: 'd5', name: '주간 보고서 초안', cat: 'daily', kw: '업무' }, { id: 'd6', name: '장보기', cat: 'daily', kw: '생활' }],
+      4: [{ id: 'd3', name: '은행 가기', cat: 'daily', kw: '생활' }, { id: 'd4', name: '팀 회의', cat: 'daily', kw: '업무', time: ['16:00', '17:00'] }],
+    },
+    plan: { 2: PG2[0], 3: PG3[0], 4: PG4[0] },
+    planInfo: { 2: PG2[1], 3: PG3[1], 4: PG4[1] },
+    actual: {
+      2: grid([['07:00', '07:40', 'r:w1'], ['09:30', '11:00', 'a:w8'], ['20:00', '20:20', 'r:w3']]),
+      3: grid([['06:30', '07:10', 'r:w1'], ['07:10', '07:50', 'r:w2'], ['08:00', '08:10', 'r:w3'], ['09:00', '10:00', 'a:w7'], ['10:30', '12:00', 'a:w12'], ['13:00', '13:30', 'p:w4'], ['13:50', '14:20', 'k:이동']]),
+    },
+    journal: {
+      2: { score: 3, review: '단어는 했는데 개념 정리는 못 했다.', thanks: ['비 오기 전에 집에 도착한 것', '친구가 빌려준 LC 교재', ''], memo: '' },
+      3: { score: 4, review: '인터뷰에서 생각 못 한 문제를 들어서 뿌듯했다.', thanks: ['인터뷰에 응해 준 두 사람', '', ''], memo: '' },
+    },
+  };
+    return data === 'empty' ? { ...o, brush: null, done: {}, picks: {}, direct: {}, plan: {}, planInfo: {}, actual: {}, journal: {} } : o;
+  }
+  state = this.seed(this.props.startScreen ?? 'today', this.props.data ?? 'empty');
+  get acts() { return (this.props.data ?? 'empty') === 'empty' ? [] : ACTS; }
+
+  listRef = React.createRef();
+  fade = { top: false, bottom: false };
+  componentDidMount() { this._t = setTimeout(() => this.measure(), 60); }
+  componentWillUnmount() { clearTimeout(this._t); }
+  componentDidUpdate(prev) { if (prev.data !== this.props.data) this.setState(this.seed(this.props.startScreen ?? 'today', this.props.data ?? 'empty')); else if (prev.startScreen !== this.props.startScreen) this.setState(initFor(this.props.startScreen ?? 'today')); this.measure(); }
+  measure() {
+    const el = this.listRef.current;
+    if (!el) return;
+    const top = el.scrollTop > 2, bottom = el.scrollTop + el.clientHeight < el.scrollHeight - 2;
+    if (top !== this.fade.top || bottom !== this.fade.bottom) { this.fade = { top, bottom }; this.forceUpdate(); }
+  }
+  hm(idx) { const m = (idx * 10 + 300) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+
+  go(o) { this.setState(s => ({ date: o, sheet: null, mode: o === TODAY ? s.mode : 'plan', brush: o === TODAY ? s.brush : null, calMonth: [dateOf(o).getFullYear(), dateOf(o).getMonth()] })); }
+  isDone(d, key, s = this.state) { return !!(s.done[d] && s.done[d][key]); }
+
+  listFor(d, s = this.state) {
+    const rel = d - TODAY, dow = dowOf(d);
+    if (d < 0 || d > 6) return { rep: [], day: [] };
+    const rep = this.acts.filter(a => a.repeat && a.days.includes(dow)).map(a => ({ key: 'r:' + a.id, src: 'repeat', act: a }));
+    const day = this.acts.filter(a => !a.repeat && a.days.length === 1 && a.days[0] === dow).map(a => ({ key: 'a:' + a.id, src: 'auto', act: a }));
+    if (rel <= 1) {
+      (s.picks[d] || []).forEach(id => { const a = this.acts.find(x => x.id === id); if (a) day.push({ key: 'p:' + id, src: 'pick', act: a, period: fmtDays(a.days) }); });
+      if (rel === 0 && d - 1 >= 0) {
+        const p = d - 1, pd = dowOf(p);
+        this.acts.filter(a => !a.repeat && a.days.length === 1 && a.days[0] === pd && !this.isDone(p, 'a:' + a.id, s)).forEach(a => day.push({ key: 'c:a:' + a.id, src: 'auto', act: a, carried: 1 }));
+        (s.direct[p] || []).filter(x => !x.time && !this.isDone(p, x.id, s)).forEach(x => day.push({ key: 'c:' + x.id, src: 'direct', item: x, carried: 1 }));
+      }
+      (s.direct[d] || []).forEach(x => day.push({ key: x.id, src: 'direct', item: x }));
+    }
+    return { rep, day };
+  }
+  metaOf(t) {
+    const cat = t.act ? GOALS[t.act.goal].cat : t.item.cat;
+    return { cat, c: PAL[CATS[cat].color], tag: t.act ? t.act.sub : CATS[cat].name + (t.item.kw ? ' · ' + t.item.kw : ''), name: t.act ? t.act.name : t.item.name };
+  }
+  cellAt(e) {
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const v = el && el.getAttribute && el.getAttribute('data-i');
+    return v == null ? -1 : +v;
+  }
+  apply(i) {
+    const g = this.drag;
+    if (i < 0 || !g || i === g.cur) return;
+    g.cur = i;
+    const lo = Math.min(g.start, i), hi = Math.max(g.start, i), a = g.snap.slice();
+    for (let k = lo; k <= hi; k++) { if (g.layer === 'plan' && g.reserved[k]) continue; a[k] = g.val; }
+    this.setState(s => ({ [g.layer]: { ...s[g.layer], [g.d]: a }, range: [lo, hi] }));
+  }
+  setJ(patch) { this.setState(s => { const d = s.date, j = s.journal[d] || { review: '', thanks: ['', '', ''], memo: '' }; return { journal: { ...s.journal, [d]: { ...j, ...patch } } }; }); }
+
+  renderVals() {
+    const s = this.state, d = s.date, rel = d - TODAY, inWeek = d >= 0 && d <= 6;
+    const dt = dateOf(d), dow = dowOf(d);
+    const { rep, day } = this.listFor(d);
+    const meta = {};
+    const view = t => {
+      const m = this.metaOf(t); meta[t.key] = m;
+      const done = this.isDone(d, t.key), sel = rel === 0 && s.brush === t.key;
+      return {
+        tag: m.tag, name: m.name, bg: m.c.bg, ink: m.c.ink, dot: m.c.dot, done,
+        srcIcon: ICON[t.src], srcLabel: SRC[t.src] + (t.carried ? ' · 어제에서' : ''),
+        carried: !!t.carried, hasPeriod: !!t.period, period: t.period || '', timed: !!(t.item && t.item.time), time: t.item && t.item.time ? t.item.time.join('–') : '',
+        showCircle: rel <= 0, locked: rel !== 0, checkCursor: rel === 0 ? 'pointer' : 'default',
+        checkBg: done ? m.c.dot : 'transparent', strike: done ? 'line-through' : 'none', fg: done ? 'var(--color-neutral-600)' : 'var(--color-text)',
+        op: rel > 1 ? 0.5 : 1, cursor: rel === 0 ? 'pointer' : 'default',
+        rowBg: sel ? 'var(--color-neutral-100)' : 'transparent', ring: sel ? 'inset 0 0 0 2px ' + m.c.dot : 'none',
+        pick: () => { if (rel === 0) this.setState({ brush: t.key, mode: 'actual' }); },
+        toggle: e => { e.stopPropagation(); if (rel !== 0) return; this.setState(st => { const cur = { ...(st.done[d] || {}) }; if (cur[t.key]) delete cur[t.key]; else cur[t.key] = 1; return { done: { ...st.done, [d]: cur } }; }); },
+      };
+    };
+    const reps = rep.map(view), days = day.map(view);
+    reps.concat(days).forEach((v, n) => { v.num = n + 1; });
+    KEYWORDS.forEach(k => { meta['k:' + k] = { cat: 'daily', c: PAL.purple, tag: '일상', name: '일상 · ' + k }; });
+
+    const planArr = s.plan[d] || [], actArr = s.actual[d] || [];
+    const reserved = Array(144).fill(false);
+    (s.direct[d] || []).filter(x => x.time).forEach(x => { for (let i = IDX(x.time[0]); i < IDX(x.time[1]); i++) reserved[i] = true; });
+    const cells = Array.from({ length: 144 }, (_, i) => { const c = i % 6; return { i, row: Math.floor(i / 6) + 1, col: c + 2, br: c === 5 ? 'none' : c === 2 ? '1px dashed var(--color-neutral-400)' : '1px solid var(--color-neutral-200)' }; });
+    const hours = Array.from({ length: 24 }, (_, r) => { const h = (r + 5) % 24; return { row: r + 1, label: String(h).padStart(2, '0'), color: h === 12 || h === 0 ? 'var(--color-accent-700)' : 'var(--color-neutral-600)' }; });
+    const info = s.planInfo[d] || {};
+    const segsOf = val => { const out = []; for (let r = 0; r < 24; r++) { let c = 0; while (c < 6) { const i = r * 6 + c, v = val(i); if (!v) { c++; continue; } let e = c; while (e < 6 && val(r * 6 + e) === v) e++; out.push({ v, r, c, len: e - c, runStart: i === 0 || val(i - 1) !== v }); c = e; } } return out; };
+    const numOf = {}; rep.concat(day).forEach((t, n) => { numOf[t.key] = n + 1; });
+    const actBands = segsOf(i => actArr[i] || null).map(g => {
+      const m = meta[g.v], dot = m ? m.c.dot : 'var(--color-neutral-500)';
+      const mark = g.v.startsWith('k:') ? g.v.slice(2, 3) : String(numOf[g.v] || '');
+      return { row: g.r + 1, c: g.c, col: (g.c + 2) + ' / span ' + g.len, bg: 'color-mix(in oklch, ' + dot + ' 55%, transparent)', dot, hasMark: g.runStart && !!mark, mark };
+    });
+    const actMarks = actBands.filter(b => b.hasMark).map(b => ({ row: b.row, col: (b.c + 2) + ' / span 1', dot: b.dot, mark: b.mark }));
+    const markAt = new Set(actMarks.map(m => (m.row - 1) * 6 + (+m.col.split(' ')[0] - 2)));
+    const resItem = Array(144).fill(null);
+    (s.direct[d] || []).filter(x => x.time).forEach(x => { for (let i = IDX(x.time[0]); i < IDX(x.time[1]); i++) resItem[i] = x; });
+    const pval = i => resItem[i] ? 'r:' + resItem[i].id : planArr[i] ? 'p:' + planArr[i] : null;
+    let run = null;
+    const planBoxes = segsOf(pval).map(g => {
+      if (g.runStart) run = { placed: false };
+      let nm = '', hasDot = false, dot = '', alarm = false;
+      if (g.v.startsWith('r:')) { const it = (s.direct[d] || []).find(x => 'r:' + x.id === g.v); nm = it ? it.name : ''; alarm = true; }
+      else { const inf = info[g.v.slice(2)] || {}, tm = inf.todo && meta[inf.todo]; nm = tm ? tm.name : inf.kw || ''; hasDot = !!tm; dot = tm ? tm.c.dot : ''; }
+      const show = !run.placed && g.len > 2 && !!nm;
+      if (show) run.placed = true;
+      return { row: g.r + 1, col: (g.c + 2) + ' / span ' + g.len, padL: show && markAt.has(g.r * 6 + g.c) ? '18px' : '3px', name: nm, hasName: show, hasDot: show && hasDot, dot, alarm: show && alarm };
+    });
+    const fmt = m => Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm';
+    const planned = cells.filter((_, i) => planArr[i] || reserved[i]).length * 10;
+    const actual = actArr.filter(Boolean).length * 10;
+
+    const canPlan = inWeek && (rel === 0 || rel === 1), canAct = inWeek && rel === 0;
+    const mode = canAct ? s.mode : 'plan';
+    const modes = [['plan', '계획 그리기', canPlan], ['actual', '실제 칠하기', canAct]].map(([k, label, ok]) => ({
+      k: label, off: !ok, cursor: ok ? 'pointer' : 'default', op: ok ? 1 : 0.45,
+      bg: ok && mode === k ? (k === 'plan' ? 'var(--color-neutral-700)' : 'var(--color-accent)') : 'var(--color-neutral-100)',
+      fg: ok && mode === k ? 'var(--color-neutral-100)' : 'var(--color-text)',
+      pick: () => ok && this.setState({ mode: k }),
+    }));
+    const bm = s.brush && meta[s.brush];
+    const showKw = canAct && mode === 'actual';
+    const kwBrush = KEYWORDS.map(k => { const on = s.brush === 'k:' + k; return { k, bg: on ? PAL.purple.bg : 'var(--color-neutral-100)', fg: on ? PAL.purple.ink : 'var(--color-text)', ring: on ? 'inset 0 0 0 2px ' + PAL.purple.dot : 'none', pick: () => this.setState({ brush: 'k:' + k, mode: 'actual' }) }; });
+    let pe = {};
+    const peId = s.sheet === 'plan' && s.planEdit && s.planEdit.id;
+    if (peId) {
+      const idxs = planArr.map((v, i) => v === peId ? i : -1).filter(i => i >= 0), inf = info[peId] || {};
+      const setInfo = v => this.setState(st => ({ planInfo: { ...st.planInfo, [d]: { ...(st.planInfo[d] || {}), [peId]: v } }, sheet: null, planEdit: null }));
+      const pp = PAL.purple;
+      pe = {
+        title: s.planEdit.isNew ? '이 계획의 이름' : '계획 블록', range: idxs.length ? this.hm(idxs[0]) + ' – ' + this.hm(idxs[idxs.length - 1] + 1) : '',
+        todos: rep.concat(day).map(t => { const m = meta[t.key], on = inf.todo === t.key; return { tag: m.tag, name: m.name, chipBg: m.c.bg, ink: m.c.ink, bg: on ? m.c.bg : 'var(--color-surface)', ring: on ? 'inset 0 0 0 2px ' + m.c.dot : 'none', pick: () => setInfo({ todo: t.key }) }; }),
+        kws: KEYWORDS.map(k => { const on = inf.kw === k; return { k, bg: on ? pp.bg : 'var(--color-surface)', fg: on ? pp.ink : 'var(--color-text)', ring: on ? 'inset 0 0 0 2px ' + pp.dot : 'none', pick: () => setInfo({ kw: k }) }; }),
+        text: s.planEdit.text, textOff: !s.planEdit.text.trim(),
+        setText: e => { const v = e.target.value; this.setState(st => ({ planEdit: { ...st.planEdit, text: v } })); },
+        applyText: () => { const v = s.planEdit.text.trim(); if (v) setInfo({ kw: v }); },
+        textKey: e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { const v = e.target.value.trim(); if (v) setInfo({ kw: v }); } },
+        secondaryLabel: s.planEdit.isNew ? '건너뛰기' : '블록 삭제',
+        secondary: () => s.planEdit.isNew ? this.setState({ sheet: null, planEdit: null }) : this.setState(st => ({ plan: { ...st.plan, [d]: (st.plan[d] || []).map(v => v === peId ? null : v) }, sheet: null, planEdit: null })),
+      };
+    }
+    const rg = s.range, rgMin = rg ? (rg[1] - rg[0] + 1) * 10 : 0;
+    const brushHint = rg ? this.hm(rg[0]) + ' – ' + this.hm(rg[1] + 1) + ' · ' + (rgMin >= 60 ? Math.floor(rgMin / 60) + '시간' + (rgMin % 60 ? ' ' + (rgMin % 60) + '분' : '') : rgMin + '분') : !canPlan ? (rel < 0 ? '지난 기록 · 보기만 할 수 있어요' : '보기 전용') : mode === 'plan' ? '드래그해서 계획을 회색으로' : bm ? '칠하는 중 · ' + bm.name : '할 일을 먼저 골라 주세요';
+
+    let dday = { n: '', goal: '' };
+    const dd = Object.values(GOALS).map(g => ({ g, n: Math.round((new Date(g.due[0], g.due[1], 0) - dt) / 864e5) })).filter(x => x.n >= 0).sort((a, b) => a.n - b.n)[0];
+    if (dd && (this.props.data ?? 'empty') !== 'empty') dday = { n: 'D-' + dd.n, goal: dd.g.name };
+
+    const badge = rel === 0 ? ['오늘', 'tag tag-accent'] : rel === 1 ? ['내일', 'tag tag-accent-2'] : rel > 1 ? ['보기 전용', 'tag tag-neutral'] : ['지난 기록', 'tag tag-neutral'];
+    let banner = rel < 0 ? '지난 기록은 수정할 수 없어요' : rel > 1 ? '보기 전용 · 주간 표에서 배정된 실천만 보여요' : '';
+    if (!inWeek && rel >= 0) banner = '이 주의 주간 계획이 아직 없어요';
+
+    const dPick = inWeek && rel >= 0 && rel <= 1 ? this.acts.filter(a => !a.repeat && a.days.length > 1 && a.days.includes(dow) && !Object.keys(s.done).some(k => +k !== d && s.done[k]['p:' + a.id])) : [];
+    const picked = s.picks[d] || [];
+    const pickList = dPick.map(a => {
+      const g = GOALS[a.goal], c = PAL[CATS[g.cat].color], on = picked.includes(a.id);
+      return { tag: a.sub, name: a.name, goal: g.name, period: fmtDays(a.days), on, chipBg: c.bg, ink: c.ink, dot: c.dot,
+        bg: on ? c.bg : 'var(--color-surface)', ring: on ? 'inset 0 0 0 2px ' + c.dot : 'none', checkBg: on ? c.ink : 'transparent',
+        toggle: () => this.setState(st => { const cur = st.picks[d] || []; return { picks: { ...st.picks, [d]: cur.includes(a.id) ? cur.filter(x => x !== a.id) : cur.concat(a.id) } }; }) };
+    });
+
+    const jj = s.journal[d] || { review: '', thanks: ['', '', ''], memo: '' };
+    const nT = jj.thanks.filter(x => x.trim()).length;
+    const parts = [jj.score && '★' + jj.score, nT && '감사 ' + nT, jj.memo.trim() && '메모'].filter(Boolean).join(' · ');
+    const jOk = inWeek ? rel <= 0 : rel < 0;
+    const j = {
+      off: !jOk, cursor: jOk ? 'pointer' : 'default', op: jOk ? 1 : 0.55,
+      summary: parts || (rel === 0 ? '오늘을 짧게 남겨요' : rel < 0 ? '남긴 기록이 없어요' : '그날이 되면 쓸 수 있어요'),
+      ro: rel !== 0, roLabel: rel !== 0 ? ' · 읽기 전용' : '', closeLabel: rel === 0 ? '저장' : '닫기',
+      review: jj.review, memo: jj.memo,
+      scores: [1, 2, 3, 4, 5].map(n => { const on = jj.score === n; return { n, label: n + '점', bg: on ? 'var(--color-accent)' : 'var(--color-surface)', fg: on ? 'var(--color-neutral-100)' : 'var(--color-text)', ring: on ? 'none' : 'inset 0 0 0 2px var(--color-neutral-300)', cursor: rel === 0 ? 'pointer' : 'default', pick: () => { if (rel === 0) this.setJ({ score: jj.score === n ? null : n }); } }; }),
+      thanks: jj.thanks.map((v, i) => ({ n: i + 1 + '.', v, set: e => { const t = jj.thanks.slice(); t[i] = e.target.value; this.setJ({ thanks: t }); } })),
+    };
+
+    const [cy, cm] = s.calMonth;
+    const first = new Date(cy, cm, 1), lead = (first.getDay() + 6) % 7, nDays = new Date(cy, cm + 1, 0).getDate();
+    const calDays = [];
+    for (let i = 0; i < lead; i++) calDays.push({ n: '', blank: true, bg: 'transparent', fg: 'transparent', ring: 'none', op: 1, fw: 400, pick: () => {} });
+    for (let n = 1; n <= nDays; n++) {
+      const o = offOf(new Date(cy, cm, n)), isSel = o === d, isToday = o === TODAY;
+      calDays.push({ n, blank: false, fw: isSel || isToday ? 700 : 500, op: o < TODAY ? 0.7 : 1,
+        bg: isSel ? 'var(--color-accent)' : 'transparent', fg: isSel ? 'var(--color-neutral-100)' : 'var(--color-text)',
+        ring: isToday && !isSel ? 'inset 0 0 0 2px var(--color-accent)' : 'none', pick: () => this.go(o) });
+    }
+    const shiftM = k => this.setState(st => { const m = new Date(st.calMonth[0], st.calMonth[1] + k, 1); return { calMonth: [m.getFullYear(), m.getMonth()] }; });
+
+    const dr = s.draft;
+    const draftCats = KEYWORDS.map(k => {
+      const p = PAL.purple, on = dr.kw === k;
+      return { name: k, bg: on ? p.bg : 'var(--color-surface)', fg: on ? p.ink : 'var(--color-text)', ring: on ? 'inset 0 0 0 2px ' + p.dot : 'none', pick: () => this.setState(st => ({ draft: { ...st.draft, kw: k } })) };
+    });
+    const setDraft = patch => this.setState(st => ({ draft: { ...st.draft, ...patch } }));
+
+    return {
+      legend: [
+        { icon: ICON.repeat, t: '반복', d: "'이번 주' 줄의 반복 실천 중 오늘 요일에 해당하는 것. 다음 날로 넘어가지 않아요." },
+        { icon: ICON.auto, t: '자동 배정', d: '주간 표 요일 칸에 그날로 적힌 실천. 못 하면 다음 날로 넘어가요.' },
+        { icon: ICON.pick, t: '담은 일', d: "'이번 주' 줄의 기간 단발 실천 중 골라 담은 것. 못 하면 다시 담을 후보로 돌아가요." },
+        { icon: ICON.direct, t: '직접 추가', d: '모바일에서 바로 적은 일. 알람 표시가 붙은 예약 할 일은 시간표에 계획으로 놓여요.' },
+      ],
+      d: { md: (dt.getMonth() + 1) + '.' + dt.getDate(), dow: DAYS[dow], badge: badge[0], badgeCls: badge[1], notToday: rel !== 0, hasBanner: !!banner, banner, canAdd: canPlan },
+      dday, planned: fmt(planned), actual: fmt(actual),
+      reps, days, noReps: reps.length > 0 ? false : days.length > 0, noDays: days.length === 0, noDaysText: !reps.length && !days.length && inWeek ? '데스크톱 주간 표에서 실천을 적으면 여기에 나타나요' : inWeek ? '할 일이 없어요' : '주간 계획이 없는 날이에요',
+      hasDday: !!dday.n,
+      dayCount: days.length ? days.filter(x => x.done).length + ' / ' + days.length : '',
+      modes, brushHint, hours, cells, gridCursor: canPlan ? 'crosshair' : 'default',
+      j, sheetOpen: !!s.sheet, sh: { cal: s.sheet === 'cal', pick: s.sheet === 'pick', add: s.sheet === 'add', journal: s.sheet === 'journal', plan: !!peId },
+      actBands, actMarks, planBoxes, showKw, kwBrush, pe,
+      cal: { title: cy + '년 ' + (cm + 1) + '월', heads: DAYS, days: calDays, prev: () => shiftM(-1), next: () => shiftM(1) },
+      pickList, noPick: pickList.length === 0,
+      draft: dr, draftCats, draftOff: !dr.name.trim(),
+      timedSw: { bg: dr.timed ? 'var(--color-accent-2)' : 'var(--color-neutral-400)', justify: dr.timed ? 'flex-end' : 'flex-start' },
+      setDraftName: e => setDraft({ name: e.target.value }), setDraftStart: e => setDraft({ start: e.target.value }), setDraftEnd: e => setDraft({ end: e.target.value }),
+      toggleTimed: () => setDraft({ timed: !dr.timed }),
+      submitDraft: () => {
+        if (!dr.name.trim()) return;
+        const it = { id: 'd' + Date.now(), name: dr.name.trim(), cat: 'daily', kw: dr.kw };
+        if (dr.timed && dr.start && dr.end && dr.end > dr.start) it.time = [dr.start, dr.end];
+        this.setState(st => ({ direct: { ...st.direct, [d]: (st.direct[d] || []).concat(it) }, sheet: null, draft: { name: '', cat: 'daily', kw: '생활', timed: false, start: '18:00', end: '18:30' } }));
+      },
+      setReview: e => this.setJ({ review: e.target.value }), setMemo: e => this.setJ({ memo: e.target.value }),
+      prevDay: () => this.go(d - 1), nextDay: () => this.go(d + 1), goToday: () => this.go(TODAY),
+      openCal: () => this.setState({ sheet: 'cal', calMonth: [dt.getFullYear(), dt.getMonth()] }),
+      openPick: () => this.setState({ sheet: 'pick' }), openAdd: () => this.setState({ sheet: 'add' }),
+      openJournal: () => { if (jOk) this.setState({ sheet: 'journal' }); },
+      closeSheet: () => this.setState({ sheet: null, planEdit: null }),
+      swDown: e => { this.sw = e.clientX; },
+      swUp: e => { if (this.sw == null) return; const dx = e.clientX - this.sw; this.sw = null; if (Math.abs(dx) > 50) this.go(d + (dx < 0 ? 1 : -1)); },
+      down: e => {
+        const i = this.cellAt(e);
+        if (i < 0 || !canPlan) return;
+        const snapOf = layer => (s[layer][d] || Array(144).fill(null)).slice();
+        if (mode === 'plan') { if (reserved[i]) return; const ex = planArr[i]; this.drag = { layer: 'plan', val: ex ? null : 'pb' + Date.now(), tap: ex || null, snap: snapOf('plan') }; }
+        else { if (!s.brush || !meta[s.brush]) return; this.drag = { layer: 'actual', val: actArr[i] === s.brush ? null : s.brush, snap: snapOf('actual') }; }
+        Object.assign(this.drag, { start: i, cur: -1, d, reserved });
+        e.currentTarget.setPointerCapture && e.currentTarget.setPointerCapture(e.pointerId);
+        this.apply(i);
+      },
+      move: e => { if (this.drag) this.apply(this.cellAt(e)); },
+      up: () => {
+        const g = this.drag;
+        if (!g) return;
+        this.drag = null;
+        if (g.layer === 'plan' && g.tap && g.cur === g.start) return this.setState(st => ({ plan: { ...st.plan, [g.d]: g.snap }, range: null, sheet: 'plan', planEdit: { id: g.tap, isNew: false, text: '' } }));
+        if (g.layer === 'plan' && g.val) return this.setState(st => ({ range: null, planInfo: { ...st.planInfo, [g.d]: { ...(st.planInfo[g.d] || {}), [g.val]: {} } }, sheet: 'plan', planEdit: { id: g.val, isNew: true, text: '' } }));
+        this.setState({ range: null });
+      },
+      listRef: this.listRef, onListScroll: () => this.measure(),
+      fadeTop: this.fade.top ? 1 : 0, fadeBottom: this.fade.bottom ? 1 : 0,
+    };
+  }
+}
+</script>
+</body>
+</html>

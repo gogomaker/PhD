@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/organic-3e1f4d66-d352-4b6d-a8c7-4fe059ed8ce4/styles.css">
+<script src="_ds/organic-3e1f4d66-d352-4b6d-a8c7-4fe059ed8ce4/_ds_bundle.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>:root{--font-heading:"Caprasimo","Jua",system-ui,sans-serif;--font-body:"Figtree","Pretendard",system-ui,sans-serif}body{margin:0;background:var(--color-bg)}a{color:var(--color-accent-700)}a:hover{color:var(--color-accent-800)}textarea::placeholder,input::placeholder{color:currentColor;opacity:.45}*{scrollbar-width:none}*::-webkit-scrollbar{display:none}</style>
+</helmet>
+<div style="min-height:100vh; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body)">
+
+<sc-if value="{{ isAuth }}" hint-placeholder-val="{{ true }}">
+  <div style="min-height:100vh; display:flex; flex-wrap:wrap; gap:14px; padding:14px; box-sizing:border-box">
+    <div style="flex:1 1 440px; min-height:560px; background:var(--color-accent-2-200); color:var(--color-accent-2-900); border-radius:40px; position:relative; overflow:hidden; padding:44px 48px; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box">
+      <span style="position:absolute; right:-90px; bottom:-110px; width:380px; height:380px; border-radius:50%; background:var(--color-accent-300)"></span>
+      <span style="position:absolute; right:190px; bottom:170px; width:120px; height:120px; border-radius:50%; background:var(--color-accent-2-400)"></span>
+      <span style="position:absolute; right:70px; top:90px; width:64px; height:64px; border-radius:50%; background:oklch(0.85 0.1 85)"></span>
+      <span style="position:relative; font-family:var(--font-heading); font-size:40px; line-height:1">PhD</span>
+      <div style="position:relative; display:flex; flex-direction:column; gap:14px; max-width:440px">
+        <h1 style="margin:0; font-size:60px; line-height:1.02">Plan Higher Dream</h1>
+        <p style="margin:0; font-size:16px; line-height:1.6; text-wrap:pretty">꿈을 카테고리와 목표로 나누고, 연간·월간·주간 계획을 거쳐 오늘 할 일까지 이어요.</p>
+      </div>
+    </div>
+    <div style="flex:1 1 400px; display:flex; align-items:center; justify-content:center; padding:40px 24px">
+      <div style="width:100%; max-width:384px; display:flex; flex-direction:column; gap:24px">
+        <sc-if value="{{ isSignup }}">
+          <div style="display:flex; gap:6px">
+            <sc-for list="{{ steps }}" as="st">
+              <div style="flex:1; display:flex; flex-direction:column; gap:6px">
+                <span style="height:6px; border-radius:99px; background:{{ st.bar }}"></span>
+                <span style="font-size:11.5px; font-weight:700; color:{{ st.fg }}">{{ st.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isLogin }}">
+          <div style="display:flex; flex-direction:column; gap:6px">
+            <h2 style="margin:0; font-size:34px">다시 만나서 반가워요</h2>
+            <p style="margin:0; font-size:14px; color:var(--color-neutral-700)">로그인하고 오늘의 계획을 이어가세요.</p>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:14px">
+            <div class="field"><label>이메일</label><input class="input" type="email" defaultValue="seoyun@phd.app"></div>
+            <div class="field"><label>비밀번호</label><input class="input" type="password" defaultValue="password"></div>
+            <div style="display:flex; justify-content:flex-end"><a href="#" style="font-size:13px">비밀번호를 잊었어요</a></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px">
+            <button class="btn btn-primary" onClick="{{ doLogin }}" style="height:48px; font-size:16px">로그인</button>
+            <button class="btn btn-secondary" onClick="{{ doLogin }}" style="height:48px; font-family:var(--font-body); font-weight:700; gap:10px"><span style="width:18px; height:18px; border-radius:50%; background:var(--color-neutral-300)"></span>Google로 계속하기</button>
+          </div>
+          <p style="margin:0; font-size:14px; color:var(--color-neutral-700)">처음이신가요? <a href="#" onClick="{{ toSignup }}" style="font-weight:700">회원가입</a></p>
+        </sc-if>
+
+        <sc-if value="{{ isSignup1 }}">
+          <div style="display:flex; flex-direction:column; gap:6px">
+            <h2 style="margin:0; font-size:34px">계정 만들기</h2>
+            <p style="margin:0; font-size:14px; color:var(--color-neutral-700)">계획은 계정마다 따로 저장돼요.</p>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:14px">
+            <div class="field"><label>이름</label><input class="input" value="{{ user.name }}" onChange="{{ setName }}"></div>
+            <div class="field"><label>이메일</label><input class="input" type="email" value="{{ user.email }}" onChange="{{ setEmail }}"></div>
+            <div class="field"><label>비밀번호</label><input class="input" type="password" defaultValue="password" placeholder="8자 이상"></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px">
+            <button class="btn btn-primary" onClick="{{ toSignup2 }}" style="height:48px; font-size:16px">다음</button>
+            <button class="btn btn-secondary" onClick="{{ toSignup2 }}" style="height:48px; font-family:var(--font-body); font-weight:700; gap:10px"><span style="width:18px; height:18px; border-radius:50%; background:var(--color-neutral-300)"></span>Google로 가입하기</button>
+          </div>
+          <p style="margin:0; font-size:14px; color:var(--color-neutral-700)">이미 계정이 있나요? <a href="#" onClick="{{ toLogin }}" style="font-weight:700">로그인</a></p>
+        </sc-if>
+
+        <sc-if value="{{ isSignup2 }}">
+          <div style="display:flex; flex-direction:column; gap:6px">
+            <h2 style="margin:0; font-size:34px">지금 어떤 시기인가요?</h2>
+            <p style="margin:0; font-size:14px; color:var(--color-neutral-700); text-wrap:pretty">고른 시기에 맞춰 카테고리를 추천해 드려요. 나중에 계정 설정에서 바꿀 수 있어요.</p>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+            <sc-for list="{{ types }}" as="ty">
+              <button onClick="{{ ty.pick }}" style="text-align:left; border:0; cursor:pointer; font:inherit; color:var(--color-text); padding:14px 16px; border-radius:24px; background:{{ ty.bg }}; box-shadow:{{ ty.ring }}; display:flex; flex-direction:column; gap:4px">
+                <span style="font-weight:700; font-size:15px">{{ ty.k }}</span>
+                <span style="font-size:12.5px; line-height:1.4; color:var(--color-neutral-700)">{{ ty.d }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="display:flex; gap:10px">
+            <button class="btn btn-secondary" onClick="{{ toSignup }}" style="height:48px; flex:none; padding:0 22px; font-family:var(--font-body); font-weight:700">이전</button>
+            <button class="btn btn-primary" onClick="{{ toSignup3 }}" style="height:48px; flex:1; font-size:16px">카테고리 정하기</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSignup3 }}">
+          <div style="display:flex; flex-direction:column; gap:6px">
+            <h2 style="margin:0; font-size:34px">삶을 어떤 영역으로 나눌까요?</h2>
+            <p style="margin:0; font-size:14px; color:var(--color-neutral-700); text-wrap:pretty">목표 카테고리는 최대 6개까지 고를 수 있어요. 고른 카테고리마다 목표를 세우게 돼요.</p>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px">
+            <span style="font-size:12px; font-weight:700; color:var(--color-accent-700)">{{ user.type }}에게 추천</span>
+            <div style="display:flex; gap:8px; flex-wrap:wrap">
+              <sc-for list="{{ chipsRec }}" as="ch">
+                <button onClick="{{ ch.toggle }}" style="display:inline-flex; align-items:center; gap:6px; height:40px; padding:0 16px; border-radius:999px; border:0; cursor:pointer; font:inherit; font-size:14px; font-weight:700; background:{{ ch.bg }}; color:{{ ch.fg }}; box-shadow:{{ ch.ring }}; opacity:{{ ch.op }}">{{ ch.mark }}{{ ch.name }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px">
+            <span style="font-size:12px; font-weight:700; color:var(--color-neutral-700)">다른 카테고리</span>
+            <div style="display:flex; gap:8px; flex-wrap:wrap">
+              <sc-for list="{{ chipsOther }}" as="ch">
+                <button onClick="{{ ch.toggle }}" style="display:inline-flex; align-items:center; gap:6px; height:40px; padding:0 16px; border-radius:999px; border:0; cursor:pointer; font:inherit; font-size:14px; font-weight:700; background:{{ ch.bg }}; color:{{ ch.fg }}; box-shadow:{{ ch.ring }}; opacity:{{ ch.op }}">{{ ch.mark }}{{ ch.name }}</button>
+              </sc-for>
+              <input onKeyDown="{{ addCustomCat }}" placeholder="+ 직접 입력 후 Enter" style="height:40px; width:170px; border-radius:999px; border:2px dashed var(--color-neutral-400); background:transparent; padding:0 14px; font:inherit; font-size:13.5px; color:var(--color-text); outline:none; box-sizing:border-box">
+            </div>
+          </div>
+          <span style="font-size:13px; font-weight:600; color:var(--color-neutral-700)">목표 카테고리 {{ catCount }} / {{ catMax }}개 선택</span>
+          <div style="display:flex; flex-direction:column; gap:10px; background:var(--color-surface); border-radius:24px; padding:14px 16px">
+            <div style="display:flex; align-items:center; gap:8px"><span style="width:12px; height:12px; border-radius:50%; background:{{ daily.dot }}"></span><span style="font-weight:700; font-size:14px">{{ daily.name }}</span><span class="tag tag-neutral" style="font-weight:700; font-size:11px">기본 포함</span></div>
+            <span style="font-size:12.5px; color:var(--color-neutral-700); text-wrap:pretty">목표 없이 시간 기록과 생활 할 일에 쓰는 카테고리예요. 색만 골라 주세요.</span>
+            <div style="display:flex; gap:6px; flex-wrap:wrap"><sc-for list="{{ daily.swatches }}" as="sw"><button onClick="{{ sw.pick }}" disabled="{{ sw.used }}" title="{{ sw.name }}" style="width:26px; height:26px; border-radius:50%; border:0; padding:0; cursor:{{ sw.cursor }}; background:{{ sw.dot }}; box-shadow:{{ sw.ring }}; opacity:{{ sw.op }}"></button></sc-for></div>
+          </div>
+          <div style="display:flex; gap:10px">
+            <button class="btn btn-secondary" onClick="{{ toSignup2 }}" style="height:48px; flex:none; padding:0 22px; font-family:var(--font-body); font-weight:700">이전</button>
+            <button class="btn btn-primary" onClick="{{ toSignup4 }}" style="height:48px; flex:1; font-size:16px">다음</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSignup4 }}">
+          <div style="display:flex; flex-direction:column; gap:6px">
+            <h2 style="margin:0; font-size:34px">궁극적인 꿈은 무엇인가요?</h2>
+            <p style="margin:0; font-size:14px; color:var(--color-neutral-700); text-wrap:pretty">모든 목표와 계획이 이 한 문장을 향해요. 언제든 꿈 작성에서 다듬을 수 있어요.</p>
+          </div>
+          <div style="background:var(--color-accent-200); border-radius:28px; padding:18px 22px">
+            <textarea value="{{ dream }}" onChange="{{ setDream }}" rows="2" placeholder="한 문장으로 적어보세요" aria-label="나의 꿈" style="width:100%; font-family:var(--font-heading); font-size:26px; line-height:1.25; background:transparent; border:0; outline:none; resize:none; color:var(--color-text); padding:0"></textarea>
+          </div>
+          <div style="display:flex; gap:10px">
+            <button class="btn btn-secondary" onClick="{{ toSignup3 }}" style="height:48px; flex:none; padding:0 22px; font-family:var(--font-body); font-weight:700">이전</button>
+            <button class="btn btn-primary" onClick="{{ finishSignup }}" style="height:48px; flex:1; font-size:16px">PhD 시작하기</button>
+          </div>
+          <button class="btn btn-ghost" onClick="{{ skipDream }}" style="align-self:center; font-family:var(--font-body); font-weight:700; font-size:14px">나중에 쓸게요</button>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex; min-height:100vh">
+  <aside style="flex:none; width:236px; position:sticky; top:0; height:100vh; padding:14px; box-sizing:border-box">
+    <div style="height:100%; background:var(--color-surface); border-radius:32px; padding:24px 14px 14px; display:flex; flex-direction:column; gap:22px; box-sizing:border-box; overflow-y:auto">
+      <div style="display:flex; flex-direction:column; gap:2px; padding:0 12px">
+        <span style="font-family:var(--font-heading); font-size:34px; line-height:1">PhD</span>
+        <span style="font-size:12px; color:var(--color-neutral-700); letter-spacing:.02em">Plan Higher Dream</span>
+      </div>
+      <sc-if value="{{ ck.show }}">
+        <div style="background:var(--color-neutral-100); border-radius:22px; padding:12px 10px 10px; display:flex; flex-direction:column; gap:2px">
+          <div style="display:flex; align-items:baseline; justify-content:space-between; padding:0 6px 4px"><span style="font-size:12px; font-weight:700">시작하기</span><span style="font-size:11.5px; font-weight:700; color:var(--color-accent-700)">{{ ck.count }}</span></div>
+          <sc-for list="{{ ck.steps }}" as="cs">
+            <button onClick="{{ cs.go }}" disabled="{{ cs.noGo }}" style="border:0; background:transparent; cursor:{{ cs.cursor }}; font:inherit; color:var(--color-text); display:flex; align-items:center; gap:8px; padding:5px 6px; border-radius:10px; text-align:left; font-size:12.5px; font-weight:{{ cs.fw }}; opacity:{{ cs.op }}" style-hover="background:var(--color-neutral-200)">
+              <span style="flex:none; width:16px; height:16px; border-radius:50%; box-sizing:border-box; border:2px solid {{ cs.ring }}; background:{{ cs.bg }}; display:grid; place-items:center; color:var(--color-neutral-100)"><sc-if value="{{ cs.done }}"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if></span>
+              <span style="text-decoration:{{ cs.strike }}">{{ cs.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <nav style="display:flex; flex-direction:column; gap:16px">
+        <sc-for list="{{ navGroups }}" as="ng">
+          <div style="display:flex; flex-direction:column; gap:3px">
+            <span style="font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--color-neutral-600); padding:0 14px 4px">{{ ng.label }}</span>
+            <sc-for list="{{ ng.items }}" as="ni">
+              <button class="btn" onClick="{{ ni.go }}" style="justify-content:flex-start; gap:12px; width:100%; padding:10px 14px; font-family:var(--font-body); font-weight:600; font-size:14px; background:{{ ni.bg }}; color:{{ ni.fg }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ni.icon }}"></path></svg>{{ ni.label }}</button>
+            </sc-for>
+          </div>
+        </sc-for>
+      </nav>
+      <button onClick="{{ nav.dreamWrite }}" title="꿈 작성으로 이동" style="margin-top:auto; border:0; cursor:pointer; font:inherit; text-align:left; color:var(--color-text); background:var(--color-accent-200); border-radius:24px; padding:14px 16px 16px; display:flex; flex-direction:column; gap:4px" style-hover="background:var(--color-accent-300)">
+        <span style="font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--color-accent-800)">나의 꿈</span>
+        <sc-if value="{{ hasDream }}"><span style="font-family:var(--font-heading); font-size:16px; line-height:1.3">{{ dream }}</span></sc-if>
+        <sc-if value="{{ noDream }}"><span style="font-size:13.5px; font-weight:600; line-height:1.4; color:var(--color-accent-900)">아직 꿈을 적지 않았어요 · <span style="text-decoration:underline; text-underline-offset:3px">쓰기</span></span></sc-if>
+      </button>
+      <button onClick="{{ toAccount }}" style=" border:0; cursor:pointer; font:inherit; color:var(--color-text); text-align:left; background:{{ accountBg }}; border-radius:24px; padding:10px 12px; display:flex; align-items:center; gap:10px" style-hover="background:var(--color-neutral-100)">
+        <span style="flex:none; width:38px; height:38px; border-radius:50%; background:var(--color-accent-2); color:var(--color-neutral-100); display:grid; place-items:center; font-weight:700; font-size:13px">{{ initials }}</span>
+        <span style="display:flex; flex-direction:column; min-width:0">
+          <span style="font-weight:700; font-size:14px">{{ user.name }}</span>
+          <span style="font-size:12px; color:var(--color-neutral-700)">계정 관리</span>
+        </span>
+      </button>
+    </div>
+  </aside>
+
+  <main style="flex:1; min-width:0; padding:36px 44px 56px; display:flex; flex-direction:column; gap:28px">
+    <sc-if value="{{ isDreamWrite }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap:28px; max-width:900px">
+        <div style="display:flex; flex-direction:column; gap:8px">
+          <span class="tag tag-accent" style="align-self:flex-start; font-weight:700">꿈 · 꿈 작성</span>
+          <h1 style="margin:0; font-size:42px">궁극적인 꿈</h1>
+          <p style="margin:0; font-size:14px; color:var(--color-neutral-700); text-wrap:pretty">모든 카테고리와 목표가 향하는 한 문장이에요. 여기서 쓴 꿈은 사이드바에 늘 떠 있어요.</p>
+        </div>
+        <div style="position:relative; overflow:hidden; background:var(--color-accent-200); border-radius:40px; padding:36px 40px 40px">
+          <span style="position:relative; font-size:12px; font-weight:700; letter-spacing:.06em; color:var(--color-accent-800)">나의 꿈</span>
+          <textarea value="{{ dream }}" onChange="{{ setDream }}" rows="2" placeholder="한 문장으로 적어보세요" aria-label="나의 꿈" style="position:relative; display:block; width:100%; margin-top:10px; font-family:var(--font-heading); font-size:46px; line-height:1.15; background:transparent; border:0; outline:none; resize:none; color:var(--color-text); padding:0; field-sizing:content"></textarea>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px">
+          <div style="background:var(--color-surface); border-radius:32px; padding:22px 24px; display:flex; flex-direction:column; gap:8px">
+            <span style="font-weight:700; font-size:15px">왜 이 꿈인가요?</span>
+            <textarea value="{{ dreamWhy }}" onChange="{{ setDreamWhy }}" rows="4" placeholder="이 꿈을 품게 된 이유" style="width:100%; font:inherit; font-size:14.5px; line-height:1.6; background:transparent; border:0; outline:none; resize:none; color:var(--color-text); padding:0"></textarea>
+          </div>
+          <div style="background:var(--color-surface); border-radius:32px; padding:22px 24px; display:flex; flex-direction:column; gap:8px">
+            <span style="font-weight:700; font-size:15px">꿈을 이룬 나의 하루</span>
+            <textarea value="{{ dreamDay }}" onChange="{{ setDreamDay }}" rows="4" placeholder="그날 아침부터 밤까지를 떠올려 적어보세요" style="width:100%; font:inherit; font-size:14.5px; line-height:1.6; background:transparent; border:0; outline:none; resize:none; color:var(--color-text); padding:0"></textarea>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap">
+          <button class="btn btn-primary" onClick="{{ nav.cats }}">카테고리로 나누기</button>
+          <span style="font-size:13px; color:var(--color-neutral-700)">꿈 → 인생 카테고리 → 목표 설정 → 꿈 보드 순서로 구체화해요.</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isDream }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid; grid-template-columns:{{ boardCols }}; gap:28px; align-items:start">
+        <div style="display:flex; flex-direction:column; gap:40px; min-width:0">
+          <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap">
+            <div style="display:flex; flex-direction:column; gap:12px; max-width:760px">
+              <span class="tag tag-accent" style="align-self:flex-start; font-weight:700">궁극적 꿈</span>
+              <h1 style="font-size:54px; margin:0; text-wrap:balance">{{ dreamTitle }}</h1>
+              <p style="margin:0; font-size:16px; color:var(--color-neutral-700); text-wrap:pretty">카테고리마다 목표를 붙이고, 목표마다 세부목표를 적어요. 카드를 누르면 오른쪽에서 편집할 수 있어요.</p>
+            </div>
+          </div>
+          <sc-if value="{{ noGoals }}"><div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; background:var(--color-surface); border-radius:28px; padding:20px 24px"><span style="font-size:15px; font-weight:600; text-wrap:pretty">먼저 목표를 적어 주세요</span><button class="btn btn-primary" onClick="{{ nav.goals }}">목표 설정</button></div></sc-if>
+          <sc-if value="{{ hasGoals }}">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(214px, 1fr)); gap:20px; align-items:start">
+            <sc-for list="{{ parts }}" as="p" hint-placeholder-count="5">
+              <div style="display:flex; flex-direction:column; gap:12px">
+                <div style="display:flex; flex-direction:column; gap:8px; padding:0 4px 4px">
+                  <div style="display:flex; align-items:center; gap:10px">
+                    <span style="flex:none; width:34px; height:34px; border-radius:50%; background:{{ p.dot }}; color:var(--color-neutral-100); display:grid; place-items:center; font-family:var(--font-heading); font-size:16px">{{ p.num }}</span>
+                    <h3 style="margin:0; font-size:24px">{{ p.name }}</h3>
+                  </div>
+                  <p style="margin:0; font-size:13px; line-height:1.5; color:var(--color-neutral-700); text-wrap:pretty">{{ p.aim }}</p>
+                </div>
+                <sc-for list="{{ p.goals }}" as="g">
+                  <div onClick="{{ g.open }}" style="background:{{ p.bg }}; border-radius:26px; padding:18px 18px 14px; display:flex; flex-direction:column; gap:12px; cursor:pointer; outline:{{ g.outline }}; outline-offset:3px; opacity:{{ g.op }}" style-hover="box-shadow:var(--shadow-md)">
+                    <h4 style="margin:0; font-size:19px">{{ g.name }}</h4>
+                    <sc-if value="{{ g.hasSubs }}">
+                      <div style="display:flex; flex-wrap:wrap; gap:6px">
+                        <sc-for list="{{ g.subs }}" as="sb">
+                          <span style="display:inline-flex; align-items:center; padding:5px 10px; border-radius:999px; background:var(--color-neutral-100); color:{{ p.ink }}; font-size:12.5px; font-weight:700; line-height:1.2">{{ sb.name }}</span>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ g.noSubs }}">
+                      <span style="font-size:13px; font-weight:600; color:{{ p.ink }}; opacity:.55">세부목표를 추가해 주세요</span>
+                    </sc-if>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+                      <span style="font-size:12px; font-weight:700; color:{{ p.ink }}">{{ g.dueLabel }}</span>
+                      <span style="font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:999px; background:{{ g.stBg }}; color:{{ g.stFg }}">{{ g.status }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+                <button class="btn" onClick="{{ nav.goals }}" style="border:2px dashed var(--color-neutral-400); color:var(--color-neutral-700); font-family:var(--font-body); font-weight:600; font-size:13px; padding:12px; border-radius:26px" style-hover="background:var(--color-neutral-200)">+ 목표 추가</button>
+              </div>
+            </sc-for>
+          </div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ ed.open }}">
+          <aside style="position:sticky; top:14px; max-height:calc(100vh - 28px); overflow-y:auto; box-sizing:border-box; background:var(--color-surface); border-radius:32px; padding:20px 22px 18px; display:flex; flex-direction:column; gap:18px">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px">
+              <span style="display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:{{ ed.partInk }}"><span style="width:10px; height:10px; border-radius:50%; background:{{ ed.partDot }}"></span>목표 편집 · {{ ed.status }}</span>
+              <button title="닫기" onClick="{{ ed.close }}" class="btn" style="width:34px; height:34px; padding:0; color:var(--color-neutral-700)" style-hover="background:var(--color-neutral-200)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:14px">
+              <input value="{{ ed.name }}" onChange="{{ ed.setName }}" aria-label="목표명" placeholder="목표명" style="font-family:var(--font-heading); font-size:28px; line-height:1.2; background:transparent; border:0; border-bottom:2px dashed var(--color-neutral-300); outline:none; padding:0 0 8px; color:var(--color-text); width:100%">
+              <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; align-items:start">
+                <div class="field"><label>카테고리</label>
+                  <select class="input" value="{{ ed.part }}" onChange="{{ ed.setPart }}"><sc-for list="{{ ed.partOpts }}" as="o"><option value="{{ o.k }}">{{ o.name }}</option></sc-for></select>
+                </div>
+                <div class="field"><label>기한 <span style="color:var(--color-accent-700)">· 필수</span></label>
+                  <input class="input" type="month" value="{{ ed.due }}" onChange="{{ ed.setDue }}">
+                  <sc-if value="{{ ed.dueMissing }}"><span style="font-size:12px; font-weight:600; color:var(--color-accent-700)">기한을 정해 주세요.</span></sc-if>
+                </div>
+              </div>
+            </div>
+            <div style="background:{{ ed.partBg }}; border-radius:26px; padding:16px; display:flex; flex-direction:column; gap:8px">
+              <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding:0 4px 4px">
+                <span style="font-size:16px; font-weight:700">세부목표 {{ ed.subCount }}</span>
+                <span style="font-size:11.5px; font-weight:600; color:{{ ed.partInk }}">계획 표 칸에 들어가는 단위</span>
+              </div>
+              <sc-for list="{{ ed.subs }}" as="sb">
+                <div onDragOver="{{ sb.over }}" onDrop="{{ sb.drop }}" style="display:flex; align-items:center; gap:6px; background:var(--color-neutral-100); border-radius:16px; padding:6px 6px 6px 2px; opacity:{{ sb.op }}">
+                  <span title="끌어서 순서 변경" draggable="true" onDragStart="{{ sb.dragStart }}" onDragEnd="{{ subDragEnd }}" style="flex:none; width:24px; height:30px; display:grid; place-items:center; cursor:grab; color:var(--color-neutral-500)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><path d="M9 5h.01M9 12h.01M9 19h.01M15 5h.01M15 12h.01M15 19h.01"></path></svg></span>
+                  <div style="flex:1; min-width:0; display:flex; flex-direction:column">
+                    <input value="{{ sb.name }}" onChange="{{ sb.rename }}" aria-label="세부목표 이름" style="width:100%; background:transparent; border:0; outline:none; font:inherit; font-size:14px; font-weight:600; color:var(--color-text); padding:2px 0">
+                    <sc-if value="{{ sb.placed }}"><span style="font-size:11px; font-weight:700; color:{{ ed.partInk }}">계획 표에 배치됨</span></sc-if>
+                  </div>
+                  <button title="{{ sb.delTitle }}" onClick="{{ sb.remove }}" disabled="{{ sb.placed }}" class="btn" style="flex:none; width:30px; height:30px; padding:0; color:var(--color-accent-700); opacity:{{ sb.delOp }}; cursor:{{ sb.delCursor }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </div>
+              </sc-for>
+              <sc-if value="{{ ed.noSubs }}"><span style="font-size:13px; font-weight:600; padding:4px; color:{{ ed.partInk }}; opacity:.6">세부목표를 추가해 주세요. 세부목표가 있어야 계획 표에 열로 넣을 수 있어요.</span></sc-if>
+              <input onKeyDown="{{ ed.addSub }}" placeholder="+ 세부목표 추가 (Enter)" style="height:42px; border-radius:16px; border:2px dashed {{ ed.partDot }}; background:transparent; padding:0 12px; font:inherit; font-size:13.5px; color:var(--color-text); outline:none; box-sizing:border-box; width:100%">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:14px; background:var(--color-neutral-100); border-radius:24px; padding:6px">
+              <button onClick="{{ ed.toggleTraits }}" aria-expanded="{{ ed.traitsOpen }}" style="border:0; background:transparent; cursor:pointer; font:inherit; color:var(--color-text); display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:18px; text-align:left" style-hover="background:var(--color-neutral-200)">
+                <span style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px">
+                  <span style="font-size:14px; font-weight:700">{{ ed.traitsLabel }}</span>
+                  <sc-if value="{{ ed.showSummary }}"><span style="font-size:12.5px; font-weight:600; color:var(--color-neutral-700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ ed.traitSummary }}</span></sc-if>
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" style="flex:none; color:var(--color-neutral-700); transform:{{ ed.chevTf }}"><path d="m6 9 6 6 6-6"></path></svg>
+              </button>
+              <sc-if value="{{ ed.traitsOpen }}">
+                <div style="display:flex; flex-direction:column; gap:14px; padding:0 10px 12px">
+                  <div class="field"><label>이유 · 선택</label><textarea class="input" rows="2" value="{{ ed.why }}" onChange="{{ ed.setWhy }}" placeholder="이 목표를 왜 이루고 싶나요?" style="resize:none; height:auto; padding-top:10px; padding-bottom:10px; line-height:1.5"></textarea></div>
+                  <div class="field"><label>중요도 · 선택</label>
+                    <div style="display:flex; gap:6px"><sc-for list="{{ ed.imps }}" as="im"><button class="{{ im.cls }}" onClick="{{ im.pick }}" style="flex:1; font-family:var(--font-body); font-weight:700; font-size:13px">{{ im.k }}</button></sc-for></div>
+                  </div>
+                  <div class="field"><label>대안 · 선택</label><input class="input" value="{{ ed.planB }}" onChange="{{ ed.setPlanB }}" placeholder="잘 안 될 때의 플랜 B"></div>
+                </div>
+              </sc-if>
+            </div>
+            <sc-if value="{{ ed.canClose }}"><button onClick="{{ ed.openWrap }}" class="btn btn-secondary" style="align-self:flex-start; font-family:var(--font-body); font-weight:700">목표 마무리하기</button></sc-if>
+            <sc-if value="{{ ed.isClosed }}"><div style="padding:12px 14px; border-radius:20px; background:var(--color-neutral-200); font-size:13px; font-weight:600; color:var(--color-neutral-800); text-wrap:pretty">{{ ed.closedText }}</div></sc-if>
+            <sc-if value="{{ ed.canDelete }}">
+              <button onClick="{{ ed.deleteGoal }}" style="align-self:flex-start; border:0; background:transparent; cursor:pointer; font:inherit; font-size:13px; font-weight:700; color:var(--color-accent-700); padding:4px 2px; text-decoration:underline; text-underline-offset:3px">목표 삭제</button>
+            </sc-if>
+          </aside>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCats }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap:28px; max-width:920px">
+        <div style="display:flex; flex-direction:column; gap:8px">
+          <span class="tag tag-accent-2" style="align-self:flex-start; font-weight:700">설정 · 인생 카테고리</span>
+          <h1 style="margin:0; font-size:42px">삶을 몇 개의 영역으로 나눠 볼까요</h1>
+          <p style="margin:0; font-size:14px; color:var(--color-neutral-700); text-wrap:pretty">목표 카테고리는 목표를 묶는 큰 영역이에요. 순서는 보드의 순서가 되고, 색은 계획 표와 모바일 타임 테이블에 그대로 쓰여요. 7색은 일상 카테고리까지 하나씩 나눠 가져요.</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <sc-for list="{{ catRows }}" as="c" hint-placeholder-count="5">
+            <div style="display:flex; align-items:center; gap:14px; background:var(--color-surface); border-radius:30px; padding:12px 16px 12px 12px; flex-wrap:wrap">
+              <div style="display:flex; flex-direction:column; gap:2px">
+                <button title="위로" onClick="{{ c.up }}" class="btn" style="width:26px; height:22px; padding:0; color:var(--color-neutral-600)" style-hover="background:var(--color-neutral-200)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"></path></svg></button>
+                <button title="아래로" onClick="{{ c.down }}" class="btn" style="width:26px; height:22px; padding:0; color:var(--color-neutral-600)" style-hover="background:var(--color-neutral-200)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+              </div>
+              <span style="flex:none; width:34px; height:34px; border-radius:50%; background:{{ c.dot }}; color:var(--color-neutral-100); display:grid; place-items:center; font-family:var(--font-heading); font-size:16px">{{ c.num }}</span>
+              <div style="flex:1 1 220px; display:flex; align-items:center; background:{{ c.bg }}; border-radius:999px; padding:0 20px; height:48px; transform:rotate(-0.6deg)">
+                <input value="{{ c.name }}" onChange="{{ c.rename }}" aria-label="카테고리 이름" style="width:100%; font-family:var(--font-heading); font-size:21px; background:transparent; border:0; color:var(--color-text); outline:none; padding:0">
+              </div>
+              <div style="display:flex; gap:6px">
+                <sc-for list="{{ c.swatches }}" as="sw">
+                  <button onClick="{{ sw.pick }}" disabled="{{ sw.used }}" title="{{ sw.name }}" style="width:24px; height:24px; border-radius:50%; border:0; padding:0; cursor:{{ sw.cursor }}; background:{{ sw.dot }}; box-shadow:{{ sw.ring }}; opacity:{{ sw.op }}"></button>
+                </sc-for>
+              </div>
+              <span style="flex:none; min-width:58px; font-size:12.5px; font-weight:600; color:var(--color-neutral-700)">목표 {{ c.count }}개</span>
+              <button title="삭제" onClick="{{ c.remove }}" class="btn" style="width:34px; height:34px; padding:0; color:var(--color-accent-700)" style-hover="background:var(--color-accent-100)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+            </div>
+          </sc-for>
+          <sc-if value="{{ catsOpen }}">
+            <button class="btn" onClick="{{ addCat }}" style="border:2px dashed var(--color-neutral-400); color:var(--color-neutral-700); font-family:var(--font-body); font-weight:700; font-size:14px; height:56px; border-radius:30px" style-hover="background:var(--color-neutral-200)">+ 카테고리 추가 ({{ catCount }}/{{ catMax }})</button>
+          </sc-if>
+          <sc-if value="{{ catsFull }}">
+            <div style="height:56px; border-radius:30px; background:var(--color-neutral-200); color:var(--color-neutral-800); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600">목표 카테고리는 최대 6개예요. 새로 추가하려면 하나를 지워주세요.</div>
+          </sc-if>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <span style="font-size:13px; font-weight:700; color:var(--color-neutral-700)">{{ user.type }}에게 추천하는 카테고리</span>
+          <div style="display:flex; gap:8px; flex-wrap:wrap">
+            <sc-for list="{{ suggest }}" as="sg">
+              <button class="btn btn-secondary" onClick="{{ sg.add }}" style="font-family:var(--font-body); font-weight:600; font-size:13px">+ {{ sg.name }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:16px; background:var(--color-surface); border-radius:30px; padding:20px 22px">
+          <div style="display:flex; flex-direction:column; gap:4px">
+            <span style="font-size:12px; font-weight:700; letter-spacing:.06em; color:var(--color-neutral-600)">일상 카테고리 · 1개 고정</span>
+            <span style="font-size:13px; color:var(--color-neutral-700); text-wrap:pretty">목표 없이 시간 기록과 생활 할 일에 써요. 목표 설정, 꿈 보드, 계획 표에는 나오지 않고, 모바일에서 키워드로 할 일을 적고 시간을 칠해요.</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap">
+            <div style="flex:1 1 220px; display:flex; align-items:center; background:{{ daily.bg }}; border-radius:999px; padding:0 20px; height:48px"><input value="{{ daily.name }}" onChange="{{ daily.rename }}" aria-label="일상 카테고리 이름" style="width:100%; font-family:var(--font-heading); font-size:21px; background:transparent; border:0; color:var(--color-text); outline:none; padding:0"></div>
+            <div style="display:flex; gap:6px"><sc-for list="{{ daily.swatches }}" as="sw"><button onClick="{{ sw.pick }}" disabled="{{ sw.used }}" title="{{ sw.name }}" style="width:26px; height:26px; border-radius:50%; border:0; padding:0; cursor:{{ sw.cursor }}; background:{{ sw.dot }}; box-shadow:{{ sw.ring }}; opacity:{{ sw.op }}"></button></sc-for></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px">
+            <span style="font-size:12.5px; font-weight:700; color:var(--color-neutral-700)">키워드 · 모바일에서 일상 할 일과 시간 칠하기에 쓰여요</span>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+              <sc-for list="{{ daily.keywords }}" as="kw"><span style="display:inline-flex; align-items:center; gap:4px; height:36px; padding:0 6px 0 14px; border-radius:999px; background:{{ daily.bg }}; color:{{ daily.ink }}; font-size:13.5px; font-weight:700">{{ kw.name }}<button title="키워드 삭제" onClick="{{ kw.remove }}" style="width:24px; height:24px; border-radius:50%; border:0; background:transparent; color:inherit; cursor:pointer; display:grid; place-items:center; padding:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button></span></sc-for>
+              <input onKeyDown="{{ daily.addKw }}" placeholder="+ 키워드 입력 후 Enter" style="height:36px; width:180px; border-radius:999px; border:2px dashed var(--color-neutral-400); background:transparent; padding:0 14px; font:inherit; font-size:13px; color:var(--color-text); outline:none; box-sizing:border-box">
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isGoals }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap:30px; max-width:1000px">
+        <div style="display:flex; flex-direction:column; gap:8px">
+          <span class="tag tag-accent-2" style="align-self:flex-start; font-weight:700">설정 · 목표</span>
+          <h1 style="margin:0; font-size:42px">꿈을 목표로 옮겨 적어요</h1>
+          <p style="margin:0; font-size:14px; color:var(--color-neutral-700); text-wrap:pretty">꿈을 기준으로, 카테고리마다 어떤 사람이 되고 싶은지와 구체적인 목표를 적어요. 목표 하나가 계획 표의 열 하나가 돼요.</p>
+        </div>
+        <sc-if value="{{ noGoals }}"><div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; background:var(--color-surface); border-radius:28px; padding:20px 24px"><span style="font-size:15px; font-weight:600; text-wrap:pretty">카테고리마다 이루고 싶은 목표를 적어 보세요</span><button class="btn btn-primary" onClick="{{ focusGoal }}">첫 목표 적기</button></div></sc-if>
+        <sc-if value="{{ hasDream }}">
+        <div style="background:var(--color-accent-200); border-radius:32px; padding:20px 20px 20px 26px; display:flex; align-items:center; gap:16px; flex-wrap:wrap">
+          <div style="flex:1 1 300px; display:flex; flex-direction:column; gap:4px">
+            <span style="font-size:12px; font-weight:700; letter-spacing:.06em; color:var(--color-accent-800)">나의 꿈</span>
+            <span style="font-family:var(--font-heading); font-size:30px; line-height:1.2">{{ dream }}</span>
+          </div>
+        </div>
+        </sc-if>
+        <div style="display:grid; grid-template-columns:200px minmax(0,1fr); column-gap:24px; row-gap:8px">
+          <span style="font-size:12px; font-weight:700; color:var(--color-neutral-600); padding-left:4px">카테고리</span>
+          <span style="font-size:12px; font-weight:700; color:var(--color-neutral-600)">되고 싶은 모습 · 목표</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:22px; margin-top:-18px">
+          <sc-for list="{{ parts }}" as="p" hint-placeholder-count="5">
+            <div style="display:grid; grid-template-columns:200px minmax(0,1fr); gap:24px; align-items:start">
+              <div style="display:flex; align-items:center; gap:10px; background:{{ p.bg }}; border-radius:999px; padding:0 18px 0 8px; height:48px; transform:rotate(-0.6deg)">
+                <span style="flex:none; width:32px; height:32px; border-radius:50%; background:{{ p.dot }}; color:var(--color-neutral-100); display:grid; place-items:center; font-family:var(--font-heading); font-size:15px">{{ p.num }}</span>
+                <span style="font-family:var(--font-heading); font-size:19px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ p.name }}</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:center; gap:10px">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-neutral-600)" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
+                  <input class="input" value="{{ p.aim }}" onChange="{{ p.setAim }}" placeholder="이 영역에서 되고 싶은 모습" style="height:48px; font-size:16px; font-weight:600">
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; padding-left:32px">
+                  <sc-for list="{{ p.goals }}" as="g">
+                    <span style="display:inline-flex; align-items:center; gap:4px; height:36px; padding:0 6px 0 14px; border-radius:999px; background:{{ p.bg }}; color:{{ p.ink }}; font-size:13.5px; font-weight:700">{{ g.name }}<button title="목표 삭제" onClick="{{ g.remove }}" style="width:24px; height:24px; border-radius:50%; border:0; background:transparent; color:inherit; cursor:pointer; display:grid; place-items:center; padding:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button></span>
+                  </sc-for>
+                  <input data-goal-input="1" onKeyDown="{{ p.addGoal }}" placeholder="+ 목표 입력 후 Enter" style="height:36px; width:180px; border-radius:999px; border:2px dashed var(--color-neutral-400); background:transparent; padding:0 14px; font:inherit; font-size:13px; color:var(--color-text); outline:none; box-sizing:border-box">
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <p style="margin:0; font-size:13px; color:var(--color-neutral-700)">목표별 세부 내용과 기한은 <a href="#" onClick="{{ nav.dream }}" style="font-weight:700">꿈 보드</a>에서 적어요. 카테고리 이름과 색은 <a href="#" onClick="{{ nav.cats }}" style="font-weight:700">인생 카테고리</a>에서 바꿀 수 있어요.</p>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isTable }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap:24px">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap">
+          <div style="display:flex; flex-direction:column; gap:8px">
+            <span class="tag tag-accent-2" style="align-self:flex-start; font-weight:700">{{ t.kicker }}</span>
+            <h1 style="margin:0; font-size:42px">{{ t.title }}</h1>
+            <p style="margin:0; font-size:14px; color:var(--color-neutral-700)">{{ t.sub }}</p>
+          </div>
+          <div style="position:relative; display:flex; gap:8px; align-items:center">
+            <button class="btn btn-secondary" onClick="{{ toggleMenu }}" style="font-family:var(--font-body); font-weight:700">+ 목표 열</button>
+            <sc-if value="{{ menuOpen }}">
+              <div style="position:absolute; right:0; top:46px; z-index:20; width:270px; background:var(--color-neutral-100); border-radius:22px; box-shadow:var(--shadow-lg); padding:10px; display:flex; flex-direction:column; gap:4px">
+                <span style="font-size:12px; color:var(--color-neutral-700); padding:4px 10px 6px">표에 없는 목표</span>
+                <sc-for list="{{ hiddenGoals }}" as="hg">
+                  <button class="btn" onClick="{{ hg.show }}" disabled="{{ hg.disabled }}" style="justify-content:flex-start; gap:10px; font-family:var(--font-body); font-weight:600; font-size:14px; padding:9px 12px; opacity:{{ hg.op }}; cursor:{{ hg.cursor }}" style-hover="background:var(--color-neutral-200)"><span style="width:10px; height:10px; border-radius:50%; background:{{ hg.dot }}"></span>{{ hg.name }}<span style="margin-left:auto; font-size:12px; color:var(--color-neutral-600)">{{ hg.part }}</span></button>
+                </sc-for>
+                <sc-if value="{{ noHidden }}"><span style="font-size:13px; padding:6px 10px 10px">모든 목표가 표에 있어요. 목표 설정에서 새 목표를 추가하세요.</span></sc-if>
+                <sc-if value="{{ hasEmptyHidden }}"><div style="margin:4px 2px 2px; padding:10px 12px; border-radius:16px; background:var(--color-neutral-200); font-size:12.5px; line-height:1.45; text-wrap:pretty">흐린 목표는 세부목표가 없어요. <a href="#" onClick="{{ nav.dream }}" style="font-weight:700">꿈 보드</a>에서 세부목표를 먼저 추가해 주세요.</div></sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <sc-if value="{{ tNoCols }}"><div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; background:var(--color-surface); border-radius:28px; padding:20px 24px"><span style="font-size:15px; font-weight:600; text-wrap:pretty">꿈 보드에서 세부목표를 만든 목표만 열로 추가할 수 있어요</span><button class="btn btn-primary" onClick="{{ tNoColsGo }}">{{ tNoColsLabel }}</button></div></sc-if>
+        <sc-if value="{{ t.isWeek }}">
+          <div style="display:flex; gap:8px; flex-wrap:wrap">
+            <sc-for list="{{ weekTabs }}" as="w">
+              <button class="{{ w.cls }}" onClick="{{ w.go }}" style="font-family:var(--font-body); font-weight:700; font-size:13px; gap:8px">{{ w.label }}<span style="font-weight:500; opacity:.75">{{ w.range }}</span></button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ tShowGrid }}">
+        <div style="position:relative; background:var(--color-surface); border-radius:32px; padding:14px">
+          <div ref="{{ tableRef }}" onScroll="{{ tableScroll }}" style="overflow-x:auto; padding:14px 2px 4px">
+            <div style="display:grid; grid-template-columns:{{ t.gridCols }}; grid-auto-rows:minmax({{ t.rowH }}, auto); gap:5px; min-width:{{ t.minW }}">
+              <div style="grid-row:1; grid-column:1; display:flex; align-items:center; padding:0 12px; font-size:12px; font-weight:700; color:var(--color-neutral-700)">{{ t.corner }}</div>
+              <sc-for list="{{ t.headers }}" as="h" hint-placeholder-count="7">
+                <div style="grid-row:1; grid-column:{{ h.col }}; background:var(--color-neutral-100); border-radius:16px; padding:9px 10px 8px 12px; display:flex; flex-direction:column; justify-content:center; gap:4px">
+                  <div style="display:flex; align-items:center; gap:7px; font-weight:700; font-size:13.5px; line-height:1.25"><span style="flex:none; width:9px; height:9px; border-radius:50%; background:{{ h.dot }}"></span>{{ h.name }}</div>
+                  <div style="display:flex; align-items:center; gap:2px; font-size:11px; color:var(--color-neutral-600)">
+                    <span style="margin-right:auto">{{ h.part }}</span>
+                    <sc-if value="{{ h.movable }}">
+                      <button title="왼쪽으로" onClick="{{ h.left }}" class="btn" style="width:22px; height:22px; padding:0; color:var(--color-neutral-600)" style-hover="background:var(--color-neutral-200)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+                      <button title="오른쪽으로" onClick="{{ h.right }}" class="btn" style="width:22px; height:22px; padding:0; color:var(--color-neutral-600)" style-hover="background:var(--color-neutral-200)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+                      <button title="표에서 숨기기" onClick="{{ h.hide }}" class="btn" style="width:22px; height:22px; padding:0; color:var(--color-neutral-600)" style-hover="background:var(--color-neutral-200)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ t.hasRef }}">
+                <div style="grid-row:2; grid-column:1; display:flex; flex-direction:column; justify-content:center; padding:0 12px; font-size:11.5px; font-weight:700; color:var(--color-neutral-700); line-height:1.35">{{ t.refLabel }}<span style="font-weight:500; color:var(--color-neutral-600)">상위 계획</span></div>
+                <sc-if value="{{ t.refEmpty }}"><div style="grid-row:2; grid-column:2 / -1; border:2px dashed var(--color-neutral-300); border-radius:16px; padding:8px 12px; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:600; color:var(--color-neutral-700)">{{ t.refEmptyText }}</div></sc-if>
+                <sc-for list="{{ t.refs }}" as="r">
+                  <div style="grid-row:2; grid-column:{{ r.col }}; border:2px dashed {{ r.border }}; color:{{ r.ink }}; border-radius:16px; padding:8px 10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; text-align:center; font-size:12.5px; font-weight:600; line-height:1.35">
+                    <sc-if value="{{ r.hasChip }}"><span style="max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10.5px; font-weight:700; line-height:1.2; padding:3px 8px; border-radius:999px; background:{{ r.chipBg }}; color:{{ r.ink }}">{{ r.chip }}</span></sc-if>
+                    <span>{{ r.text }}</span>
+                  </div>
+                </sc-for>
+              </sc-if>
+              <sc-for list="{{ t.rowLabels }}" as="rl">
+                <div style="grid-row:{{ rl.row }}; grid-column:1; border-radius:16px; padding:6px 12px; display:flex; flex-direction:column; justify-content:center; background:{{ rl.bg }}; color:{{ rl.fg }}">
+                  <span style="font-weight:700; font-size:14px">{{ rl.label }}</span>
+                  <span style="font-size:11.5px; opacity:.75">{{ rl.sub }}</span>
+                </div>
+              </sc-for>
+              <sc-for list="{{ t.empties }}" as="e">
+                <div onClick="{{ e.add }}" onDragOver="{{ e.over }}" onDrop="{{ e.drop }}" style="grid-row:{{ e.row }}; grid-column:{{ e.col }}; background:var(--color-neutral-100); border:2px dashed {{ e.border }}; border-radius:16px; cursor:pointer" style-hover="background:var(--color-neutral-200)"></div>
+              </sc-for>
+              <sc-for list="{{ t.blocks }}" as="b">
+                <div onClick="{{ b.select }}" style="grid-row:{{ b.gridRow }}; grid-column:{{ b.col }}; position:relative; background:{{ b.bg }}; color:{{ b.ink }}; border-radius:16px; padding:8px 10px; display:flex; flex-direction:column; justify-content:{{ b.justify }}; outline:{{ b.outline }}; outline-offset:2px; box-shadow:{{ b.shadow }}; z-index:{{ b.z }}">
+                  <sc-if value="{{ b.isNote }}">
+                    <textarea value="{{ b.memo }}" onChange="{{ b.change }}" autoFocus="{{ b.isNew }}" placeholder="메모" rows="1" style="width:100%; background:transparent; border:0; resize:none; font:inherit; font-size:13px; font-weight:600; line-height:1.4; color:var(--color-text); text-align:center; outline:none; padding:0; field-sizing:content; overflow:hidden"></textarea>
+                  </sc-if>
+                  <sc-if value="{{ b.showEdit }}">
+                    <div style="display:flex; justify-content:center; align-items:center; margin-bottom:4px">
+                      <span style="max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10.5px; font-weight:700; line-height:1.2; padding:3px 8px; border-radius:999px; background:var(--color-neutral-100); color:{{ b.ink }}">{{ b.subName }}</span>
+                    </div>
+                    <textarea value="{{ b.memo }}" onChange="{{ b.change }}" autoFocus="{{ b.isNew }}" placeholder="{{ b.ph }}" rows="1" style="width:100%; background:transparent; border:0; resize:none; font:inherit; font-size:13px; font-weight:600; line-height:1.4; color:var(--color-text); text-align:center; outline:none; padding:0; field-sizing:content; overflow:hidden"></textarea>
+                  </sc-if>
+                  <sc-if value="{{ b.nameOnly }}">
+                    <div style="display:flex; flex-direction:column; align-items:center; text-align:center">
+                      <span style="font-size:13px; font-weight:700; line-height:1.35; color:var(--color-text)">{{ b.subName }}</span>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ b.isActs }}">
+                    <div style="display:flex; flex-direction:column; gap:4px">
+                      <sc-for list="{{ b.acts }}" as="a">
+                        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px; background:var(--color-neutral-100); border-radius:10px; padding:4px 6px; font-size:12px; font-weight:600; line-height:1.3; color:var(--color-text)">
+                          <span style="flex:none; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10.5px; font-weight:700; line-height:1.2; padding:2px 7px; border-radius:999px; background:{{ a.chipBg }}; color:{{ a.ink }}">{{ a.subName }}</span>
+                          <span style="flex:1 1 auto; min-width:0; text-wrap:pretty">{{ a.name }}</span>
+                          <sc-if value="{{ a.repeat }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" style="flex:none; color:{{ a.ink }}"><title>반복</title><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path></svg></sc-if>
+                          <sc-if value="{{ a.showX }}"><button title="실천 삭제" onClick="{{ a.remove }}" style="flex:none; width:18px; height:18px; border-radius:50%; border:0; background:transparent; color:var(--color-accent-700); cursor:pointer; display:grid; place-items:center; padding:0"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button></sc-if>
+                        </div>
+                      </sc-for>
+                      <sc-if value="{{ b.showMore }}"><button onClick="{{ b.expand }}" style="align-self:flex-start; border:0; background:transparent; cursor:pointer; font:inherit; font-size:11.5px; font-weight:700; color:{{ b.ink }}; padding:2px 4px">{{ b.moreLabel }}</button></sc-if>
+                      <sc-if value="{{ b.showFold }}"><button onClick="{{ b.fold }}" style="align-self:flex-start; border:0; background:transparent; cursor:pointer; font:inherit; font-size:11.5px; font-weight:700; color:{{ b.ink }}; padding:2px 4px">접기</button></sc-if>
+                      <sc-if value="{{ b.selected }}"><button onClick="{{ b.addAct }}" style="border:2px dashed {{ b.dot }}; background:transparent; border-radius:10px; cursor:pointer; font:inherit; font-size:11.5px; font-weight:700; color:{{ b.ink }}; padding:3px 6px">+ 실천</button></sc-if>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ b.selected }}">
+                    <div onClick="{{ stop }}" style="position:absolute; top:-15px; right:8px; display:flex; gap:2px; padding:3px; background:var(--color-neutral-100); border-radius:999px; box-shadow:var(--shadow-md)">
+                      <span title="끌어서 이동" draggable="true" onDragStart="{{ b.dragStart }}" onDragEnd="{{ dragEnd }}" style="width:26px; height:26px; border-radius:50%; display:grid; place-items:center; cursor:grab; color:var(--color-neutral-700)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><path d="M9 5h.01M9 12h.01M9 19h.01M15 5h.01M15 12h.01M15 19h.01"></path></svg></span>
+                      <button title="아래 칸까지 늘리기" onClick="{{ b.extend }}" class="btn" style="width:26px; height:26px; padding:0; color:var(--color-neutral-700)" style-hover="background:var(--color-neutral-200)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg></button>
+                      <button title="한 칸 줄이기" onClick="{{ b.shrink }}" class="btn" style="width:26px; height:26px; padding:0; color:var(--color-neutral-700)" style-hover="background:var(--color-neutral-200)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></button>
+                      <button title="삭제" onClick="{{ b.remove }}" class="btn" style="width:26px; height:26px; padding:0; color:var(--color-accent-700)" style-hover="background:var(--color-accent-100)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-for list="{{ t.cells }}" as="c">
+                <div onClick="{{ c.add }}" style="grid-row:{{ c.row }}; grid-column:{{ c.col }}; min-width:0; background:{{ c.bg }}; border:2px dashed {{ c.border }}; border-radius:16px; padding:5px; display:flex; flex-direction:column; gap:4px; cursor:pointer; box-sizing:border-box" style-hover="box-shadow:inset 0 0 0 2px var(--color-neutral-300)">
+                  <sc-for list="{{ c.items }}" as="a">
+                    <div onClick="{{ a.select }}" style="display:flex; align-items:center; flex-wrap:wrap; gap:4px; min-width:0; background:var(--color-neutral-100); border-radius:10px; padding:4px 6px; font-size:12px; font-weight:600; line-height:1.3; color:var(--color-text); outline:{{ a.outline }}; outline-offset:1px">
+                      <span style="flex:none; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10.5px; font-weight:700; line-height:1.2; padding:2px 7px; border-radius:999px; background:{{ a.chipBg }}; color:{{ a.ink }}">{{ a.subName }}</span>
+                      <span style="flex:1 1 64px; min-width:0; text-wrap:pretty">{{ a.name }}</span>
+                      <span style="flex:none; margin-left:auto; display:flex; align-items:center; gap:4px">
+                        <sc-if value="{{ a.repeat }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" style="flex:none; color:{{ a.ink }}"><title>반복</title><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path></svg></sc-if>
+                        <sc-if value="{{ a.hasDays }}"><span style="font-size:11px; font-weight:700; color:{{ a.ink }}; white-space:nowrap">{{ a.days }}</span></sc-if>
+                        <sc-if value="{{ a.showX }}"><button title="실천 삭제" onClick="{{ a.remove }}" style="flex:none; width:18px; height:18px; border-radius:50%; border:0; background:transparent; color:var(--color-accent-700); cursor:pointer; display:grid; place-items:center; padding:0"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button></sc-if>
+                      </span>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ c.showMore }}"><button onClick="{{ c.expand }}" style="align-self:flex-start; border:0; background:transparent; cursor:pointer; font:inherit; font-size:11.5px; font-weight:700; color:{{ c.ink }}; padding:2px 4px">{{ c.moreLabel }}</button></sc-if>
+                  <sc-if value="{{ c.showFold }}"><button onClick="{{ c.fold }}" style="align-self:flex-start; border:0; background:transparent; cursor:pointer; font:inherit; font-size:11.5px; font-weight:700; color:{{ c.ink }}; padding:2px 4px">접기</button></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="position:absolute; top:14px; bottom:14px; right:14px; width:56px; pointer-events:none; background:linear-gradient(to right, transparent, var(--color-surface)); opacity:{{ tableFade }}; transition:opacity .15s"></div>
+        </div>
+        </sc-if>
+        <p style="margin:0; font-size:13px; color:var(--color-neutral-700); text-wrap:pretty">{{ t.foot }}</p>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isTrack }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap:28px">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap">
+          <div style="display:flex; flex-direction:column; gap:8px">
+            <span class="tag tag-accent-2" style="align-self:flex-start; font-weight:700">{{ tk.kicker }}</span>
+            <h1 style="margin:0; font-size:42px">{{ tk.title }}</h1>
+            <p style="margin:0; font-size:14px; color:var(--color-neutral-700)">모바일 하루 플래너에서 칠한 10분 칸을 목표별로 모았어요.</p>
+          </div>
+          <div style="display:flex; gap:6px"><sc-for list="{{ tk.ranges }}" as="r"><button class="{{ r.cls }}" onClick="{{ r.pick }}" style="font-family:var(--font-body); font-weight:700; font-size:13px">{{ r.k }}</button></sc-for></div>
+        </div>
+        <sc-if value="{{ trackEmpty }}"><div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; background:var(--color-surface); border-radius:28px; padding:20px 24px"><span style="font-size:15px; font-weight:600; text-wrap:pretty">모바일에서 시간을 칠하면 여기에 쌓여요</span><button class="btn btn-primary" onClick="{{ nav.week }}">주간 실천 적기</button></div></sc-if>
+        <sc-if value="{{ trackHas }}">
+        <div style="display:flex; gap:16px; flex-wrap:wrap">
+          <div style="flex:1 1 200px; background:var(--color-surface); border-radius:28px; padding:20px 24px; display:flex; flex-direction:column; gap:4px">
+            <span style="font-size:13px; font-weight:600; color:var(--color-neutral-700)">계획한 시간</span>
+            <span style="font-family:var(--font-heading); font-size:40px; line-height:1.1">{{ sum.planned }}h</span>
+          </div>
+          <div style="flex:1 1 200px; background:var(--color-surface); border-radius:28px; padding:20px 24px; display:flex; flex-direction:column; gap:4px">
+            <span style="font-size:13px; font-weight:600; color:var(--color-neutral-700)">실제로 쓴 시간</span>
+            <span style="font-family:var(--font-heading); font-size:40px; line-height:1.1">{{ sum.actual }}h</span>
+          </div>
+          <div style="flex:1 1 200px; background:var(--color-accent-2-200); color:var(--color-accent-2-900); border-radius:28px; padding:20px 24px; display:flex; flex-direction:column; gap:4px">
+            <span style="font-size:13px; font-weight:600">계획 대비 실행</span>
+            <span style="font-family:var(--font-heading); font-size:40px; line-height:1.1">{{ sum.rate }}%</span>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(380px, 1fr)); gap:20px; align-items:start">
+          <div style="background:var(--color-surface); border-radius:32px; padding:26px 28px; display:flex; flex-direction:column; gap:18px">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap">
+              <h3 style="margin:0; font-size:22px">목표별 계획 대비 실제</h3>
+              <div style="display:flex; gap:14px; font-size:12px; color:var(--color-neutral-700)">
+                <span style="display:flex; align-items:center; gap:6px"><span style="width:16px; height:8px; border-radius:99px; border:2px solid var(--color-neutral-500)"></span>계획</span>
+                <span style="display:flex; align-items:center; gap:6px"><span style="width:16px; height:8px; border-radius:99px; background:var(--color-neutral-700)"></span>실제</span>
+              </div>
+            </div>
+            <sc-for list="{{ vs }}" as="v" hint-placeholder-count="7">
+              <div style="display:grid; grid-template-columns:120px minmax(0,1fr) 92px; align-items:center; gap:14px">
+                <span style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; min-width:0"><span style="flex:none; width:9px; height:9px; border-radius:50%; background:{{ v.dot }}"></span>{{ v.name }}</span>
+                <div style="display:flex; flex-direction:column; gap:4px">
+                  <div style="height:10px; width:{{ v.pw }}; border-radius:99px; border:2px solid var(--color-neutral-500); box-sizing:border-box"></div>
+                  <div style="height:10px; width:{{ v.aw }}; border-radius:99px; background:{{ v.dot }}"></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px">
+                  <span style="font-size:12.5px; color:var(--color-neutral-700)">{{ v.actual }}/{{ v.planned }}h</span>
+                  <span class="{{ v.tagCls }}" style="font-weight:700; padding:2px 7px">{{ v.diff }}</span>
+                </div>
+              </div>
+            </sc-for>
+            <p style="margin:0; font-size:12px; color:var(--color-neutral-700); text-wrap:pretty">계획 시간은 모바일 계획 블록 중 할 일과 연결된 것만 셌어요. 키워드만 적은 계획 {{ sum.kw }}시간은 전체 계획에만 포함돼요.</p>
+          </div>
+          <div style="background:var(--color-surface); border-radius:32px; padding:26px 28px; display:flex; flex-direction:column; gap:18px">
+            <div style="display:flex; flex-direction:column; gap:2px">
+              <h3 style="margin:0; font-size:22px">목표별 진척도</h3>
+              <span style="font-size:12.5px; color:var(--color-neutral-700)">시간과 따로, 스스로 느끼는 진척을 직접 조절해요.</span>
+            </div>
+            <sc-for list="{{ prog }}" as="g" hint-placeholder-count="7">
+              <div style="display:grid; grid-template-columns:120px minmax(0,1fr) 52px; align-items:center; column-gap:14px; row-gap:0">
+                <span style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; min-width:0"><span style="flex:none; width:9px; height:9px; border-radius:50%; background:{{ g.dot }}"></span>{{ g.name }}</span>
+                <input type="range" min="0" max="100" step="5" value="{{ g.v }}" onChange="{{ g.set }}" aria-label="{{ g.name }} 진척도" style="width:100%; accent-color:{{ g.dot }}">
+                <span style="text-align:right; font-family:var(--font-heading); font-size:18px">{{ g.v }}%</span>
+                <span style="grid-column:2 / span 2; font-size:11.5px; color:var(--color-neutral-600)">{{ g.date }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="background:var(--color-surface); border-radius:32px; padding:26px 28px; display:flex; flex-direction:column; gap:18px">
+          <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap">
+            <div style="display:flex; align-items:baseline; gap:12px; flex-wrap:wrap">
+              <h3 style="margin:0; font-size:22px">하루 점수</h3>
+              <span style="font-size:13px; font-weight:700; color:var(--color-accent-700)">{{ score.avgLabel }}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:4px; font-size:11.5px; color:var(--color-neutral-700)">1<sc-for list="{{ score.legend }}" as="lg"><span style="width:16px; height:16px; border-radius:5px; background:{{ lg }}"></span></sc-for>5점</div>
+          </div>
+          <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:stretch">
+            <div style="flex:1 1 360px; max-width:480px; display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:6px">
+              <sc-for list="{{ score.heads }}" as="sh"><span style="text-align:center; font-size:11.5px; font-weight:700; color:var(--color-neutral-600)">{{ sh }}</span></sc-for>
+              <sc-for list="{{ score.days }}" as="sd">
+                <button onClick="{{ sd.pick }}" disabled="{{ sd.blank }}" title="{{ sd.title }}" style="min-height:44px; border:0; border-radius:14px; cursor:{{ sd.cursor }}; font:inherit; font-size:12.5px; font-weight:700; background:{{ sd.bg }}; color:{{ sd.fg }}; box-shadow:{{ sd.ring }}">{{ sd.n }}</button>
+              </sc-for>
+            </div>
+            <div style="flex:1 1 220px; background:var(--color-neutral-100); border-radius:24px; padding:18px 20px; display:flex; flex-direction:column; gap:6px">
+              <span style="font-size:12.5px; font-weight:700; color:var(--color-neutral-600)">{{ score.selDate }}</span>
+              <span style="font-family:var(--font-heading); font-size:36px; line-height:1.1">{{ score.selScore }}</span>
+              <p style="margin:0; font-size:14px; line-height:1.55; text-wrap:pretty">{{ score.selReason }}</p>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--color-surface); border-radius:32px; padding:26px 28px; display:flex; flex-direction:column; gap:18px">
+          <div style="display:flex; flex-direction:column; gap:2px">
+            <h3 style="margin:0; font-size:22px">목표별 누적 시간</h3>
+            <span style="font-size:12.5px; color:var(--color-neutral-700)">2026년 7월 시작부터 지금까지</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px 32px">
+            <sc-for list="{{ cum }}" as="c" hint-placeholder-count="7">
+              <div style="display:flex; flex-direction:column; gap:6px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px">
+                  <span style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; min-width:0"><span style="flex:none; width:9px; height:9px; border-radius:50%; background:{{ c.dot }}"></span>{{ c.name }}</span>
+                  <span style="font-family:var(--font-heading); font-size:18px">{{ c.total }}h</span>
+                </div>
+                <div style="height:14px; border-radius:99px; background:var(--color-neutral-100); overflow:hidden"><div style="height:100%; width:{{ c.w }}; border-radius:99px; background:{{ c.dot }}"></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReviews }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap:28px; max-width:1100px">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap">
+          <div style="display:flex; flex-direction:column; gap:8px">
+            <span class="tag tag-accent-2" style="align-self:flex-start; font-weight:700">기록 · 회고 모음</span>
+            <h1 style="margin:0; font-size:42px">마무리한 목표들</h1>
+            <p style="margin:0; font-size:14px; color:var(--color-neutral-700)">목표를 마무리할 때 남긴 회고를 최신순으로 모았어요.</p>
+          </div>
+          <div style="display:flex; gap:6px"><sc-for list="{{ rvFilters }}" as="rf"><button class="{{ rf.cls }}" onClick="{{ rf.pick }}" style="font-family:var(--font-body); font-weight:700; font-size:13px">{{ rf.k }}</button></sc-for></div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:20px; align-items:start">
+          <sc-for list="{{ reviews }}" as="rv" hint-placeholder-count="2">
+            <article style="background:var(--color-surface); border-radius:32px; padding:14px 14px 24px; display:flex; flex-direction:column; gap:16px">
+              <sc-if value="{{ rv.hasPhoto }}"><div class="washed" style="border-radius:24px; overflow:hidden; aspect-ratio:4 / 3"><div role="img" aria-label="{{ rv.name }} 인증사진" style="width:100%; height:100%; background:{{ rv.photoBg }}"></div></div></sc-if>
+              <div style="padding:6px 8px 0; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
+                  <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:{{ rv.ink }}"><span style="width:9px; height:9px; border-radius:50%; background:{{ rv.dot }}"></span>{{ rv.part }}</span>
+                  <span style="font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:999px; background:{{ rv.badgeBg }}; color:{{ rv.badgeFg }}">{{ rv.type }}</span>
+                </div>
+                <h3 style="margin:0; font-size:24px">{{ rv.name }}</h3>
+                <div style="display:flex; gap:6px 14px; font-size:12.5px; color:var(--color-neutral-700); flex-wrap:wrap"><span>{{ rv.period }}</span><span>누적 {{ rv.hours }}시간</span><span>실천 {{ rv.acts }}개 완료</span></div>
+              </div>
+              <div style="padding:0 8px; display:flex; flex-direction:column; gap:14px">
+                <sc-for list="{{ rv.qa }}" as="q">
+                  <div style="display:flex; flex-direction:column; gap:4px">
+                    <span style="font-size:12px; font-weight:700; color:var(--color-neutral-600)">{{ q.q }}</span>
+                    <p style="margin:0; font-size:14px; line-height:1.55; text-wrap:pretty">{{ q.a }}</p>
+                  </div>
+                </sc-for>
+              </div>
+            </article>
+          </sc-for>
+        </div>
+        <sc-if value="{{ noReviews }}"><div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; background:var(--color-surface); border-radius:28px; padding:20px 24px"><span style="font-size:15px; font-weight:600; text-wrap:pretty">마무리한 목표의 회고가 여기에 모여요</span><button class="btn btn-primary" onClick="{{ nav.dream }}">꿈 보드</button></div></sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAccount }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap:24px; max-width:780px">
+        <div style="display:flex; flex-direction:column; gap:8px">
+          <span class="tag tag-neutral" style="align-self:flex-start; font-weight:700">계정</span>
+          <h1 style="margin:0; font-size:42px">계정 관리</h1>
+        </div>
+        <div style="background:var(--color-surface); border-radius:32px; padding:26px 28px; display:flex; flex-direction:column; gap:20px">
+          <div style="display:flex; align-items:center; gap:18px">
+            <span style="flex:none; width:72px; height:72px; border-radius:50%; background:var(--color-accent-2); color:var(--color-neutral-100); display:grid; place-items:center; font-weight:700; font-size:22px">{{ initials }}</span>
+            <div style="display:flex; flex-direction:column; gap:4px">
+              <h3 style="margin:0; font-size:24px">{{ user.name }}</h3>
+              <span style="font-size:13px; color:var(--color-neutral-700)">2026년 7월부터 함께하는 중</span>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px">
+            <div class="field"><label>이름</label><input class="input" value="{{ user.name }}" onChange="{{ setName }}"></div>
+            <div class="field"><label>이메일</label><input class="input" value="{{ user.email }}" onChange="{{ setEmail }}"></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px">
+            <span style="font-size:12px; color:var(--color-neutral-700)">지금 나는</span>
+            <div style="display:flex; gap:8px; flex-wrap:wrap">
+              <sc-for list="{{ types }}" as="ty">
+                <button class="{{ ty.cls }}" onClick="{{ ty.pick }}" style="font-family:var(--font-body); font-weight:700; font-size:13px">{{ ty.k }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--color-surface); border-radius:32px; padding:26px 28px; display:flex; flex-direction:column; gap:18px">
+          <h3 style="margin:0; font-size:22px">플래너 설정</h3>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap">
+            <div style="display:flex; flex-direction:column; gap:2px"><span style="font-weight:700; font-size:14.5px">하루 시작 시간</span><span style="font-size:13px; color:var(--color-neutral-700)">모바일 타임 테이블의 첫 줄이에요.</span></div>
+            <div style="display:flex; gap:6px">
+              <sc-for list="{{ dayStarts }}" as="ds"><button class="{{ ds.cls }}" onClick="{{ ds.pick }}" style="font-family:var(--font-body); font-weight:700; font-size:13px">{{ ds.k }}</button></sc-for>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap">
+            <div style="display:flex; flex-direction:column; gap:2px"><span style="font-weight:700; font-size:14.5px">한 주의 시작</span><span style="font-size:13px; color:var(--color-neutral-700)">주간 계획 표의 첫 요일이에요.</span></div>
+            <div style="display:flex; gap:6px">
+              <sc-for list="{{ weekStarts }}" as="ws"><button class="{{ ws.cls }}" onClick="{{ ws.pick }}" style="font-family:var(--font-body); font-weight:700; font-size:13px">{{ ws.k }}</button></sc-for>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap">
+            <div style="display:flex; flex-direction:column; gap:2px"><span style="font-weight:700; font-size:14.5px">회고 알림</span><span style="font-size:13px; color:var(--color-neutral-700)">매일 정한 시간에 오늘 시간을 칠했는지 알려줘요.</span></div>
+            <div style="display:flex; align-items:center; gap:12px">
+              <sc-if value="{{ notifyOn }}">
+                <span style="font-size:13px; font-weight:600; color:var(--color-neutral-700)">{{ notifyLabel }}</span>
+                <input class="input" type="time" step="600" value="{{ notifyTime }}" onChange="{{ setNotifyTime }}" aria-label="알림 시간" style="width:132px; height:40px; font-weight:700">
+              </sc-if>
+            <button onClick="{{ toggleNotify }}" aria-label="회고 알림" style="width:52px; height:30px; border-radius:999px; border:0; padding:3px; cursor:pointer; background:{{ notify.bg }}; display:flex; justify-content:{{ notify.justify }}"><span style="width:24px; height:24px; border-radius:50%; background:var(--color-neutral-100); box-shadow:var(--shadow-sm)"></span></button>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--color-surface); border-radius:32px; padding:26px 28px; display:flex; flex-direction:column; gap:18px">
+          <h3 style="margin:0; font-size:22px">로그인과 데이터</h3>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap">
+            <div style="display:flex; flex-direction:column; gap:2px"><span style="font-weight:700; font-size:14.5px">연결된 계정</span><span style="font-size:13px; color:var(--color-neutral-700)">Google · {{ user.email }}</span></div>
+            <button class="btn btn-secondary" style="font-family:var(--font-body); font-weight:700">비밀번호 변경</button>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap">
+            <div style="display:flex; flex-direction:column; gap:2px"><span style="font-weight:700; font-size:14.5px">데이터 내보내기</span><span style="font-size:13px; color:var(--color-neutral-700)">목표, 계획 표, 시간 기록을 CSV로 받아요.</span></div>
+            <button class="btn btn-secondary" style="font-family:var(--font-body); font-weight:700">내보내기</button>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; padding-top:4px">
+            <button class="btn btn-primary" onClick="{{ logout }}">로그아웃</button>
+            <button class="btn btn-ghost" style="color:var(--color-accent-700); font-family:var(--font-body); font-weight:700">계정 삭제</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </main>
+  <sc-if value="{{ wrap.open }}">
+    <div class="dialog-backdrop" onClick="{{ wrap.close }}" style="position:fixed; inset:0; z-index:50; display:grid; place-items:center; padding:24px">
+      <div class="dialog" onClick="{{ stop }}" style="width:min(560px, 100%); max-height:calc(100vh - 48px); overflow-y:auto; display:flex; flex-direction:column; gap:20px; box-sizing:border-box">
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <span style="display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:{{ wrap.ink }}"><span style="width:10px; height:10px; border-radius:50%; background:{{ wrap.dot }}"></span>{{ wrap.part }}</span>
+          <h2 class="dialog-title" style="margin:0; font-size:30px">{{ wrap.name }} 마무리하기</h2>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px">
+          <sc-for list="{{ wrap.stats }}" as="st"><div style="background:{{ wrap.bg }}; border-radius:20px; padding:12px 14px; display:flex; flex-direction:column; gap:2px"><span style="font-size:11.5px; font-weight:700; color:{{ wrap.ink }}">{{ st.k }}</span><span style="font-family:var(--font-heading); font-size:18px; line-height:1.25">{{ st.v }}</span></div></sc-for>
+        </div>
+        <div class="field"><label>마무리 종류</label><div style="display:flex; gap:6px"><sc-for list="{{ wrap.types }}" as="ty"><button class="{{ ty.cls }}" onClick="{{ ty.pick }}" style="flex:1; font-family:var(--font-body); font-weight:700">{{ ty.k }}</button></sc-for></div></div>
+        <sc-if value="{{ wrap.isDone }}">
+          <div class="field"><span style="font-size:13px; font-weight:700">인증사진 · 1장</span>
+            <label style="position:relative; display:grid; place-items:center; height:170px; border-radius:24px; border:2px dashed var(--color-neutral-400); background:var(--color-neutral-100); cursor:pointer; overflow:hidden; font-size:13.5px; font-weight:600; color:var(--color-neutral-700)">
+              <sc-if value="{{ wrap.hasPhoto }}"><div role="img" aria-label="인증사진" style="position:absolute; inset:0; background:{{ wrap.photoBg }}"></div></sc-if>
+              <sc-if value="{{ wrap.noPhoto }}"><span>눌러서 사진을 올려 주세요</span></sc-if>
+              <input type="file" accept="image/*" onChange="{{ wrap.setPhoto }}" style="position:absolute; inset:0; opacity:0; cursor:pointer">
+            </label>
+          </div>
+        </sc-if>
+        <sc-for list="{{ wrap.qs }}" as="q">
+          <div class="field"><label>{{ q.q }}</label><textarea class="input" rows="2" value="{{ q.v }}" onChange="{{ q.set }}" style="resize:none; height:auto; padding-top:10px; padding-bottom:10px; line-height:1.5; border-radius:20px"></textarea></div>
+        </sc-for>
+        <div style="padding:10px 14px; border-radius:16px; background:var(--color-neutral-200); font-size:12.5px; font-weight:600; color:var(--color-neutral-800)">마무리한 목표는 다시 열 수 없어요. 계획 표에서 빠지고, 회고는 회고 모음에 남아요.</div>
+        <div class="dialog-actions" style="display:flex; justify-content:flex-end; gap:8px"><button class="btn btn-ghost" onClick="{{ wrap.close }}" style="font-family:var(--font-body); font-weight:700">취소</button><button class="btn btn-primary" onClick="{{ wrap.confirm }}">마무리하기</button></div>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ pop.open }}">
+    <div onClick="{{ closePop }}" style="position:fixed; inset:0; z-index:40"></div>
+    <div style="position:fixed; z-index:41; left:{{ pop.left }}; top:{{ pop.top }}; transform:{{ pop.tf }}; width:{{ pop.w }}; box-sizing:border-box; background:var(--color-neutral-100); border-radius:22px; box-shadow:var(--shadow-lg); padding:10px; display:flex; flex-direction:column; gap:2px">
+      <div style="padding:6px 10px 8px; display:flex; flex-direction:column; gap:2px">
+        <span style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:700"><span style="width:9px; height:9px; border-radius:50%; background:{{ pop.dot }}"></span>{{ pop.goal }} · {{ pop.when }}</span>
+        <span style="font-size:12px; color:var(--color-neutral-700)">{{ pop.hint }}</span>
+      </div>
+      <sc-if value="{{ pop.isAct }}"><span style="font-size:12px; font-weight:700; color:var(--color-neutral-700); padding:2px 12px 4px">1. 세부목표</span></sc-if>
+      <sc-for list="{{ pop.items }}" as="it">
+        <button class="btn" onClick="{{ it.pick }}" style="justify-content:flex-start; gap:8px; font-family:var(--font-body); font-weight:600; font-size:14px; padding:9px 12px; text-align:left; background:{{ it.bg }}; box-shadow:{{ it.ring }}" style-hover="background:var(--color-neutral-200)">{{ it.mark }}{{ it.name }}<sc-if value="{{ it.hl }}"><span style="margin-left:auto; flex:none; font-size:10.5px; font-weight:700; line-height:1.2; padding:3px 8px; border-radius:999px; background:var(--color-neutral-100); color:{{ pop.ink }}">{{ it.badge }}</span></sc-if></button>
+      </sc-for>
+      <sc-if value="{{ pop.empty }}">
+        <span style="font-size:13px; padding:4px 10px 8px; text-wrap:pretty">{{ pop.emptyText }}</span>
+        <button class="btn btn-secondary" onClick="{{ pop.toBoard }}" style="margin:0 6px 4px; font-family:var(--font-body); font-weight:700; font-size:13px">꿈 보드에서 추가하기</button>
+      </sc-if>
+      <sc-if value="{{ pop.isAct }}">
+        <div style="display:flex; flex-direction:column; gap:12px; padding:10px 6px 4px">
+          <div class="field"><label>2. 실천 이름</label><input class="input" value="{{ pop.actName }}" onChange="{{ pop.setActName }}" onKeyDown="{{ pop.actKey }}" placeholder="예: 매일 단어 40개"></div>
+          <div class="field"><label>3. 속성</label>
+            <div style="display:flex; gap:6px"><sc-for list="{{ pop.kinds }}" as="k"><button class="{{ k.cls }}" onClick="{{ k.pick }}" style="flex:1; font-family:var(--font-body); font-weight:700; font-size:13px">{{ k.k }}</button></sc-for></div>
+            <span style="font-size:12px; color:var(--color-neutral-700)">{{ pop.kindHint }}</span>
+          </div>
+          <div class="field"><label>4. 요일</label>
+            <div style="display:flex; gap:4px"><sc-for list="{{ pop.dayChips }}" as="d"><button onClick="{{ d.pick }}" style="flex:1; height:34px; padding:0; border-radius:999px; border:0; cursor:pointer; font:inherit; font-size:13px; font-weight:700; background:{{ d.bg }}; color:{{ d.fg }}">{{ d.k }}</button></sc-for></div>
+            <span style="font-size:12px; color:var(--color-neutral-700)">{{ pop.dayHint }}</span>
+          </div>
+          <button class="btn btn-primary" onClick="{{ pop.submit }}" disabled="{{ pop.cantSubmit }}">실천 추가</button>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;data&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;sample&quot;,&quot;empty&quot;],&quot;default&quot;:&quot;empty&quot;,&quot;tsType&quot;:&quot;'sample'|'empty'&quot;},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;login&quot;,&quot;signup&quot;,&quot;dreamWrite&quot;,&quot;cats&quot;,&quot;goals&quot;,&quot;dream&quot;,&quot;year&quot;,&quot;month&quot;,&quot;week&quot;,&quot;track&quot;,&quot;reviews&quot;,&quot;account&quot;],&quot;default&quot;:&quot;login&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;comfortable&quot;,&quot;compact&quot;],&quot;default&quot;:&quot;comfortable&quot;,&quot;tsType&quot;:&quot;'comfortable'|'compact'&quot;},&quot;showRef&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const PALETTE = {
+  red: { name: '빨강', bg: 'oklch(0.9 0.055 25)', ink: 'oklch(0.42 0.11 25)', dot: 'oklch(0.7 0.13 25)' },
+  orange: { name: '주황', bg: 'oklch(0.91 0.06 60)', ink: 'oklch(0.44 0.1 55)', dot: 'oklch(0.74 0.13 60)' },
+  yellow: { name: '노랑', bg: 'oklch(0.93 0.07 95)', ink: 'oklch(0.44 0.09 85)', dot: 'oklch(0.82 0.13 92)' },
+  green: { name: '초록', bg: 'oklch(0.91 0.06 145)', ink: 'oklch(0.4 0.08 145)', dot: 'oklch(0.72 0.12 145)' },
+  blue: { name: '파랑', bg: 'oklch(0.91 0.045 245)', ink: 'oklch(0.4 0.09 250)', dot: 'oklch(0.7 0.1 245)' },
+  purple: { name: '보라', bg: 'oklch(0.9 0.05 300)', ink: 'oklch(0.42 0.1 300)', dot: 'oklch(0.7 0.11 300)' },
+  pink: { name: '분홍', bg: 'oklch(0.91 0.05 350)', ink: 'oklch(0.43 0.1 350)', dot: 'oklch(0.74 0.11 350)' },
+};
+const MAX_CATS = 6;
+const PHOTO = 'assets/review-photo.jpg';
+const DONE_ACTS = { cert: 46, toeic: 52, linalg: 18, paper: 9, app: 31, photo: 12, run: 64, talk: 7, read: 0 };
+const KW_PLAN = 18;
+const SCORES = [[4,'아침 루틴을 다 지켰어요.'],[3,'오후에 집중이 흐트러졌어요.'],[4,'LC 모의고사 점수가 올랐어요.'],[2,'늦잠으로 오전을 놓쳤어요.'],[3,'운동만 겨우 했어요.'],[5,'가족과 산책하고 푹 쉬었어요.'],[4,'주간 계획을 차분히 세웠어요.'],[3,'과제 마감에 쫓겼어요.'],[4,'인터뷰 질문지를 끝냈어요.'],[5,'계획한 일을 전부 했어요.'],[2,'감기 기운으로 쉬었어요.'],[2,'여전히 몸이 무거웠어요.'],[3,'조금씩 회복했어요.'],[4,'스터디에서 칭찬을 들었어요.'],[4,'기출 1회를 시간 안에 풀었어요.'],[3,'회의가 길어졌어요.'],[5,'10km를 처음 쉬지 않고 뛰었어요.'],[4,'논문 한 편을 요약했어요.'],[3,'주말 일정이 많았어요.'],[4,'사진 주제 후보를 정했어요.'],[3,'월요병으로 느리게 시작했어요.'],[4,'개념 정리를 두 챕터 했어요.'],[2,'잠을 거의 못 잤어요.'],[4,'낮잠 덕분에 저녁이 괜찮았어요.'],[5,'실기 범위를 처음 다 훑었어요.'],[4,'친구들과 저녁을 먹었어요.'],[3,'계획보다 쉬는 시간이 길었어요.'],[4,'단어 Day 1을 시작했어요.'],[4,'사용자 인터뷰를 잡았어요.'],[3,'샴푸를 또 못 샀어요.']];
+const SCORE_BG = ['var(--color-accent-200)', 'var(--color-accent-300)', 'var(--color-accent-400)', 'var(--color-accent-500)', 'var(--color-accent-700)'];
+const NOTE = { bg: 'var(--color-neutral-200)', ink: 'var(--color-neutral-800)', dot: 'var(--color-neutral-500)' };
+const TYPES = [
+  { k: '대학생', d: '학업과 진로를 함께 준비해요', cats: ['전공', '커리어', '어학', '대외활동'] },
+  { k: '수험생', d: '시험 하나에 집중하는 시기', cats: ['시험 과목', '컨디션', '생활 루틴'] },
+  { k: '직장인', d: '일과 성장을 함께 챙겨요', cats: ['업무', '자기계발', '재정', '관계'] },
+  { k: '군 복무 중', d: '복무 기간을 성장의 시간으로', cats: ['군생활', '자기계발', '신앙', '전역 후'] },
+  { k: '그 외', d: '카테고리를 직접 정할게요', cats: ['가족', '재정', '관계'] },
+];
+const CHIP_POOL = ['건강', '커리어', '어학', '전공', '취미', '대외활동', '재정', '관계', '가족', '신앙', '자기계발', '업무', '군생활', '전역 후', '시험 과목', '컨디션', '생활 루틴'];
+const TRACK = { cert: [24, 21, 46], toeic: [15, 16, 38], linalg: [12, 7, 19], paper: [6, 3, 5], app: [16, 14, 30], photo: [4, 5, 9], run: [14, 12, 40], talk: [2, 2, 6] };
+const YEAR_ROWS = Array.from({ length: 12 }, (_, i) => ({ label: ((9 + i) % 12 + 1) + '월', sub: i < 3 ? '2026' : '2027' }));
+const WEEK_STARTS = [[9, 28], [10, 5], [10, 12], [10, 19], [10, 26]];
+const md = d => (d.getMonth() + 1) + '.' + d.getDate();
+const addDays = ([m, d], n) => new Date(2026, m - 1, d + n);
+const MONTH_ROWS = WEEK_STARTS.map((s, i) => ({ label: (i + 1) + '주차', sub: md(addDays(s, 0)) + ' – ' + md(addDays(s, 6)) }));
+const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
+const weekRows = w => DAYS.map((d, i) => ({ label: d, sub: md(addDays(WEEK_STARTS[w], i)) }));
+const ICON = {
+  dream: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z',
+  goals: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+  cats: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 17a3 3 0 1 0 6 0 3 3 0 0 0-6 0z',
+  year: 'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18M17 14h-6M13 18H7',
+  month: 'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18',
+  week: 'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01',
+  dreamWrite: 'M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z',
+  track: 'M3 3v16a2 2 0 0 0 2 2h16M18 17V9M13 17V5M8 17v-3',
+  reviews: 'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z',
+};
+const NAV = [
+  ['꿈', [['dreamWrite', '꿈 작성']]],
+  ['목표', [['cats', '인생 카테고리'], ['goals', '목표 설정'], ['dream', '꿈 보드']]],
+  ['계획', [['year', '연간 계획'], ['month', '월간 계획'], ['week', '주간 계획']]],
+  ['기록', [['track', '트래킹'], ['reviews', '회고 모음']]],
+];
+
+const S = (id, name) => ({ id, name });
+const INIT_GOALS = [
+  { id: 'run', part: 'health', name: '체력 만들기', due: '2027-09', why: '연구도 결국 체력이라서요.', importance: '높음', planB: '바쁜 주엔 걷기 30분으로 대신', subs: [S('run.daily', '매일 운동'), S('run.half', '하프 마라톤 준비')] },
+  { id: 'cert', part: 'career', name: '정보처리기사', due: '2027-05', why: '졸업 전에 실무 기초를 증명하고 싶어요.', importance: '보통', planB: '안 되면 필기만 먼저', subs: [S('cert.th', '필기 이론'), S('cert.ex', '필기 기출'), S('cert.pr', '실기')] },
+  { id: 'app', part: 'career', name: '사이드 앱 ‘모아’', due: '2027-02', why: '포트폴리오에 직접 만든 서비스를 넣고 싶어요.', importance: '높음', planB: '안 되면 웹 버전만 출시', subs: [S('app.plan', '기획'), S('app.design', '디자인'), S('app.dev', '개발'), S('app.launch', '출시')] },
+  { id: 'toeic', part: 'lang', name: '토익 850', due: '2027-03', why: '대학원 지원 서류에 필요해요.', importance: '높음', planB: '안 되면 5월 시험으로 한 번 더', subs: [S('toeic.word', '매일 단어 40개'), S('toeic.lc', 'LC'), S('toeic.rc', 'RC')] },
+  { id: 'talk', part: 'lang', name: '영어 회화', due: '2027-06', why: '', importance: '보통', planB: '', subs: [S('talk.shadow', '쉐도잉 15분'), S('talk.study', '스터디')] },
+  { id: 'linalg', part: 'major', name: '선형대수 복습', due: '2027-05', why: '대학원 수업의 기초라서요.', importance: '보통', planB: '', subs: [S('la.a', '1–6장'), S('la.b', '7–12장'), S('la.rev', '총복습')] },
+  { id: 'paper', part: 'major', name: '논문 읽기', due: '2027-04', why: '지원할 연구실을 고르기 위해서요.', importance: '보통', planB: '', subs: [S('pa.find', '관심 분야 탐색'), S('pa.sum', '월 4편 요약')] },
+  { id: 'photo', part: 'hobby', name: '사진전', due: '2027-07', why: '', importance: '낮음', planB: '안 되면 온라인 전시로', subs: [S('ph.theme', '주제 기획'), S('ph.shoot', '촬영'), S('ph.select', '셀렉 · 인화'), S('ph.show', '전시 준비')] },
+  { id: 'read', part: 'hobby', name: '책 24권 읽기', due: '2027-09', why: '', importance: '', planB: '', subs: [] },
+  { id: 'wake', part: 'health', name: '아침 6시 기상 습관', due: '2026-09', why: '', importance: '', planB: '', start: '2026-07-01', subs: [S('wake.a', '6시 기상'), S('wake.b', '기상 기록')],
+    closed: { type: 'done', date: '2026-09-20', photo: PHOTO, hours: 36, acts: 82, did: '석 달 동안 6시 기상을 82일 지켰어요. 아침 시간에 단어 공부를 붙일 수 있게 됐어요.', miss: '시험 기간에는 새벽까지 깨어 있다가 리듬이 무너졌어요.', next: '일어나는 시간보다 잠드는 시간을 먼저 정할게요.' } },
+  { id: 'algo', part: 'career', name: '코딩 테스트 매일 1문제', due: '2026-12', why: '', importance: '', planB: '', start: '2026-07-10', subs: [S('algo.a', '실버 문제'), S('algo.b', '골드 문제')],
+    closed: { type: 'stop', date: '2026-09-05', photo: null, hours: 21, acts: 40, did: '실버 문제 40개를 풀고 자주 나오는 유형을 정리했어요.', miss: '사이드 앱 개발과 시간이 겹쳐 둘 다 밀렸어요.', next: '졸업 프로젝트가 끝나는 1월에 주 3회로 다시 시작할게요.' } },
+];
+const IMPORTANCE = ['높음', '보통', '낮음'];
+const fmtDue = d => d ? d.slice(2, 4) + '.' + d.slice(5, 7) : '';
+let uid = 0;
+const A = (sub, name, repeat) => ({ id: 'a' + (uid++), sub, name, repeat: !!repeat });
+const mkW = arr => arr.map(([col, row, span, x]) => col === 'note'
+  ? { id: 'b' + (uid++), col, row, span, lane: 'main', sub: null, memo: x }
+  : { id: 'b' + (uid++), col, row, span, lane: 'main', acts: x });
+const T = (col, sub, name, days, repeat) => ({ id: 'a' + (uid++), col, sub, name, days, repeat: !!repeat });
+const ALL = [0, 1, 2, 3, 4, 5, 6];
+const mk = arr => arr.map(([col, row, span, sub, memo]) => col === 'note'
+  ? { id: 'b' + (uid++), col, row, span, lane: 'main', sub: null, memo: sub }
+  : { id: 'b' + (uid++), col, row, span, lane: 'main', sub, memo: memo || '' });
+const INIT = {
+  year: mk([
+    ['cert', 0, 2, 'cert.th', '개념 정리'], ['cert', 2, 1, 'cert.ex', '기출 5회'], ['cert', 3, 1, 'cert.ex', '필기 시험'], ['cert', 4, 3, 'cert.pr', '실기 공부'], ['cert', 7, 1, 'cert.pr', '실기 시험'],
+    ['toeic', 0, 4, 'toeic.word', '단어장 3회독'], ['toeic', 4, 1, 'toeic.lc', 'LC 집중 + 1차 응시 750'], ['toeic', 5, 1, 'toeic.rc', 'RC 보완 + 2차 응시 850'],
+    ['linalg', 0, 3, 'la.a', '행렬 · 벡터공간'], ['linalg', 3, 3, 'la.b', '고윳값 · 대각화'], ['linalg', 6, 2, 'la.rev', ''],
+    ['paper', 1, 1, 'pa.find', '랩 리스트업'], ['paper', 2, 4, 'pa.sum', ''], ['paper', 6, 1, 'pa.sum', '리뷰 노트 발행'],
+    ['app', 0, 1, 'app.plan', '문제 정의'], ['app', 1, 1, 'app.design', 'UI 시안'], ['app', 2, 1, 'app.dev', 'MVP 개발'], ['app', 3, 1, 'app.dev', '베타 테스트'], ['app', 4, 1, 'app.launch', '스토어 출시'],
+    ['photo', 0, 2, 'ph.theme', ''], ['photo', 2, 4, 'ph.shoot', ''], ['photo', 6, 2, 'ph.select', ''], ['photo', 8, 2, 'ph.show', '대관 · 전시'],
+    ['run', 0, 3, 'run.daily', '러닝 · 근력 번갈아'], ['run', 3, 4, 'run.half', '10km → 하프 훈련 + 매일 운동'], ['run', 7, 1, 'run.half', '대회 출전'], ['run', 8, 4, 'run.daily', '러닝 · 근력 유지'],
+  ]),
+  month: mk([
+    ['note', 0, 1, '개천절 연휴'], ['note', 1, 1, '한글날'], ['note', 3, 1, '중간 점검'],
+    ['cert', 0, 2, 'cert.th', '1과목 DB'], ['cert', 2, 2, 'cert.th', '2과목 SW 설계'], ['cert', 4, 1, 'cert.ex', '기출 1회'],
+    ['toeic', 0, 3, 'toeic.word', '단어장 1회독'], ['toeic', 3, 2, 'toeic.lc', '3주차 중간고사라 4–5주차에 LC 몰아서'],
+    ['linalg', 0, 2, 'la.a', '1–2장 행렬'], ['linalg', 2, 2, 'la.a', '3–4장 벡터공간'],
+    ['paper', 3, 2, 'pa.find', '분야 탐색'],
+    ['app', 0, 1, 'app.plan', '문제 정의'], ['app', 1, 2, 'app.plan', '와이어프레임'], ['app', 3, 2, 'app.design', 'UI 시안을 11월에서 당겨옴'],
+    ['photo', 0, 1, 'ph.theme', '레퍼런스 수집'], ['photo', 1, 1, 'ph.theme', '주제 후보 3개'], ['photo', 2, 1, 'ph.theme', '주제 확정'], ['photo', 3, 2, 'ph.shoot', '테스트 촬영'],
+    ['run', 0, 5, 'run.daily', '주 4회 러닝'],
+  ]),
+  week: {
+    0: mkW([['note', 0, 5, '출근 9–6'], ['note', 5, 1, '개천절 · 가족'], ['note', 6, 1, '교회']]).concat([
+      T('toeic', 'toeic.word', '매일 단어 40개', ALL, 1), T('toeic', 'toeic.rc', '문법 파트 정리', [2, 3, 4]), T('toeic', 'toeic.lc', 'Part 1 사진', [1]), T('toeic', 'toeic.lc', 'Part 2 응답', [3]),
+      T('cert', 'cert.th', '개념 1챕터씩', [0, 1, 2, 3, 4], 1), T('cert', 'cert.ex', 'SQL 문제 30', [2]), T('cert', 'cert.th', '1주 복습', [5]), T('cert', 'cert.ex', '기출 1회 풀기', [5]), T('cert', 'cert.ex', '오답 노트', [5]),
+      T('run', 'run.daily', '러닝 5km', [0, 2, 4], 1), T('run', 'run.daily', '근력 20분', [1, 3], 1), T('run', 'run.half', '10km 페이스 측정', [6]),
+      T('linalg', 'la.a', '하루 1절 읽기', [0, 1, 2, 3, 4], 1), T('linalg', 'la.a', '1장 연습문제', [6]),
+      T('app', 'app.plan', '아이디어 메모 5분', ALL, 1), T('app', 'app.plan', '인터뷰 질문지', [1]), T('app', 'app.plan', '사용자 인터뷰 2명', [3]), T('app', 'app.plan', '문제 정의서', [5]),
+      T('photo', 'ph.theme', '레퍼런스 1장 저장', ALL, 1), T('photo', 'ph.theme', '전시 레퍼런스 정리', [3]), T('photo', 'ph.theme', '갤러리 탐방', [6]),
+      T('paper', 'pa.find', '관심 랩 홈페이지 보기', [1, 3]),
+    ]),
+    1: [], 2: [], 3: [], 4: [],
+  },
+};
+
+class Component extends DCLogic {
+  seed(data) { const o = {
+    screen: this.props.startScreen ?? 'login', signupStep: 1, onboarding: false,
+    user: { name: '김서윤', email: 'seoyun@phd.app', type: '대학생' },
+    settings: { dayStart: '05시', weekStart: '월요일', notify: true, notifyTime: '22:00' },
+    dream: '배운 것을 나누며 사는 연구자',
+    dreamWhy: '좋은 선생님 한 분 덕분에 공부가 즐거워졌어요. 나도 누군가에게 그런 사람이 되고 싶어요.',
+    dreamDay: '아침엔 연구실에서 실험을 하고, 오후엔 학생들과 세미나를 해요. 저녁엔 배운 것을 글로 정리해 나눠요.',
+    partOrder: ['health', 'career', 'lang', 'major', 'hobby'],
+    parts: {
+      health: { name: '건강', aim: '매일 30분, 몸을 움직이는 사람', color: 'red' },
+      career: { name: '커리어', aim: '졸업 전에 실무 역량을 증명하기', color: 'orange' },
+      lang: { name: '어학', aim: '대학원에 지원할 수 있는 영어', color: 'yellow' },
+      major: { name: '전공', aim: '연구실 진학을 위한 기초와 탐색', color: 'green' },
+      hobby: { name: '취미', aim: '1년 안에 작은 사진전 열기', color: 'blue' },
+    },
+    goals: INIT_GOALS,
+    cols: ['cert', 'toeic', 'linalg', 'paper', 'app', 'photo', 'run'],
+    daily: { name: '일상', color: 'purple', keywords: ['업무', '생활', '이동', '휴식'] },
+    wrap: null, revFilter: 'all', trackRange: 'month', scoreSel: 30,
+    progress: { cert: { v: 40, date: '9.28' }, toeic: { v: 35, date: '9.30' }, linalg: { v: 20, date: '9.14' }, paper: { v: 10, date: '9.20' }, app: { v: 30, date: '9.29' }, photo: { v: 15, date: '9.10' }, run: { v: 45, date: '9.27' }, talk: { v: 5, date: '9.03' } },
+    blocks: INIT, week: 0, sel: null, newId: null, drag: null, menu: false, edit: null, pop: null, subDrag: null, traitsOpen: false, expanded: {},
+  };
+    if (data !== 'empty') return o;
+    return { ...o, dream: '', dreamWhy: '', dreamDay: '', partOrder: ['career', 'lang', 'health'],
+      parts: { career: { name: '커리어', aim: '', color: 'orange' }, lang: { name: '어학', aim: '', color: 'yellow' }, health: { name: '건강', aim: '', color: 'red' } },
+      goals: [], cols: [], blocks: { year: [], month: [], week: { 0: [], 1: [], 2: [], 3: [], 4: [] } }, progress: {} };
+  }
+  state = this.seed(this.props.data ?? 'empty');
+  get isEmpty() { return (this.props.data ?? 'empty') === 'empty'; }
+  refPack(kind, hasRef, refs) {
+    const empty = hasRef && refs.every(r => r.text === '—');
+    return { refs: empty ? [] : refs, refEmpty: empty, refEmptyText: kind === 'month' ? '연간 표의 이번 달 칸이 여기로 내려와요' : '월간 표의 이번 주 칸이 여기로 내려와요' };
+  }
+
+  componentDidMount() {
+    this._key = e => {
+      if (e.key !== 'Escape') return;
+      const s = this.state;
+      if (s.pop || s.sel || s.menu) this.setState({ sel: null, menu: false, pop: null });
+      else if (s.edit) this.setState({ edit: null });
+    };
+    this._scroll = () => { if (this.state.pop) this.setState({ pop: null }); };
+    this._mt = setInterval(() => this.measureTable(), 500);
+    window.addEventListener('keydown', this._key);
+    window.addEventListener('scroll', this._scroll, true);
+  }
+  componentWillUnmount() { clearInterval(this._mt); window.removeEventListener('keydown', this._key); window.removeEventListener('scroll', this._scroll, true); }
+  tableRef = React.createRef();
+  _fadeR = false;
+  measureTable() {
+    const el = this.tableRef.current;
+    const f = !!el && el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+    if (f !== this._fadeR) { this._fadeR = f; this.forceUpdate(); }
+  }
+  componentDidUpdate(prev) { this.measureTable(); if (prev.data !== this.props.data) this.setState({ ...this.seed(this.props.data ?? 'empty'), screen: this.state.screen }); if (prev.startScreen !== this.props.startScreen && this.props.startScreen) this.setState({ screen: this.props.startScreen, signupStep: 1 }); }
+
+  rowsOf(kind) { return kind === 'year' ? YEAR_ROWS : kind === 'month' ? MONTH_ROWS : weekRows(this.state.week); }
+  blocksOf(kind, s = this.state) { return kind === 'week' ? s.blocks.week[s.week] : s.blocks[kind]; }
+  setBlocks(kind, fn) {
+    this.setState(s => {
+      const b = { ...s.blocks };
+      if (kind === 'week') b.week = { ...b.week, [s.week]: fn(b.week[s.week]) };
+      else b[kind] = fn(b[kind]);
+      return { blocks: b };
+    });
+  }
+  occupied(kind, col, row, exceptId) {
+    return this.blocksOf(kind).some(b => b.id !== exceptId && b.col === col && row >= b.row && row < b.row + b.span);
+  }
+  allBlocks(s = this.state) { return s.blocks.year.concat(s.blocks.month, ...Object.values(s.blocks.week)); }
+  placedSubs(s = this.state) { const set = new Set(); this.allBlocks(s).forEach(b => { if (b.sub) set.add(b.sub); (b.acts || []).forEach(a => set.add(a.sub)); }); return set; }
+  visibleCols(s = this.state) { return s.cols.filter(id => this.GM[id] && !this.GM[id].closed && this.P[this.GM[id].part] && this.GM[id].subs.length > 0); }
+  meta(id) { return id === 'note' ? NOTE : this.P[this.GM[id].part]; }
+  subOf(gid, sid) { const g = this.GM[gid]; return g && g.subs.find(x => x.id === sid); }
+  upper(kind, col) {
+    if (kind === 'year') return null;
+    const s = this.state, src = kind === 'month' ? s.blocks.year : s.blocks.month, at = kind === 'month' ? 0 : s.week;
+    return src.find(b => b.col === col && at >= b.row && at < b.row + b.span) || null;
+  }
+  openPop(kind, col, row, el, blockId, days) {
+    const rc = el.getBoundingClientRect(), h = kind === 'week' ? 560 : 300, w = kind === 'week' ? 300 : 260;
+    const flip = rc.bottom + h > window.innerHeight && rc.top > h;
+    const top = flip ? rc.top - 6 : Math.max(10, Math.min(rc.bottom + 6, window.innerHeight - h - 10));
+    this.setState(s => ({ sel: blockId || null, menu: false, pop: { kind, week: s.week, col, row, blockId: blockId || null, sub: null, name: '', repeat: false, days: days || [], left: Math.max(10, Math.min(rc.left, window.innerWidth - w - 10)), top, flip } }));
+  }
+  fmtDays(ds) {
+    const d = ds.slice().sort((a, b) => a - b);
+    if (d.length === 7) return '매일';
+    const run = d.every((x, i) => i === 0 || x === d[i - 1] + 1);
+    return run && d.length >= 3 ? DAYS[d[0]] + '–' + DAYS[d[d.length - 1]] : d.map(x => DAYS[x]).join('·');
+  }
+
+  buildWeek() {
+    const s = this.state, GM = this.GM, kind = 'week';
+    const rows = this.rowsOf(kind), pill = on => on ? 'btn btn-primary' : 'btn btn-secondary';
+    const goals = this.visibleCols(), colIds = ['note'].concat(goals);
+    const all = this.blocksOf(kind);
+    const notes = all.filter(b => b.col === 'note'), acts = all.filter(b => b.days && goals.includes(b.col));
+    const hasRef = this.props.showRef ?? true, off = hasRef ? 3 : 2, d0 = off + 1;
+    const dense = (this.props.density ?? 'comfortable') === 'compact';
+    const colOf = id => colIds.indexOf(id) + 2;
+    const todayRow = s.week === 0 ? 3 : -1;
+    const headers = colIds.map(id => {
+      const col = colOf(id);
+      if (id === 'note') return { col, name: '참고사항', part: '모바일로 가지 않는 메모', dot: NOTE.dot, movable: false };
+      const g = GM[id], p = this.P[g.part];
+      return { col, name: g.name, part: p.name, dot: p.dot, movable: true, left: () => this.moveCol(id, -1), right: () => this.moveCol(id, 1), hide: () => this.hideCol(id) };
+    });
+    const rowLabels = [{ row: off, label: '이번 주', sub: '여러 날에 걸친 실천', bg: 'var(--color-accent-2-200)', fg: 'var(--color-accent-2-900)' }].concat(rows.map((r, i) => ({
+      row: d0 + i, label: r.label, sub: i === todayRow ? r.sub + ' · 오늘' : r.sub,
+      bg: i === todayRow ? 'var(--color-accent)' : 'var(--color-neutral-100)', fg: i === todayRow ? 'var(--color-neutral-100)' : 'var(--color-text)',
+    })));
+    const pop = s.pop && s.pop.kind === kind && s.pop.week === s.week ? s.pop : null;
+    const occ = {};
+    notes.forEach(b => { for (let r = b.row; r < b.row + b.span; r++) occ[r] = 1; });
+    const dragOk = s.drag && s.drag.kind === kind && s.drag.col === 'note';
+    const empties = [];
+    for (let r = 0; r < 7; r++) if (!occ[r]) empties.push({
+      row: d0 + r, col: 2, border: dragOk ? 'var(--color-accent-400)' : 'transparent',
+      add: () => this.addNote(kind, r), over: ev => { if (dragOk) ev.preventDefault(); }, drop: ev => { ev.preventDefault(); this.dropBlock(kind, 'note', r); },
+    });
+    const blocks = notes.map(b => {
+      const sel = s.sel === b.id;
+      return {
+        gridRow: (d0 + b.row) + ' / span ' + b.span, col: 2, bg: NOTE.bg, ink: NOTE.ink, dot: NOTE.dot, memo: b.memo, selected: sel, isNew: s.newId === b.id,
+        isNote: true, isActs: false, showEdit: false, nameOnly: false, acts: [], ph: '메모', justify: 'center',
+        outline: sel ? '2px solid var(--color-accent)' : '0 solid transparent', shadow: sel ? 'var(--shadow-md)' : 'none', z: sel ? 3 : 1,
+        select: () => { if (s.sel !== b.id) this.setState({ sel: b.id, menu: false, pop: null }); },
+        change: e => { const v = e.target.value; this.setBlocks(kind, a => a.map(x => x.id === b.id ? { ...x, memo: v } : x)); },
+        dragStart: e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', b.id); this.setState({ drag: { kind, id: b.id, col: 'note' } }); },
+        extend: () => { const nr = b.row + b.span; if (nr < 7 && !this.occupied(kind, 'note', nr, b.id)) this.setBlocks(kind, a => a.map(x => x.id === b.id ? { ...x, span: x.span + 1 } : x)); },
+        shrink: () => { if (b.span > 1) this.setBlocks(kind, a => a.map(x => x.id === b.id ? { ...x, span: x.span - 1 } : x)); },
+        remove: () => { this.setBlocks(kind, a => a.filter(x => x.id !== b.id)); this.setState({ sel: null }); },
+      };
+    });
+    const cells = [];
+    const mkCell = (id, ri, list, preset) => {
+      const m = this.meta(id), key = s.week + ':' + id + ':' + ri, n = list.length, ex = !!s.expanded[key];
+      const shown = ex || n <= 3 ? list : list.slice(0, 3);
+      const isPop = pop && pop.col === id && pop.row === ri;
+      return {
+        row: ri === -1 ? off : d0 + ri, col: colOf(id), ink: m.ink,
+        bg: n ? m.bg : 'var(--color-neutral-100)', border: isPop ? 'var(--color-accent)' : 'transparent',
+        add: e => this.openPop(kind, id, ri, e.currentTarget, null, preset),
+        items: shown.map(a => {
+          const sb = this.subOf(id, a.sub), sel = s.sel === a.id;
+          return {
+            subName: sb ? sb.name : '삭제된 세부목표', name: a.name, repeat: a.repeat, chipBg: m.bg, ink: m.ink,
+            hasDays: ri === -1, days: this.fmtDays(a.days), showX: sel, outline: sel ? '2px solid var(--color-accent)' : '0 solid transparent',
+            select: e => { e.stopPropagation(); this.setState({ sel: sel ? null : a.id, pop: null }); },
+            remove: e => { e.stopPropagation(); this.setBlocks(kind, arr => arr.filter(x => x.id !== a.id)); this.setState({ sel: null }); },
+          };
+        }),
+        showMore: n > 3 && !ex, moreLabel: '+' + (n - 3) + '개 더', showFold: n > 3 && ex,
+        expand: e => { e.stopPropagation(); this.setState(st => ({ expanded: { ...st.expanded, [key]: true } })); },
+        fold: e => { e.stopPropagation(); this.setState(st => { const x = { ...st.expanded }; delete x[key]; return { expanded: x }; }); },
+      };
+    };
+    goals.forEach(id => {
+      const mine = acts.filter(a => a.col === id).sort((a, b) => Math.min(...a.days) - Math.min(...b.days));
+      cells.push(mkCell(id, -1, mine.filter(a => a.days.length > 1), []));
+      for (let d = 0; d < 7; d++) cells.push(mkCell(id, d, mine.filter(a => a.days.length === 1 && a.days[0] === d), [d]));
+    });
+    let refs = [];
+    if (hasRef) refs = colIds.map(id => {
+      const hit = this.upper(kind, id), m = this.meta(id);
+      const sub = hit && hit.sub ? this.subOf(id, hit.sub) : null;
+      return { col: colOf(id), hasChip: !!sub, chip: sub ? sub.name : '', chipBg: m.bg, text: hit ? (hit.memo || '') : '—', ink: hit ? m.ink : 'var(--color-neutral-500)', border: hit ? m.dot : 'var(--color-neutral-300)' };
+    });
+    let popVals = { open: false };
+    if (pop) {
+      const g = GM[pop.col], p = this.P[g.part];
+      const up = this.upper(kind, pop.col), top = up && up.sub;
+      const ordered = g.subs.slice().sort((a, b) => (b.id === top) - (a.id === top));
+      const days = pop.days || [];
+      popVals = {
+        open: true, w: '300px', left: pop.left + 'px', top: pop.top + 'px', tf: pop.flip ? 'translateY(-100%)' : 'none',
+        goal: g.name, dot: p.dot, ink: p.ink, when: pop.row === -1 ? '이번 주' : rows[pop.row].label + ' ' + rows[pop.row].sub,
+        hint: '세부목표를 고르고 실천을 적어요',
+        items: ordered.map(x => {
+          const hl = !!top && x.id === top, on = pop.sub === x.id;
+          return { name: x.name, hl, badge: '이번 주 계획', mark: on ? '✓ ' : '', bg: on || hl ? p.bg : 'transparent', ring: on ? 'inset 0 0 0 2px ' + p.dot : 'none',
+            pick: () => this.setState(st => ({ pop: { ...st.pop, sub: x.id } })) };
+        }),
+        empty: g.subs.length === 0, emptyText: '이 목표에 세부목표가 없어요.',
+        toBoard: () => this.setState({ screen: 'dream', edit: pop.col, pop: null }),
+        isAct: true, actName: pop.name,
+        setActName: e => { const v = e.target.value; this.setState(st => ({ pop: { ...st.pop, name: v } })); },
+        actKey: e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) this.addAct(kind); },
+        kinds: [['단발', false], ['반복', true]].map(([k, v]) => ({ k, cls: pill(pop.repeat === v), pick: () => this.setState(st => ({ pop: { ...st.pop, repeat: v } })) })),
+        kindHint: pop.repeat ? '고른 요일마다 할 일로 나타나요.' : '그 기간 안에 한 번 하면 사라져요.',
+        dayChips: DAYS.map((k, i) => {
+          const on = days.includes(i);
+          return { k, bg: on ? p.ink : 'var(--color-neutral-200)', fg: on ? 'var(--color-neutral-100)' : 'var(--color-text)',
+            pick: () => this.setState(st => { const ds = st.pop.days || []; return { pop: { ...st.pop, days: ds.includes(i) ? ds.filter(x => x !== i) : ds.concat(i) } }; }) };
+        }),
+        dayHint: days.length === 0 ? '요일을 하나 이상 골라 주세요.' : days.length === 1 ? DAYS[days[0]] + '요일 칸에 들어가요.' : "'이번 주' 줄에 들어가요 · " + this.fmtDays(days),
+        cantSubmit: !(pop.sub && pop.name.trim() && days.length), submit: () => this.addAct(kind),
+      };
+    }
+    this._pop = popVals;
+    return {
+      kicker: '주간 계획', title: '10월 ' + (s.week + 1) + '주차', sub: '이번 주에 실제로 할 실천을 적어요. 여기 적은 실천이 모바일 하루 플래너의 할 일이 돼요.',
+      foot: "하루짜리 실천은 요일 칸에, 여러 날에 걸친 실천은 '이번 주' 줄에 모여요. 반복(↻) 실천은 고른 요일마다 할 일로 나타나고, 단발 실천은 그 기간 안에 한 번 하면 사라져요.",
+      isWeek: true, corner: '요일', hasRef, ...this.refPack('week', hasRef, refs), refLabel: '월간 · ' + (s.week + 1) + '주차', headers, rowLabels, empties, blocks, cells,
+      gridCols: '96px ' + colIds.map(id => id === 'note' ? 'minmax(124px, 1fr)' : 'minmax(168px, 1fr)').join(' '),
+      minW: (96 + colIds.reduce((a, id) => a + (id === 'note' ? 124 : 168) + 5, 0)) + 'px',
+      rowH: dense ? '44px' : '56px',
+    };
+  }
+
+  buildTable(kind) {
+    if (kind === 'week') return this.buildWeek();
+    const s = this.state, GM = this.GM;
+    const rows = this.rowsOf(kind), R = rows.length, isW = kind === 'week';
+    const pill = on => on ? 'btn btn-primary' : 'btn btn-secondary';
+    const colIds = (kind === 'year' ? [] : ['note']).concat(this.visibleCols());
+    const blocks = this.blocksOf(kind).filter(b => colIds.includes(b.col));
+    const hasRef = kind !== 'year' && (this.props.showRef ?? true);
+    const off = hasRef ? 3 : 2;
+    const dense = (this.props.density ?? 'comfortable') === 'compact';
+    const lay = {}, start = {}, K = {}, occ = {}, gridCols = [];
+    let next = 2, minW = 96;
+    colIds.forEach(id => {
+      const grid = [];
+      const free = (l, b) => { for (let r = b.row; r < b.row + b.span; r++) if (grid[l] && grid[l][r]) return false; return true; };
+      const mark = (l, b) => { grid[l] = grid[l] || []; for (let r = b.row; r < b.row + b.span; r++) grid[l][r] = 1; };
+      const items = blocks.filter(b => b.col === id).sort((a, b) => a.row - b.row || b.span - a.span);
+      items.forEach(b => { let l = 0; while (!free(l, b)) l++; mark(l, b); lay[b.id] = { lane: l, cs: 1 }; });
+      const k = Math.max(1, grid.length);
+      items.forEach(b => { const L = lay[b.id]; while (L.lane + L.cs < k && free(L.lane + L.cs, b)) { mark(L.lane + L.cs, b); L.cs++; } });
+      start[id] = next; K[id] = k; occ[id] = grid; next += k;
+      const w = isW && id !== 'note' ? 210 : 124;
+      for (let i = 0; i < k; i++) gridCols.push(k === 1 ? 'minmax(' + w + 'px, 1fr)' : 'minmax(' + Math.round(w / k) + 'px, ' + (1 / k).toFixed(4) + 'fr)');
+      minW += w + 5 * k;
+    });
+    const cs = id => start[id] + ' / span ' + K[id];
+    const todayRow = isW ? (s.week === 0 ? 3 : -1) : 0;
+    const headers = colIds.map(id => {
+      const col = cs(id);
+      if (id === 'note') return { col, name: '참고사항', part: '모바일로 가지 않는 메모', dot: NOTE.dot, movable: false };
+      const g = GM[id], p = this.P[g.part];
+      return { col, name: g.name, part: p.name, dot: p.dot, movable: true, left: () => this.moveCol(id, -1), right: () => this.moveCol(id, 1), hide: () => this.hideCol(id) };
+    });
+    const rowLabels = rows.map((r, i) => ({
+      row: i + off, label: r.label, sub: i === todayRow ? r.sub + ' · 오늘' : r.sub,
+      bg: i === todayRow ? 'var(--color-accent)' : 'var(--color-neutral-100)', fg: i === todayRow ? 'var(--color-neutral-100)' : 'var(--color-text)',
+    }));
+    const pop = s.pop && s.pop.kind === kind && (!isW || s.pop.week === s.week) ? s.pop : null;
+    const empties = [];
+    for (let r = 0; r < R; r++) colIds.forEach(id => {
+      const g = occ[id], k = K[id], has = l => g[l] && g[l][r];
+      const dragOk = s.drag && s.drag.kind === kind && s.drag.col === id;
+      for (let l = 0; l < k;) {
+        if (has(l)) { l++; continue; }
+        let e = l; while (e < k && !has(e)) e++;
+        const isPop = pop && !pop.blockId && pop.col === id && pop.row === r;
+        empties.push({
+          row: r + off, col: (start[id] + l) + ' / span ' + (e - l), border: isPop ? 'var(--color-accent)' : dragOk ? 'var(--color-accent-400)' : 'transparent',
+          add: ev => id === 'note' ? this.addNote(kind, r) : this.openPop(kind, id, r, ev.currentTarget),
+          over: ev => { if (dragOk) ev.preventDefault(); },
+          drop: ev => { ev.preventDefault(); this.dropBlock(kind, id, r); },
+        });
+        l = e;
+      }
+    });
+    let refs = [], refLabel = '';
+    if (hasRef) {
+      refLabel = kind === 'month' ? '연간 · 10월' : '월간 · ' + (s.week + 1) + '주차';
+      refs = colIds.map(id => {
+        const hit = this.upper(kind, id), m = this.meta(id);
+        const sub = hit && hit.sub ? this.subOf(id, hit.sub) : null;
+        return { col: cs(id), hasChip: !!sub, chip: sub ? sub.name : '', chipBg: m.bg, text: hit ? (hit.memo || '') : '—', ink: hit ? m.ink : 'var(--color-neutral-500)', border: hit ? m.dot : 'var(--color-neutral-300)' };
+      });
+    }
+    const bl = blocks.map(b => {
+      const L = lay[b.id], m = this.meta(b.col), sel = s.sel === b.id, isNote = b.col === 'note', isActs = isW && !isNote;
+      const sub = isNote || isActs ? null : this.subOf(b.col, b.sub);
+      const acts = isActs ? (b.acts || []) : [], n = acts.length, ex = !!s.expanded[b.id];
+      const shown = sel || ex || n <= 3 ? acts : acts.slice(0, 3);
+      const freeExt = isActs;
+      return {
+        gridRow: (b.row + off) + ' / span ' + b.span, col: (start[b.col] + L.lane) + ' / span ' + L.cs,
+        bg: m.bg, ink: m.ink, dot: m.dot, memo: b.memo, selected: sel, isNew: s.newId === b.id,
+        isNote, isActs, subName: sub ? sub.name : '삭제된 세부목표', ph: kind === 'month' ? '코멘트' : '메모',
+        justify: isActs ? 'flex-start' : 'center',
+        showEdit: !isNote && !isActs && (!!b.memo || sel), nameOnly: !isNote && !isActs && !b.memo && !sel,
+        acts: shown.map(a => {
+          const sb = this.subOf(b.col, a.sub);
+          return { subName: sb ? sb.name : '삭제된 세부목표', name: a.name, repeat: a.repeat, chipBg: m.bg, ink: m.ink, showX: sel,
+            remove: e => { e.stopPropagation(); this.setBlocks(kind, arr => n <= 1 ? arr.filter(x => x.id !== b.id) : arr.map(x => x.id === b.id ? { ...x, acts: x.acts.filter(y => y.id !== a.id) } : x)); if (n <= 1) this.setState({ sel: null }); } };
+        }),
+        showMore: n > 3 && !sel && !ex, moreLabel: '+' + (n - 3) + '개 더', showFold: n > 3 && !sel && ex,
+        expand: e => { e.stopPropagation(); this.setState(st => ({ expanded: { ...st.expanded, [b.id]: true } })); },
+        fold: e => { e.stopPropagation(); this.setState(st => { const x = { ...st.expanded }; delete x[b.id]; return { expanded: x }; }); },
+        addAct: e => { e.stopPropagation(); this.openPop(kind, b.col, b.row, e.currentTarget, b.id); },
+        outline: sel ? '2px solid var(--color-accent)' : '0 solid transparent', shadow: sel ? 'var(--shadow-md)' : 'none', z: sel ? 3 : 1,
+        select: () => { if (s.sel !== b.id) this.setState({ sel: b.id, menu: false, pop: null }); },
+        change: e => { const v = e.target.value; this.setBlocks(kind, a => a.map(x => x.id === b.id ? { ...x, memo: v } : x)); },
+        dragStart: e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', b.id); this.setState({ drag: { kind, id: b.id, col: b.col } }); },
+        extend: () => { const nr = b.row + b.span; if (nr < R && (freeExt || !this.occupied(kind, b.col, nr, b.id))) this.setBlocks(kind, a => a.map(x => x.id === b.id ? { ...x, span: x.span + 1 } : x)); },
+        shrink: () => { if (b.span > 1) this.setBlocks(kind, a => a.map(x => x.id === b.id ? { ...x, span: x.span - 1 } : x)); },
+        remove: () => { this.setBlocks(kind, a => a.filter(x => x.id !== b.id)); this.setState({ sel: null }); },
+      };
+    });
+    let popVals = { open: false };
+    if (pop) {
+      const g = GM[pop.col], p = this.P[g.part];
+      const up = this.upper(kind, pop.col), top = up && up.sub;
+      const ordered = g.subs.slice().sort((a, b) => (b.id === top) - (a.id === top));
+      const pb = pop.blockId ? this.blocksOf(kind).find(x => x.id === pop.blockId) : null;
+      const r0 = pb ? pb.row : pop.row, r1 = pb ? pb.row + pb.span - 1 : pop.row;
+      const w = isW ? 300 : 260;
+      popVals = {
+        open: true, w: w + 'px', left: pop.left + 'px', top: pop.top + 'px', tf: pop.flip ? 'translateY(-100%)' : 'none',
+        goal: g.name, dot: p.dot, ink: p.ink,
+        when: r0 === r1 ? rows[r0].label + (isW ? ' ' + rows[r0].sub : '') : rows[r0].label + '–' + rows[r1].label,
+        hint: isW ? (pb ? '이 칸에 실천을 하나 더 넣어요' : '세부목표를 고르고 실천을 적어요') : kind === 'month' ? '세부목표를 골라 넣고 코멘트를 적어요' : '세부목표를 골라 넣고 메모를 적어요',
+        items: ordered.map(x => {
+          const hl = !!top && x.id === top, on = isW && pop.sub === x.id;
+          return { name: x.name, hl, badge: kind === 'month' ? '이번 달 계획' : '이번 주 계획', mark: on ? '✓ ' : '',
+            bg: on || hl ? p.bg : 'transparent', ring: on ? 'inset 0 0 0 2px ' + p.dot : 'none',
+            pick: () => isW ? this.setState(st => ({ pop: { ...st.pop, sub: x.id } })) : this.placeSub(kind, pop.col, pop.row, x.id) };
+        }),
+        empty: g.subs.length === 0, emptyText: '이 목표에 세부목표가 없어요.',
+        toBoard: () => this.setState({ screen: 'dream', edit: pop.col, pop: null }),
+        isAct: isW, actName: pop.name,
+        setActName: e => { const v = e.target.value; this.setState(st => ({ pop: { ...st.pop, name: v } })); },
+        actKey: e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) this.addAct(kind); },
+        kinds: [['단발', false], ['반복', true]].map(([k, v]) => ({ k, cls: pill(pop.repeat === v), pick: () => this.setState(st => ({ pop: { ...st.pop, repeat: v } })) })),
+        kindHint: pop.repeat ? '이 칸의 기간 동안 매일 할 일로 나타나요.' : '한 번 완료하면 사라져요.',
+        cantSubmit: !(pop.sub && pop.name.trim()), submit: () => this.addAct(kind),
+      };
+    }
+    this._pop = popVals;
+    const titles = {
+      year: ['연간 계획', '2026.10 – 2027.09', '목표마다 어느 달에 어떤 세부목표를 할지 크게 배치해요. 여기서 정한 배치는 처음 계획으로 남아요.'],
+      month: ['월간 계획', '2026년 10월', '연간 계획의 10월 칸을 참고해, 이번 달 사정에 맞게 세부목표를 주차별로 다시 나눠요. 바꾼 이유는 코멘트로 남겨요.'],
+      week: ['주간 계획', '10월 ' + (s.week + 1) + '주차', '이번 주에 실제로 할 실천을 적어요. 여기 적은 실천이 모바일 하루 플래너의 할 일이 돼요.'],
+    }[kind];
+    const foot = {
+      year: '빈 칸을 누르면 그 목표의 세부목표를 골라 넣고 메모를 적어요. 여러 번 할 일은 여러 칸에 적거나, 칸을 아래로 병합하세요. 블록을 선택한 뒤 ↓로 병합하고, ⠿를 끌어 같은 열의 다른 기간으로 옮길 수 있어요.',
+      month: '빈 칸을 누르면 그 목표의 세부목표를 골라 넣고 코멘트를 적어요. 연간 계획에서 이번 달에 배치한 세부목표가 맨 위에 보여요. 여기서 바꾼 내용은 연간 계획에 반영되지 않아요.',
+      week: '반복 실천은 그 기간 동안 매일 할 일로 나타나요. 단발 실천은 한 번 완료하면 사라지고, 하루짜리 칸의 단발 실천은 못 하면 다음 날로 넘어가요.',
+    }[kind];
+    return {
+      kicker: titles[0], title: titles[1], sub: titles[2], foot, isWeek: isW, cells: [],
+      corner: isW ? '요일' : '기간', hasRef, ...this.refPack(kind, hasRef, refs), refLabel, headers, rowLabels, empties, blocks: bl,
+      gridCols: '96px ' + gridCols.join(' '), minW: minW + 'px',
+      rowH: isW ? (dense ? '50px' : '66px') : (dense ? '44px' : '56px'),
+    };
+  }
+
+  addNote(kind, row) {
+    const id = 'n' + Date.now();
+    this.setBlocks(kind, a => a.concat({ id, col: 'note', lane: 'main', row, span: 1, sub: null, memo: '' }));
+    this.setState({ sel: id, newId: id, menu: false, pop: null });
+  }
+  placeSub(kind, col, row, sub) {
+    const id = 'n' + Date.now();
+    this.setBlocks(kind, a => a.concat({ id, col, lane: 'main', row, span: 1, sub, memo: '' }));
+    this.setState({ sel: id, newId: id, pop: null });
+  }
+  addAct(kind) {
+    const pop = this.state.pop;
+    if (!pop || !pop.sub || !pop.name.trim()) return;
+    if (kind === 'week') {
+      if (!pop.days || !pop.days.length) return;
+      this.setBlocks(kind, a => a.concat({ id: 'a' + Date.now(), col: pop.col, sub: pop.sub, name: pop.name.trim(), repeat: pop.repeat, days: pop.days.slice().sort((x, y) => x - y) }));
+      return this.setState({ pop: null, sel: null });
+    }
+    const act = { id: 'a' + Date.now(), sub: pop.sub, name: pop.name.trim(), repeat: pop.repeat };
+    const id = pop.blockId || 'n' + Date.now();
+    if (pop.blockId) this.setBlocks(kind, a => a.map(x => x.id === id ? { ...x, acts: (x.acts || []).concat(act) } : x));
+    else this.setBlocks(kind, a => a.concat({ id, col: pop.col, lane: 'main', row: pop.row, span: 1, acts: [act] }));
+    this.setState({ pop: null, sel: id });
+  }
+  dropBlock(kind, col, row) {
+    const d = this.state.drag;
+    this.setState({ drag: null });
+    if (!d || d.kind !== kind || d.col !== col) return;
+    const b = this.blocksOf(kind).find(x => x.id === d.id);
+    if (!b) return;
+    const max = this.rowsOf(kind).length, loose = kind === 'week' && col !== 'note';
+    let span = 1;
+    while (span < b.span && row + span < max && (loose || !this.occupied(kind, col, row + span, b.id))) span++;
+    this.setBlocks(kind, a => a.map(x => x.id === b.id ? { ...x, row, span } : x));
+  }
+  moveCol(id, dir) {
+    this.setState(s => {
+      const c = s.cols.slice(), i = c.indexOf(id), j = i + dir;
+      if (j < 0 || j >= c.length) return null;
+      [c[i], c[j]] = [c[j], c[i]];
+      return { cols: c };
+    });
+  }
+  hideCol(id) { this.setState(s => ({ cols: s.cols.filter(c => c !== id) })); }
+  showCol(id) { const g = this.GM[id]; if (!g || !g.subs.length) return; this.setState(s => ({ cols: s.cols.includes(id) ? s.cols : s.cols.concat(id), menu: false })); }
+  setGoal(id, patch) { this.setState(s => ({ goals: s.goals.map(g => g.id === id ? { ...g, ...patch } : g) })); }
+  setSubs(id, fn) { this.setState(s => ({ goals: s.goals.map(g => g.id === id ? { ...g, subs: fn(g.subs) } : g) })); }
+  deleteGoal(id) { this.setState(s => ({ goals: s.goals.filter(g => g.id !== id), cols: s.cols.filter(c => c !== id), edit: null })); }
+
+  setPart(k, patch) { this.setState(s => ({ parts: { ...s.parts, [k]: { ...s.parts[k], ...patch } } })); }
+  movePart(k, dir) {
+    this.setState(s => {
+      const o = s.partOrder.slice(), i = o.indexOf(k), j = i + dir;
+      if (j < 0 || j >= o.length) return null;
+      [o[i], o[j]] = [o[j], o[i]];
+      return { partOrder: o };
+    });
+  }
+  removePart(k) {
+    this.setState(s => {
+      const gone = s.goals.filter(g => g.part === k).map(g => g.id);
+      const parts = { ...s.parts }; delete parts[k];
+      return { parts, partOrder: s.partOrder.filter(x => x !== k), goals: s.goals.filter(g => g.part !== k), cols: s.cols.filter(c => !gone.includes(c)) };
+    });
+  }
+  addPart(name) {
+    this.setState(s => {
+      if (s.partOrder.length >= MAX_CATS) return null;
+      const used = s.partOrder.map(k => s.parts[k].color).concat(s.daily.color);
+      const color = Object.keys(PALETTE).find(c => !used.includes(c)) || 'orange';
+      const k = 'p' + Date.now();
+      return { parts: { ...s.parts, [k]: { name: name || '새 카테고리', aim: '', color } }, partOrder: s.partOrder.concat(k) };
+    });
+  }
+  addGoal(part, name) {
+    const id = 'g' + Date.now();
+    this.setState(s => ({ goals: s.goals.concat({ id, part, name, due: '', why: '', importance: '', planB: '', subs: [] }) }));
+  }
+  removeGoal(id) { this.setState(s => ({ goals: s.goals.filter(g => g.id !== id), cols: s.cols.filter(c => c !== id) })); }
+
+  renderVals() {
+    const s = this.state;
+    this.P = Object.fromEntries(s.partOrder.map(k => [k, { ...s.parts[k], ...PALETTE[s.parts[k].color], name: s.parts[k].name }]));
+    this.GM = Object.fromEntries(s.goals.map(g => [g.id, g]));
+    const P = this.P, GM = this.GM;
+    const go = k => e => { if (e && e.preventDefault) e.preventDefault(); this.setState({ screen: k, sel: null, menu: false, pop: null }); };
+    const isAuth = s.screen === 'login' || s.screen === 'signup';
+    const isTable = ['year', 'month', 'week'].includes(s.screen);
+    const pill = on => on ? 'btn btn-primary' : 'btn btn-secondary';
+
+    const navGroups = NAV.map(([label, items]) => ({
+      label, items: items.map(([k, l]) => ({ label: l, icon: ICON[k], go: go(k), bg: s.screen === k ? 'var(--color-accent)' : 'transparent', fg: s.screen === k ? 'var(--color-neutral-100)' : 'var(--color-text)' })),
+    }));
+
+    const stepIdx = s.screen === 'signup' ? s.signupStep - 1 : 4;
+    const steps = ['계정', '나에 대해', '카테고리', '꿈'].map((label, i) => ({
+      label, bar: i <= stepIdx ? 'var(--color-accent)' : 'var(--color-neutral-300)', fg: i <= stepIdx ? 'var(--color-accent-700)' : 'var(--color-neutral-600)',
+    }));
+
+    const placed = this.placedSubs();
+    const parts = s.partOrder.map((pk, i) => {
+      const p = P[pk];
+      return {
+        num: i + 1, name: p.name, aim: p.aim || '되고 싶은 모습을 적어보세요', bg: p.bg, ink: p.ink, dot: p.dot,
+        setAim: e => this.setPart(pk, { aim: e.target.value }),
+        addGoal: e => { const v = e.target.value.trim(); if (e.key === 'Enter' && v && !e.nativeEvent.isComposing) { this.addGoal(pk, v); e.target.value = ''; } },
+        goals: s.goals.filter(g => g.part === pk).sort((a, b) => !!a.closed - !!b.closed).map(g => {
+          const going = g.subs.some(x => placed.has(x.id)), cl = g.closed;
+          return {
+            op: cl ? 0.5 : 1,
+            name: g.name, subs: g.subs.map(x => ({ name: x.name })), hasSubs: g.subs.length > 0, noSubs: g.subs.length === 0,
+            dueLabel: g.due ? '기한 ' + fmtDue(g.due) : '기한 미정',
+            status: cl ? (cl.type === 'done' ? '완성' : '중도 마무리') : going ? '진행 중' : '시작 전', stBg: cl ? 'var(--color-text)' : going ? p.ink : 'var(--color-neutral-100)', stFg: cl || going ? 'var(--color-neutral-100)' : 'var(--color-neutral-700)',
+            outline: s.edit === g.id ? '3px solid ' + p.ink : '0 solid transparent',
+            open: () => this.setState(st => st.edit === g.id ? null : { edit: g.id, traitsOpen: false }),
+            remove: () => this.removeGoal(g.id),
+          };
+        }),
+      };
+    });
+    if (s.screen === 'goals') parts.forEach((p, i) => { p.aim = s.parts[s.partOrder[i]].aim; });
+
+    const catRows = s.partOrder.map((pk, i) => {
+      const p = P[pk];
+      return {
+        num: i + 1, name: s.parts[pk].name, bg: p.bg, dot: p.dot, count: s.goals.filter(g => g.part === pk).length,
+        rename: e => this.setPart(pk, { name: e.target.value }),
+        up: () => this.movePart(pk, -1), down: () => this.movePart(pk, 1), remove: () => this.removePart(pk),
+        swatches: Object.entries(PALETTE).map(([ck, c]) => { const used = s.daily.color === ck || s.partOrder.some(o => o !== pk && s.parts[o].color === ck); return { name: c.name + (used ? ' · 사용 중' : ''), dot: c.dot, used, cursor: used ? 'not-allowed' : 'pointer', op: used ? 0.25 : 1, ring: s.parts[pk].color === ck ? '0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-text)' : 'none', pick: () => { if (!used) this.setPart(pk, { color: ck }); } }; }),
+      };
+    });
+    const names = s.partOrder.map(k => s.parts[k].name);
+    const tdef = TYPES.find(t => t.k === s.user.type) || TYPES[4];
+    const suggest = tdef.cats.filter(c => !names.includes(c)).map(name => ({ name, add: () => this.addPart(name) }));
+
+    const full = s.partOrder.length >= MAX_CATS;
+    const keyByName = n => s.partOrder.find(k => s.parts[k].name === n);
+    const chip = name => {
+      const k = keyByName(name), on = !!k, c = on ? P[k] : null;
+      return { name, mark: on ? '✓ ' : '+ ', bg: on ? c.bg : 'var(--color-surface)', fg: on ? c.ink : 'var(--color-neutral-800)', ring: on ? 'inset 0 0 0 2px ' + c.dot : 'none',
+        toggle: () => on ? this.removePart(k) : this.addPart(name), op: !on && full ? 0.45 : 1 };
+    };
+    const pool = CHIP_POOL.concat(names.filter(n => !CHIP_POOL.includes(n)));
+    const chipsRec = tdef.cats.map(chip);
+    const chipsOther = pool.filter(n => !tdef.cats.includes(n)).map(chip);
+    const types = TYPES.map(t => ({
+      k: t.k, d: t.d, cls: pill(s.user.type === t.k),
+      bg: s.user.type === t.k ? 'var(--color-accent-100)' : 'var(--color-surface)',
+      ring: s.user.type === t.k ? 'inset 0 0 0 2px var(--color-accent)' : 'none',
+      pick: () => this.setState({ user: { ...s.user, type: t.k } }),
+    }));
+
+    const vis = this.visibleCols();
+    const tNoCols = isTable && vis.length === 0;
+    const addable = s.goals.some(g => !g.closed && g.subs.length > 0 && P[g.part]);
+    const bw = Object.values(s.blocks.week);
+    const ckRaw = [
+      ['목표 적기', s.goals.length > 0, 'goals'], ['세부목표 만들기', s.goals.some(g => g.subs.length > 0), 'dream'],
+      ['연간 표에 배치', s.blocks.year.some(b => b.sub), 'year'], ['월간 조정', s.blocks.month.some(b => b.sub), 'month'],
+      ['주간 실천 적기', bw.some(a => a.some(b => b.days)), 'week'], ['모바일에서 첫 기록', !this.isEmpty, null],
+    ];
+    const nextI = ckRaw.findIndex(x => !x[1]);
+    const ck = {
+      show: nextI >= 0, count: ckRaw.filter(x => x[1]).length + ' / ' + ckRaw.length,
+      steps: ckRaw.map(([label, done, scr], i) => ({ label, done, noGo: !scr, cursor: scr ? 'pointer' : 'default', fw: i === nextI ? 700 : 600, op: done || i === nextI ? 1 : 0.6,
+        ring: done ? 'var(--color-accent-2)' : i === nextI ? 'var(--color-accent)' : 'var(--color-neutral-400)', bg: done ? 'var(--color-accent-2)' : 'transparent', strike: done ? 'line-through' : 'none',
+        go: () => scr && this.setState({ screen: scr, sel: null, menu: false, pop: null }) })),
+    };
+    const hiddenGoals = s.goals.filter(g => !vis.includes(g.id) && !g.closed && P[g.part]).map(g => {
+      const ok = g.subs.length > 0;
+      return { name: g.name, part: ok ? P[g.part].name : '세부목표 없음', dot: P[g.part].dot, disabled: !ok, op: ok ? 1 : 0.45, cursor: ok ? 'pointer' : 'not-allowed', show: () => this.showCol(g.id) };
+    });
+
+    const eg = s.edit && GM[s.edit] && P[GM[s.edit].part] ? GM[s.edit] : null;
+    let ed = { open: false };
+    if (eg) {
+      const p = P[eg.part], going = eg.subs.some(x => placed.has(x.id));
+      ed = {
+        open: true, close: () => this.setState({ edit: null }),
+        name: eg.name, setName: e => this.setGoal(eg.id, { name: e.target.value }),
+        part: eg.part, partInk: p.ink, partDot: p.dot, partBg: p.bg, status: going ? '진행 중' : '시작 전',
+        partOpts: s.partOrder.map(k => ({ k, name: s.parts[k].name })),
+        setPart: e => this.setGoal(eg.id, { part: e.target.value }),
+        due: eg.due, dueMissing: !eg.due, setDue: e => this.setGoal(eg.id, { due: e.target.value }),
+        why: eg.why || '', setWhy: e => this.setGoal(eg.id, { why: e.target.value }),
+        planB: eg.planB || '', setPlanB: e => this.setGoal(eg.id, { planB: e.target.value }),
+        traitsOpen: s.traitsOpen, showSummary: !s.traitsOpen, toggleTraits: () => this.setState(st => ({ traitsOpen: !st.traitsOpen })),
+        traitsLabel: s.traitsOpen ? '목표의 특성 접기' : '목표의 특성 더 보기', chevTf: s.traitsOpen ? 'rotate(180deg)' : 'none',
+        traitSummary: [eg.why && '이유 있음', eg.importance && '중요도 ' + eg.importance, eg.planB && '대안 있음'].filter(Boolean).join(' · ') || '이유 · 중요도 · 대안 (선택)',
+        imps: IMPORTANCE.map(k => ({ k, cls: pill(eg.importance === k), pick: () => this.setGoal(eg.id, { importance: eg.importance === k ? '' : k }) })),
+        subCount: eg.subs.length, noSubs: eg.subs.length === 0,
+        subs: eg.subs.map((x, i) => {
+          const pl = placed.has(x.id);
+          return {
+            name: x.name, placed: pl,
+            rename: e => { const v = e.target.value; this.setSubs(eg.id, a => a.map(y => y.id === x.id ? { ...y, name: v } : y)); },
+            delTitle: pl ? '계획 표에 배치된 세부목표는 삭제할 수 없어요' : '삭제', delOp: pl ? 0.3 : 1, delCursor: pl ? 'not-allowed' : 'pointer',
+            remove: () => { if (!pl) this.setSubs(eg.id, a => a.filter(y => y.id !== x.id)); },
+            op: s.subDrag === i ? 0.4 : 1,
+            dragStart: e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', x.id); this.setState({ subDrag: i }); },
+            over: e => { if (this.state.subDrag !== null) e.preventDefault(); },
+            drop: e => {
+              e.preventDefault();
+              const from = this.state.subDrag;
+              this.setState({ subDrag: null });
+              if (from === null || from === i) return;
+              this.setSubs(eg.id, a => { const c = a.slice(); const [m] = c.splice(from, 1); c.splice(i, 0, m); return c; });
+            },
+          };
+        }),
+        addSub: e => { const v = e.target.value.trim(); if (e.key === 'Enter' && v && !e.nativeEvent.isComposing) { this.setSubs(eg.id, a => a.concat({ id: 's' + Date.now(), name: v })); e.target.value = ''; } },
+        canDelete: !going && !eg.closed, deleteGoal: () => this.deleteGoal(eg.id),
+        canClose: going && !eg.closed, isClosed: !!eg.closed,
+        closedText: eg.closed ? (eg.closed.type === 'done' ? '완성' : '중도 마무리') + '으로 마무리한 목표예요. 회고는 회고 모음에서 볼 수 있어요.' : '',
+        openWrap: () => this.setState({ wrap: { gid: eg.id, type: 'done', photo: null, did: '', miss: '', next: '' } }),
+      };
+    }
+
+    const tg = s.goals.filter(g => P[g.part] && !g.closed);
+    const wk = s.trackRange === 'week', fac = wk ? 0.25 : 1;
+    const tr = id => { const t = TRACK[id] || [0, 0, 0]; return [Math.round(t[0] * fac), Math.round(t[1] * fac), t[2]]; };
+    const max = Math.max(1, ...tg.map(g => Math.max(tr(g.id)[0], tr(g.id)[1])));
+    const vs = tg.map(g => {
+      const [pl, ac] = tr(g.id), d = ac - pl, p = P[g.part];
+      return { name: g.name, dot: p.dot, planned: pl, actual: ac, pw: (pl / max * 100) + '%', aw: (ac / max * 100) + '%', diff: (d >= 0 ? '+' : '−') + Math.abs(d) + 'h', tagCls: d >= 0 ? 'tag tag-accent-2' : 'tag tag-accent' };
+    });
+    const cmax = Math.max(1, ...tg.map(g => tr(g.id)[2]));
+    const cum = tg.slice().sort((a, b) => tr(b.id)[2] - tr(a.id)[2]).map(g => ({ name: g.name, dot: P[g.part].dot, total: tr(g.id)[2], w: (tr(g.id)[2] / cmax * 100) + '%' }));
+    const kw = Math.round(KW_PLAN * fac);
+    const planned = tg.reduce((a, g) => a + tr(g.id)[0], 0) + kw, actual = tg.reduce((a, g) => a + tr(g.id)[1], 0);
+    const prog = tg.map(g => { const pr = s.progress[g.id] || { v: 0, date: '' }; return { name: g.name, dot: P[g.part].dot, v: pr.v, date: pr.date ? pr.date + ' 수정' : '아직 조절하지 않았어요',
+      set: e => { const v = +e.target.value; this.setState(st => ({ progress: { ...st.progress, [g.id]: { v, date: '10.1' } } })); } }; });
+    const sRange = wk ? [21, 27] : [1, 30];
+    const lead = wk ? 0 : 1;
+    const sDays = [];
+    for (let i = 0; i < lead; i++) sDays.push({ n: '', blank: true, bg: 'transparent', fg: 'transparent', ring: 'none', cursor: 'default', title: '', pick: () => {} });
+    for (let n = sRange[0]; n <= sRange[1]; n++) {
+      const [sc] = SCORES[n - 1], on = s.scoreSel === n;
+      sDays.push({ n: wk ? '9.' + n : n, blank: false, title: n + '일 · ' + sc + '점', bg: SCORE_BG[sc - 1], fg: sc >= 4 ? 'var(--color-neutral-100)' : 'var(--color-accent-900)', cursor: 'pointer',
+        ring: on ? '0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-text)' : 'none', pick: () => this.setState({ scoreSel: n }) });
+    }
+    const inR = s.scoreSel >= sRange[0] && s.scoreSel <= sRange[1] ? s.scoreSel : sRange[1];
+    const sList = SCORES.slice(sRange[0] - 1, sRange[1]);
+    const avg = (sList.reduce((a, x) => a + x[0], 0) / sList.length).toFixed(1);
+    const score = {
+      avgLabel: (wk ? '이번 주' : '이번 달') + ' 평균 ' + avg + '점', legend: SCORE_BG, heads: ['월', '화', '수', '목', '금', '토', '일'], days: sDays,
+      selDate: '9월 ' + inR + '일 (' + ['일', '월', '화', '수', '목', '금', '토'][new Date(2026, 8, inR).getDay()] + ')', selScore: SCORES[inR - 1][0] + '점', selReason: SCORES[inR - 1][1],
+    };
+    const tk = {
+      kicker: '트래킹 · ' + (wk ? '9월 4주차' : '2026년 9월'), title: wk ? '이번 주, 계획한 만큼 썼을까' : '이번 달, 계획한 만큼 썼을까',
+      ranges: [['week', '주간'], ['month', '월간']].map(([k, l]) => ({ k: l, cls: pill(s.trackRange === k), pick: () => this.setState({ trackRange: k }) })),
+    };
+    const fmtD = d => d ? d.slice(2, 4) + '.' + d.slice(5, 7) + '.' + (d.slice(8, 10) || '01') : '';
+    const closedAll = s.goals.filter(g => g.closed && P[g.part]).sort((a, b) => (b.closed.date > a.closed.date ? 1 : -1));
+    const reviews = closedAll.filter(g => s.revFilter === 'all' || g.closed.type === s.revFilter).map(g => {
+      const c = g.closed, p = P[g.part], done = c.type === 'done';
+      return { name: g.name, part: p.name, dot: p.dot, ink: p.ink, type: done ? '완성' : '중도 마무리', badgeBg: done ? p.ink : 'var(--color-neutral-300)', badgeFg: done ? 'var(--color-neutral-100)' : 'var(--color-neutral-800)',
+        hasPhoto: !!c.photo, photoBg: c.photo ? 'center / cover no-repeat url("' + c.photo + '")' : 'none', period: fmtD(g.start || '2026-07-01') + ' – ' + fmtD(c.date), hours: c.hours, acts: c.acts,
+        qa: [['무엇을 해냈나요', c.did], ['아쉬웠던 점', c.miss], ['다음에 다르게 할 것', c.next]].filter(x => x[1]).map(([q, a]) => ({ q, a })) };
+    });
+    const rvFilters = [['all', '전체'], ['done', '완성'], ['stop', '중도 마무리']].map(([k, l]) => ({ k: l, cls: pill(s.revFilter === k), pick: () => this.setState({ revFilter: k }) }));
+    const dl = s.daily, dp = PALETTE[dl.color];
+    const daily = {
+      name: dl.name, bg: dp.bg, ink: dp.ink, dot: dp.dot,
+      rename: e => { const v = e.target.value; this.setState(st => ({ daily: { ...st.daily, name: v } })); },
+      swatches: Object.entries(PALETTE).map(([ck, c]) => { const used = s.partOrder.some(o => s.parts[o].color === ck); return { name: c.name + (used ? ' · 사용 중' : ''), dot: c.dot, used, cursor: used ? 'not-allowed' : 'pointer', op: used ? 0.25 : 1,
+        ring: dl.color === ck ? '0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-text)' : 'none', pick: () => { if (!used) this.setState(st => ({ daily: { ...st.daily, color: ck } })); } }; }),
+      keywords: dl.keywords.map(k => ({ name: k, remove: () => this.setState(st => ({ daily: { ...st.daily, keywords: st.daily.keywords.filter(x => x !== k) } })) })),
+      addKw: e => { const v = e.target.value.trim(); if (e.key === 'Enter' && v && !e.nativeEvent.isComposing) { if (!dl.keywords.includes(v)) this.setState(st => ({ daily: { ...st.daily, keywords: st.daily.keywords.concat(v) } })); e.target.value = ''; } },
+    };
+    let wrap = { open: false };
+    const wg = s.wrap && GM[s.wrap.gid];
+    if (wg && P[wg.part]) {
+      const w = s.wrap, p = P[wg.part], setW = patch => this.setState(st => ({ wrap: { ...st.wrap, ...patch } }));
+      wrap = {
+        open: true, name: wg.name, part: p.name, dot: p.dot, ink: p.ink, bg: p.bg,
+        stats: [{ k: '기간', v: fmtD(wg.start || '2026-07-01') + ' – 26.10.01' }, { k: '누적 시간', v: (TRACK[wg.id] || [0, 0, 0])[2] + '시간' }, { k: '완료한 실천', v: (DONE_ACTS[wg.id] || 0) + '개' }],
+        types: [['done', '완성'], ['stop', '중도 마무리']].map(([k, l]) => ({ k: l, cls: pill(w.type === k), pick: () => setW({ type: k }) })),
+        isDone: w.type === 'done', hasPhoto: !!w.photo, noPhoto: !w.photo, photoBg: w.photo ? 'center / cover no-repeat url("' + w.photo + '")' : 'none',
+        setPhoto: e => { const f = e.target.files && e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => setW({ photo: r.result }); r.readAsDataURL(f); },
+        qs: [['did', '무엇을 해냈나요'], ['miss', '아쉬웠던 점'], ['next', '다음에 다르게 할 것']].map(([k, q]) => ({ q, v: w[k], set: e => setW({ [k]: e.target.value }) })),
+        close: () => this.setState({ wrap: null }),
+        confirm: () => {
+          const closed = { type: w.type, date: '2026-10-01', photo: w.type === 'done' ? w.photo : null, hours: (TRACK[wg.id] || [0, 0, 0])[2], acts: DONE_ACTS[wg.id] || 0, did: w.did, miss: w.miss, next: w.next };
+          this.setState(st => ({ goals: st.goals.map(g => g.id === wg.id ? { ...g, closed, start: g.start || '2026-07-01' } : g), cols: st.cols.filter(c => c !== wg.id), wrap: null }));
+        },
+      };
+    }
+
+    return {
+      isAuth, isApp: !isAuth, isLogin: s.screen === 'login', isSignup: s.screen === 'signup',
+      isSignup1: s.screen === 'signup' && s.signupStep === 1, isSignup2: s.screen === 'signup' && s.signupStep === 2,
+      steps, types, user: s.user, initials: s.user.name.slice(-2),
+      setName: e => this.setState({ user: { ...s.user, name: e.target.value } }),
+      setEmail: e => this.setState({ user: { ...s.user, email: e.target.value } }),
+      doLogin: () => this.setState({ screen: 'dream', onboarding: false }),
+      toSignup: e => { e && e.preventDefault && e.preventDefault(); this.setState({ screen: 'signup', signupStep: 1 }); },
+      toSignup2: () => this.setState({ signupStep: 2 }),
+      toSignup3: () => this.setState({ signupStep: 3 }),
+      toSignup4: () => this.setState({ signupStep: 4 }),
+      isSignup3: s.screen === 'signup' && s.signupStep === 3, isSignup4: s.screen === 'signup' && s.signupStep === 4,
+      chipsRec, chipsOther, catCount: s.partOrder.length, catMax: MAX_CATS, catsFull: full, catsOpen: !full,
+      addCustomCat: e => { const v = e.target.value.trim(); if (e.key === 'Enter' && v && !e.nativeEvent.isComposing) { if (!names.includes(v)) this.addPart(v); e.target.value = ''; } },
+      isDreamWrite: s.screen === 'dreamWrite',
+      dreamWhy: s.dreamWhy, setDreamWhy: e => this.setState({ dreamWhy: e.target.value }),
+      dreamDay: s.dreamDay, setDreamDay: e => this.setState({ dreamDay: e.target.value }),
+      toLogin: e => { e && e.preventDefault && e.preventDefault(); this.setState({ screen: 'login' }); },
+      finishSignup: () => this.setState({ screen: 'goals' }),
+      skipDream: () => this.setState({ dream: '', screen: 'goals' }),
+      ck, noGoals: s.goals.length === 0, hasGoals: s.goals.length > 0,
+      focusGoal: () => { const el = document.querySelector('[data-goal-input]'); if (el) el.focus(); },
+      tNoCols, tShowGrid: !(s.screen === 'year' && tNoCols), tNoColsLabel: addable ? '+ 목표 열 추가' : '꿈 보드로', tNoColsGo: () => addable ? this.setState({ menu: true }) : this.setState({ screen: 'dream' }),
+      trackEmpty: this.isEmpty, trackHas: !this.isEmpty,
+      hasDream: !!s.dream.trim(), noDream: !s.dream.trim(), daily, wrap, reviews, noReviews: reviews.length === 0, rvFilters, prog, score, tk,
+      isReviews: s.screen === 'reviews',
+      tableRef: this.tableRef, tableFade: this._fadeR ? 1 : 0,
+      tableScroll: () => { if (this.state.pop) this.setState({ pop: null }); this.measureTable(); },
+      navGroups, nav: { dream: go('dream'), goals: go('goals'), cats: go('cats'), dreamWrite: go('dreamWrite'), week: go('week') },
+      toAccount: go('account'), accountBg: s.screen === 'account' ? 'var(--color-neutral-100)' : 'transparent',
+      isDream: s.screen === 'dream', isCats: s.screen === 'cats', isGoals: s.screen === 'goals', isTable, isTrack: s.screen === 'track', isAccount: s.screen === 'account',
+      dream: s.dream, setDream: e => this.setState({ dream: e.target.value }),
+      parts, catRows, suggest, addCat: () => this.addPart(),
+      hiddenGoals, noHidden: hiddenGoals.length === 0, hasEmptyHidden: hiddenGoals.some(h => h.disabled),
+      ed, boardCols: eg ? 'minmax(0,1fr) 400px' : 'minmax(0,1fr)',
+      dreamTitle: s.dream || '궁극적 꿈을 한 문장으로 적어보세요',
+      subDragEnd: () => this.setState({ subDrag: null }),
+      closePop: () => { if (this.state.pop) this.setState({ pop: null }); },
+      menuOpen: s.menu, toggleMenu: () => this.setState({ menu: !s.menu }),
+      t: isTable ? this.buildTable(s.screen) : {},
+      pop: isTable ? this._pop : { open: false },
+      weekTabs: MONTH_ROWS.map((r, i) => ({ label: r.label, range: r.sub, cls: pill(i === s.week), go: () => this.setState({ week: i, sel: null, pop: null }) })),
+      stop: e => e.stopPropagation(),
+      dragEnd: () => this.setState({ drag: null }),
+      vs, cum, sum: { planned, actual, kw, rate: planned ? Math.round(actual / planned * 100) : 0 },
+      dayStarts: ['04시', '05시', '06시'].map(k => ({ k, cls: pill(s.settings.dayStart === k), pick: () => this.setState({ settings: { ...s.settings, dayStart: k } }) })),
+      weekStarts: ['월요일', '일요일'].map(k => ({ k, cls: pill(s.settings.weekStart === k), pick: () => this.setState({ settings: { ...s.settings, weekStart: k } }) })),
+      notify: { bg: s.settings.notify ? 'var(--color-accent-2)' : 'var(--color-neutral-400)', justify: s.settings.notify ? 'flex-end' : 'flex-start' },
+      notifyOn: s.settings.notify, notifyTime: s.settings.notifyTime,
+      notifyLabel: (() => { const [h, m] = s.settings.notifyTime.split(':').map(Number); return (h < 12 ? '오전 ' : '오후 ') + ((h % 12) || 12) + '시' + (m ? ' ' + m + '분' : ''); })(),
+      setNotifyTime: e => this.setState({ settings: { ...s.settings, notifyTime: e.target.value || '22:00' } }),
+      toggleNotify: () => this.setState({ settings: { ...s.settings, notify: !s.settings.notify } }),
+      logout: () => this.setState({ screen: 'login' }),
+    };
+  }
+}
+</script>
+</body>
+</html>
