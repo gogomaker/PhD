@@ -320,3 +320,12 @@ export function useSelection() {
   }, [sel]);
   return [sel, setSel] as const;
 }
+
+// R-P12: 지난 기간은 잠김 안내
+export function LockNote({ all }: { all: boolean }) {
+  return (
+    <div data-testid="lock-note" style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 999, background: 'var(--color-neutral-200)', color: 'var(--color-neutral-800)', fontSize: 13, fontWeight: 600 }}>
+      {all ? '지난 계획은 볼 수만 있어요' : '지난 기간(빗금 칸)은 수정할 수 없어요'}
+    </div>
+  );
+}

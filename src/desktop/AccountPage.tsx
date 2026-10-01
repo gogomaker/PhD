@@ -96,13 +96,6 @@ export default function AccountPage() {
             ))}
           </div>
         </Row>
-        <Row title="한 주의 시작" sub="주간 계획 표의 첫 요일이에요.">
-          <div style={{ display: 'flex', gap: 6 }}>
-            {(['mon', 'sun'] as const).map(w => (
-              <button key={w} className={pill(profile.week_start === w)} aria-pressed={profile.week_start === w} onClick={() => save({ week_start: w })} style={PILL_STYLE}>{w === 'mon' ? '월요일' : '일요일'}</button>
-            ))}
-          </div>
-        </Row>
         <Row title="회고 알림" sub="매일 정한 시간에 오늘 시간을 칠했는지 알려줘요.">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {profile.review_notify_enabled && (

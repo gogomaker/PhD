@@ -11,10 +11,12 @@ const AREA: CSSProperties = { width: '100%', background: 'transparent', border: 
  * R-P1: 한 열은 항상 한 줄 — 칸끼리 겹치지 않고, 늘리기·옮기기도 빈 자리까지만.
  * R-P2: 칸을 아래로 늘려 기간을 표현한다.
  */
-export function MergeColumn({ col, firstRow, rowCount, blocks, tone, placeholder, noteOnly, sel, setSel, focusId, popRow, label, onEmpty, onRange, onText, onDelete }: {
+export function MergeColumn({ col, firstRow, rowCount, lockedBefore = 0, blocks, tone, placeholder, noteOnly, sel, setSel, focusId, popRow, label, onEmpty, onRange, onText, onDelete }: {
   col: number;
   firstRow: number;
   rowCount: number;
+  /** 이 행보다 앞은 지난 기간 → 잠금 (R-P12) */
+  lockedBefore?: number;
   blocks: MBlock[];
   tone: Tone;
   placeholder: string;
@@ -44,6 +46,10 @@ export function MergeColumn({ col, firstRow, rowCount, blocks, tone, placeholder
   const empties = [];
   for (let r = 0; r < rowCount; r++) {
     if (covered(r)) continue;
+    if (r < lockedBefore) {
+      empties.push(<div key={'e' + r} data-testid="plan-locked" className="plan-locked" title="지난 기간은 수정할 수 없어요" style={{ gridRow: firstRow + r, gridColumn: col }} />);
+      continue;
+    }
     empties.push(
       <div
         key={'e' + r}
@@ -65,22 +71,26 @@ export function MergeColumn({ col, firstRow, rowCount, blocks, tone, placeholder
     <>
       {empties}
       {blocks.map(b => {
-        const selected = sel === b.id;
+        const locked = b.start < lockedBefore;
+        const selected = !locked && sel === b.id;
         const canExtend = b.end + 1 < rowCount && !covered(b.end + 1, b.id);
         return (
           <div
             key={b.id}
             data-sel={b.id}
             data-testid="plan-block"
-            onClick={() => !selected && setSel(b.id)}
-            style={{ gridRow: `${firstRow + b.start} / span ${b.end - b.start + 1}`, gridColumn: col, minWidth: 0, position: 'relative', background: tone.bg, color: tone.ink, borderRadius: 16, padding: '8px 10px', display: 'flex', flexDirection: 'column', justifyContent: 'center', outline: selected ? '2px solid var(--color-accent)' : '0 solid transparent', outlineOffset: 2, boxShadow: selected ? 'var(--shadow-md)' : 'none', zIndex: selected ? 3 : 1, cursor: selected ? 'default' : 'pointer' }}
+            data-locked={locked || undefined}
+            title={locked ? '지난 기간은 수정할 수 없어요' : undefined}
+            onClick={() => !selected && !locked && setSel(b.id)}
+            style={{ gridRow: `${firstRow + b.start} / span ${b.end - b.start + 1}`, gridColumn: col, minWidth: 0, position: 'relative', background: tone.bg, color: tone.ink, borderRadius: 16, padding: '8px 10px', display: 'flex', flexDirection: 'column', justifyContent: 'center', outline: selected ? '2px solid var(--color-accent)' : '0 solid transparent', outlineOffset: 2, boxShadow: selected ? 'var(--shadow-md)' : 'none', zIndex: selected ? 3 : 1, cursor: selected || locked ? 'default' : 'pointer', opacity: locked ? 0.8 : 1 }}
           >
             {!noteOnly && (
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: b.text || selected ? 4 : 0 }}>
                 {b.text || selected ? <Chip tone={tone} white>{b.chip}</Chip> : <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35, color: 'var(--color-text)', textAlign: 'center' }}>{b.chip}</span>}
               </div>
             )}
-            {(noteOnly || b.text || selected) && (
+            {locked && b.text && <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: 'var(--color-text)', textAlign: 'center', whiteSpace: 'pre-wrap' }}>{b.text}</span>}
+            {!locked && (noteOnly || b.text || selected) && (
               <BlurInput multiline rows={1} required={false} maxLength={200} label={placeholder} placeholder={placeholder} value={b.text} onSave={v => onText(b, v)} style={AREA} autoFocus={focusId === b.id} />
             )}
             {selected && (

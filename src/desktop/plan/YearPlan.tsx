@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAccount, useToday } from '../../account/AccountProvider';
 import { MergeColumn, type MBlock } from './MergeColumn';
-import { ColumnHeader, NoColumns, PlanHeader, PopHead, Popover, RowLabel, SubgoalPicker, TableFrame, useSelection, useTableGoals } from './shared';
+import { ColumnHeader, LockNote, NoColumns, PlanHeader, PopHead, Popover, RowLabel, SubgoalPicker, TableFrame, useSelection, useTableGoals } from './shared';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const monthKey = (y: number, m0: number) => `${y}-${pad(m0 + 1)}-01`;
@@ -34,6 +34,8 @@ export default function YearPlan() {
 
   const popGoal = pop && cols.find(g => g.id === pop.goalId);
   const curMonth = Number(today.slice(5, 7)) - 1;
+  // R-P12: 지난달은 잠금
+  const lockedBefore = year < thisYear ? 12 : year === thisYear ? curMonth : 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -48,6 +50,7 @@ export default function YearPlan() {
         onToday={year !== thisYear ? () => go(thisYear) : undefined}
         todayLabel="올해"
       />
+      {cols.length > 0 && lockedBefore > 0 && <LockNote all={lockedBefore === 12} />}
       {cols.length === 0 ? (
         <NoColumns />
       ) : (
@@ -61,6 +64,7 @@ export default function YearPlan() {
               col={i + 2}
               firstRow={2}
               rowCount={12}
+              lockedBefore={lockedBefore}
               label={g.name}
               blocks={blocksOf(g.id)}
               tone={toneOf(g)}

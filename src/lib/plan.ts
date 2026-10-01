@@ -3,6 +3,9 @@ import { addDays, toDayKey, type DayKey } from './day';
 
 export type WeekStart = 'mon' | 'sun';
 
+/** 한 주는 일요일에 시작한다 (2026-10-01 기획 결정, 고정) */
+export const WEEK_START: WeekStart = 'sun';
+
 /** 요일 이름. ISO 요일 1=월 … 7=일 */
 export const DOW_LABEL = ['', '월', '화', '수', '목', '금', '토', '일'];
 
@@ -18,7 +21,7 @@ export function isoDow(key: DayKey) {
 }
 
 /** 그 날이 속한 주의 첫날 */
-export function weekStartOf(key: DayKey, ws: WeekStart): DayKey {
+export function weekStartOf(key: DayKey, ws: WeekStart = WEEK_START): DayKey {
   const back = ws === 'mon' ? isoDow(key) - 1 : isoDow(key) % 7;
   return addDays(key, -back);
 }
@@ -50,7 +53,7 @@ export function monthOfWeek(start: DayKey): { ym: YearMonth; index: number } {
 }
 
 /** 그 달에 속한 주들의 첫날 */
-export function monthWeeks(ym: YearMonth, ws: WeekStart): DayKey[] {
+export function monthWeeks(ym: YearMonth, ws: WeekStart = WEEK_START): DayKey[] {
   let start = weekStartOf(ym + '-01', ws);
   if (monthOfWeek(start).ym !== ym) start = addDays(start, 7);
   const out: DayKey[] = [];
@@ -83,4 +86,18 @@ export function fmtDays(positions: number[], labels: string[]): string {
 export function md(key: DayKey) {
   const { m, d } = parts(key);
   return `${m}.${d}`;
+}
+
+// ───────── 지난 기간 잠금 (R-P12, DB의 plan_locked와 같은 규칙) ─────────
+/** 지난달이면 잠김 (연간 칸) */
+export function monthLocked(ym: YearMonth, today: DayKey) {
+  return ym < ymOf(today);
+}
+/** 지난주면 잠김 (월간 칸·월간 참고사항) */
+export function weekLocked(weekStart: DayKey, today: DayKey) {
+  return weekStart < weekStartOf(today);
+}
+/** 지난 날이면 잠김 (주간 참고사항·실천) */
+export function dayLocked(day: DayKey, today: DayKey) {
+  return day < today;
 }

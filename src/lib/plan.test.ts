@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addMonths, fmtDays, isoDow, monthOfWeek, monthWeeks, practiceDates, weekStartOf } from './plan';
+import { addMonths, dayLocked, fmtDays, isoDow, monthLocked, monthOfWeek, monthWeeks, practiceDates, weekLocked, weekStartOf } from './plan';
 
 describe('주 계산', () => {
   it('ISO 요일', () => {
@@ -51,4 +51,26 @@ describe('요일 표시 (R-P8)', () => {
   it('떨어지면 월·수·금', () => expect(fmtDays([4, 0, 2], L)).toBe('월·수·금'));
   it('전체는 매일', () => expect(fmtDays([0, 1, 2, 3, 4, 5, 6], L)).toBe('매일'));
   it('둘이 붙어 있으면 화·수', () => expect(fmtDays([1, 2], L)).toBe('화·수'));
+});
+
+describe('일요일 시작 (고정)', () => {
+  it('기본은 일요일', () => {
+    expect(weekStartOf('2026-10-01')).toBe('2026-09-27');
+  });
+  it('9.27 주는 9월 5주차, 10월 1주차는 10.4', () => {
+    expect(monthOfWeek('2026-09-27')).toEqual({ ym: '2026-09', index: 4 });
+    expect(monthWeeks('2026-10')).toEqual(['2026-10-04', '2026-10-11', '2026-10-18', '2026-10-25']);
+  });
+});
+
+describe('지난 기간 잠금 (R-P12)', () => {
+  const today = '2026-10-01'; // 목
+  it('지난달·지난주·지난 날', () => {
+    expect(monthLocked('2026-09', today)).toBe(true);
+    expect(monthLocked('2026-10', today)).toBe(false);
+    expect(weekLocked('2026-09-20', today)).toBe(true);
+    expect(weekLocked('2026-09-27', today)).toBe(false);
+    expect(dayLocked('2026-09-30', today)).toBe(true);
+    expect(dayLocked('2026-10-01', today)).toBe(false);
+  });
 });

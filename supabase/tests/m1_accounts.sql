@@ -109,7 +109,7 @@ begin
   exception when insufficient_privilege then null; end;
 
   -- 설정 값 범위
-  update public.profiles set day_start_hour = 6, week_start = 'sun';
+  update public.profiles set day_start_hour = 6;
   begin
     update public.profiles set day_start_hour = 7;
     raise exception 'FAIL 하루 시작 7시가 저장됨';

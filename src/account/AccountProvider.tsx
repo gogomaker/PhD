@@ -13,7 +13,7 @@ export type Profile = {
   dream_why: string | null;
   dream_day: string | null;
   day_start_hour: number;
-  week_start: 'mon' | 'sun';
+  week_start: 'sun';
   review_notify_enabled: boolean;
   review_notify_time: string;
   timezone: string;

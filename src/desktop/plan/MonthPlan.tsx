@@ -3,21 +3,23 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAccount, useToday } from '../../account/AccountProvider';
 import { addDays } from '../../lib/day';
-import { addMonths, md, monthOfWeek, monthWeeks, weekStartOf } from '../../lib/plan';
+import { addMonths, md, monthOfWeek, monthWeeks, weekLocked, weekStartOf, WEEK_START } from '../../lib/plan';
 import { MergeColumn, type MBlock } from './MergeColumn';
-import { ColumnHeader, NOTE, NoColumns, PlanHeader, PopHead, Popover, RefRow, RowLabel, SubgoalPicker, TableFrame, useSelection, useTableGoals, type RefCell } from './shared';
+import { ColumnHeader, LockNote, NOTE, NoColumns, PlanHeader, PopHead, Popover, RefRow, RowLabel, SubgoalPicker, TableFrame, useSelection, useTableGoals, type RefCell } from './shared';
 
 // 월간 계획: 행 = 그 달의 주차. 연간의 이번 달 칸이 상위 계획 줄로 내려온다 (R-P3). 여기서 바꿔도 연간은 그대로 (R-P4)
 export default function MonthPlan() {
-  const { profile, yearCells, monthCells, notes, run, create } = useAccount();
+  const { yearCells, monthCells, notes, run, create } = useAccount();
   const today = useToday();
-  const ws = profile?.week_start ?? 'mon';
+  const ws = WEEK_START;
   const [params, setParams] = useSearchParams();
   const thisYm = monthOfWeek(weekStartOf(today, ws)).ym;
   const ym = /^\d{4}-\d{2}$/.test(params.get('m') ?? '') ? params.get('m')! : thisYm;
   const ymKey = ym + '-01';
   const weeks = monthWeeks(ym, ws);
   const todayWeek = weeks.indexOf(weekStartOf(today, ws));
+  // R-P12: 지난주는 잠금
+  const lockedBefore = weeks.filter(w => weekLocked(w, today)).length;
   const { cols, toneOf, catOf, subsOf } = useTableGoals();
   const [sel, setSel] = useSelection();
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -62,6 +64,7 @@ export default function MonthPlan() {
         onToday={ym !== thisYm ? () => go(thisYm) : undefined}
         todayLabel="이번 달"
       />
+      {cols.length > 0 && lockedBefore > 0 && <LockNote all={lockedBefore === weeks.length} />}
       {cols.length === 0 ? (
         <NoColumns />
       ) : (
@@ -75,6 +78,7 @@ export default function MonthPlan() {
             col={2}
             firstRow={3}
             rowCount={weeks.length}
+            lockedBefore={lockedBefore}
             label="참고사항"
             blocks={noteBlocks}
             tone={NOTE}
@@ -94,6 +98,7 @@ export default function MonthPlan() {
               col={i + 3}
               firstRow={3}
               rowCount={weeks.length}
+              lockedBefore={lockedBefore}
               label={g.name}
               blocks={goalBlocks(g.id)}
               tone={toneOf(g)}

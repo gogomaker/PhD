@@ -3,9 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAccount, useToday, type Goal, type Practice } from '../../account/AccountProvider';
 import { addDays, dayLabel, type DayKey } from '../../lib/day';
-import { fmtDays, isoDow, md, monthOfWeek, monthWeeks, practiceDates, weekDays, weekStartOf } from '../../lib/plan';
+import { dayLocked, fmtDays, isoDow, md, monthOfWeek, monthWeeks, practiceDates, weekDays, weekStartOf, WEEK_START } from '../../lib/plan';
 import { MergeColumn, type MBlock } from './MergeColumn';
-import { Chip, ColumnHeader, ICONS, NOTE, NoColumns, PlanHeader, PopHead, Popover, RefRow, RowLabel, SubgoalPicker, Svg, TableFrame, useSelection, useTableGoals, type RefCell, type Tone } from './shared';
+import { Chip, ColumnHeader, ICONS, LockNote, NOTE, NoColumns, PlanHeader, PopHead, Popover, RefRow, RowLabel, SubgoalPicker, Svg, TableFrame, useSelection, useTableGoals, type RefCell, type Tone } from './shared';
 
 const MAX_SHOWN = 3; // R-P9
 const pill = (on: boolean) => (on ? 'btn btn-primary' : 'btn btn-secondary');
@@ -14,9 +14,9 @@ type Pop = { goalId: string; row: number; anchor: DOMRect; sub: string | null; n
 
 // 주간 계획: "이번 주" 줄 + 요일 7줄. 목표 열에는 병합 없이 실천을 쌓는다 (R-P6). 참고사항 열만 병합
 export default function WeekPlan() {
-  const { profile, monthCells, notes, practices, run, create } = useAccount();
+  const { monthCells, notes, practices, run, create } = useAccount();
   const today = useToday();
-  const ws = profile?.week_start ?? 'mon';
+  const ws = WEEK_START;
   const [params, setParams] = useSearchParams();
   const thisWeek = weekStartOf(today, ws);
   const asked = params.get('w');
@@ -32,6 +32,8 @@ export default function WeekPlan() {
   const [pop, setPop] = useState<Pop | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const todayRow = days.indexOf(today);
+  // R-P12: 지난 날은 잠금
+  const lockedDays = days.filter(d => dayLocked(d, today)).length;
 
   const go = (w: DayKey) => { setSel(null); setPop(null); setParams(w === thisWeek ? {} : { w }); };
   const subName = (goalId: string, sid: string) => subsOf(goalId).find(s => s.id === sid)?.name ?? '';
@@ -42,7 +44,8 @@ export default function WeekPlan() {
   // 이번 주에 걸친 실천: 요일 1개면 그 요일 칸, 2개 이상이면 "이번 주" 줄 (R-P8)
   const inWeek = practices
     .map(p => ({ p, pos: practiceDates(p.week_start_date, p.weekdays).map(d => days.indexOf(d)).filter(i => i >= 0) }))
-    .filter(x => x.pos.length > 0);
+    .filter(x => x.pos.length > 0)
+    .map(x => ({ ...x, locked: dayLocked(practiceDates(x.p.week_start_date, x.p.weekdays)[0], today) }));
   const cellItems = (goalId: string, row: number) =>
     inWeek
       .filter(x => x.p.goal_id === goalId && (row === -1 ? x.p.weekdays.length > 1 : x.p.weekdays.length === 1 && x.pos[0] === row))
@@ -90,6 +93,7 @@ export default function WeekPlan() {
           </button>
         ))}
       </div>
+      {cols.length > 0 && lockedDays > 0 && <LockNote all={lockedDays === 7} />}
       {cols.length === 0 ? (
         <NoColumns />
       ) : (
@@ -105,6 +109,7 @@ export default function WeekPlan() {
             col={2}
             firstRow={4}
             rowCount={7}
+            lockedBefore={lockedDays}
             label="참고사항"
             blocks={noteBlocks}
             tone={NOTE}
@@ -129,6 +134,7 @@ export default function WeekPlan() {
                   goal={g}
                   tone={toneOf(g)}
                   items={cellItems(g.id, row)}
+                  locked={row === -1 ? lockedDays === 7 : row < lockedDays}
                   labels={labels}
                   multi={row === -1}
                   subName={sid => subName(g.id, sid)}
@@ -158,6 +164,7 @@ export default function WeekPlan() {
             highlight={upper(popGoal.id)?.subgoal_id}
             when={pop.row === -1 ? '이번 주' : `${labels[pop.row]} ${md(days[pop.row])}`}
             labels={labels}
+            lockedDays={lockedDays}
             pop={pop}
             setPop={setPop}
             onSubmit={submit}
@@ -168,12 +175,14 @@ export default function WeekPlan() {
   );
 }
 
-function StackCell({ gridRow, col, tone, items, labels, multi, subName, expanded, setExpanded, sel, setSel, popOn, label, onAdd, onDelete }: {
+function StackCell({ gridRow, col, tone, items, locked, labels, multi, subName, expanded, setExpanded, sel, setSel, popOn, label, onAdd, onDelete }: {
   gridRow: number;
   col: number;
   goal: Goal;
   tone: Tone;
-  items: { p: Practice; pos: number[] }[];
+  items: { p: Practice; pos: number[]; locked: boolean }[];
+  /** 지난 날 칸: 실천 추가 불가 */
+  locked: boolean;
   labels: string[];
   multi: boolean;
   subName: (sid: string) => string;
@@ -190,24 +199,27 @@ function StackCell({ gridRow, col, tone, items, labels, multi, subName, expanded
   const shown = expanded || n <= MAX_SHOWN ? items : items.slice(0, MAX_SHOWN);
   return (
     <div
-      role="button"
-      tabIndex={0}
-      aria-label={label + '에 실천 추가'}
+      role={locked ? undefined : 'button'}
+      tabIndex={locked ? undefined : 0}
+      aria-label={locked ? undefined : label + '에 실천 추가'}
+      title={locked ? '지난 날은 수정할 수 없어요' : undefined}
       data-testid="week-cell"
       data-cell={label}
-      className="plan-stack"
-      onClick={e => onAdd(e.currentTarget.getBoundingClientRect())}
-      onKeyDown={e => e.target === e.currentTarget && e.key === 'Enter' && onAdd(e.currentTarget.getBoundingClientRect())}
-      style={{ gridRow, gridColumn: col, minWidth: 0, background: n ? tone.bg : 'var(--color-neutral-100)', border: '2px dashed ' + (popOn ? 'var(--color-accent)' : 'transparent'), borderRadius: 16, padding: 5, display: 'flex', flexDirection: 'column', gap: 4, cursor: 'pointer', boxSizing: 'border-box' }}
+      data-locked={locked || undefined}
+      className={locked ? (n ? '' : 'plan-locked') : 'plan-stack'}
+      onClick={e => !locked && onAdd(e.currentTarget.getBoundingClientRect())}
+      onKeyDown={e => !locked && e.target === e.currentTarget && e.key === 'Enter' && onAdd(e.currentTarget.getBoundingClientRect())}
+      style={{ gridRow, gridColumn: col, minWidth: 0, background: n ? tone.bg : locked ? undefined : 'var(--color-neutral-100)', border: '2px dashed ' + (popOn ? 'var(--color-accent)' : 'transparent'), borderRadius: 16, padding: 5, display: 'flex', flexDirection: 'column', gap: 4, cursor: locked ? 'default' : 'pointer', boxSizing: 'border-box', opacity: locked && n ? 0.8 : 1 }}
     >
-      {shown.map(({ p, pos }) => {
-        const selected = sel === p.id;
+      {shown.map(({ p, pos, locked: pLocked }) => {
+        const selected = !pLocked && sel === p.id;
         return (
           <div
             key={p.id}
             data-sel={p.id}
             data-testid="practice"
-            onClick={e => { e.stopPropagation(); setSel(selected ? null : p.id); }}
+            title={pLocked ? '지난 날이 들어간 실천은 지울 수 없어요' : undefined}
+            onClick={e => { e.stopPropagation(); if (!pLocked) setSel(selected ? null : p.id); }}
             style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, minWidth: 0, background: 'var(--color-neutral-100)', borderRadius: 10, padding: '4px 6px', fontSize: 12, fontWeight: 600, lineHeight: 1.3, color: 'var(--color-text)', outline: selected ? '2px solid var(--color-accent)' : '0 solid transparent', outlineOffset: 1, cursor: 'default' }}
           >
             <Chip tone={tone}>{subName(p.subgoal_id)}</Chip>
@@ -232,9 +244,9 @@ function StackCell({ gridRow, col, tone, items, labels, multi, subName, expanded
             </button>
           )}
           {/* 실천이 있는 칸에 하나 더 넣기 (마우스를 올리면 보임) */}
-          <button className="stack-add" aria-label={label + '에 실천 하나 더'} onClick={e => { e.stopPropagation(); onAdd(e.currentTarget.parentElement!.parentElement!.getBoundingClientRect()); }} style={{ marginLeft: 'auto', border: '2px dashed ' + tone.dot, background: 'transparent', borderRadius: 10, cursor: 'pointer', font: 'inherit', fontSize: 11.5, fontWeight: 700, color: tone.ink, padding: '1px 8px' }}>
+          {!locked && <button className="stack-add" aria-label={label + '에 실천 하나 더'} onClick={e => { e.stopPropagation(); onAdd(e.currentTarget.parentElement!.parentElement!.getBoundingClientRect()); }} style={{ marginLeft: 'auto', border: '2px dashed ' + tone.dot, background: 'transparent', borderRadius: 10, cursor: 'pointer', font: 'inherit', fontSize: 11.5, fontWeight: 700, color: tone.ink, padding: '1px 8px' }}>
             + 실천
-          </button>
+          </button>}
         </div>
       )}
     </div>
@@ -242,13 +254,15 @@ function StackCell({ gridRow, col, tone, items, labels, multi, subName, expanded
 }
 
 // R-P7: 세부목표 → 이름 → 반복/단발(기본 단발) → 요일 칩(복수). 요일 칸에서 열면 그 요일이 미리 골라져 있다
-function PracticeForm({ goal, tone, subs, highlight, when, labels, pop, setPop, onSubmit }: {
+function PracticeForm({ goal, tone, subs, highlight, when, labels, lockedDays, pop, setPop, onSubmit }: {
   goal: Goal;
   tone: Tone;
   subs: { id: string; name: string }[];
   highlight?: string | null;
   when: string;
   labels: string[];
+  /** 앞에서부터 이만큼은 지난 날 → 고를 수 없음 */
+  lockedDays: number;
   pop: Pop;
   setPop: (p: Pop) => void;
   onSubmit: () => void;
@@ -283,8 +297,9 @@ function PracticeForm({ goal, tone, subs, highlight, when, labels, pop, setPop, 
           <div style={{ display: 'flex', gap: 4 }}>
             {labels.map((k, i) => {
               const on = ds.includes(i);
+              const past = i < lockedDays;
               return (
-                <button key={i} type="button" aria-pressed={on} aria-label={k + '요일'} onClick={() => setPop({ ...pop, days: on ? ds.filter(x => x !== i) : [...ds, i] })} style={{ flex: 1, height: 34, padding: 0, borderRadius: 999, border: 0, cursor: 'pointer', font: 'inherit', fontSize: 13, fontWeight: 700, background: on ? tone.ink : 'var(--color-neutral-200)', color: on ? 'var(--color-neutral-100)' : 'var(--color-text)' }}>{k}</button>
+                <button key={i} type="button" aria-pressed={on} aria-label={k + '요일'} disabled={past} title={past ? '지난 날은 고를 수 없어요' : undefined} onClick={() => setPop({ ...pop, days: on ? ds.filter(x => x !== i) : [...ds, i] })} style={{ flex: 1, height: 34, padding: 0, borderRadius: 999, border: 0, cursor: past ? 'not-allowed' : 'pointer', opacity: past ? 0.35 : 1, font: 'inherit', fontSize: 13, fontWeight: 700, background: on ? tone.ink : 'var(--color-neutral-200)', color: on ? 'var(--color-neutral-100)' : 'var(--color-text)' }}>{k}</button>
               );
             })}
           </div>
