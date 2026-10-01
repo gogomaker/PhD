@@ -8,11 +8,11 @@ import { fmtMinutes, relOf, segments, SLOTS, timedSlots, timeOf, type DayItem, t
 import type { Tone } from '../desktop/plan/shared';
 import { useDay } from './useDay';
 import { TimeTable, type BandView, type Cells, type PlanBoxView } from './TimeTable';
-import { AddSheet, CalendarSheet, ConfirmSheet, JournalSheet, PlanSheet } from './Sheets';
+import { AddSheet, CalendarSheet, ConfirmSheet, JournalSheet, PlanSheet, SettingsSheet } from './Sheets';
 import { ensurePush, pushSupported } from './push';
 
 type PlanInfo = { task_id?: string | null; keyword_id?: string | null; label?: string | null };
-type SheetState = null | { k: 'cal' } | { k: 'add' } | { k: 'journal' } | { k: 'plan'; key: string; isNew: boolean } | { k: 'del'; task: TaskRow; name: string };
+type SheetState = null | { k: 'cal' } | { k: 'add' } | { k: 'journal' } | { k: 'plan'; key: string; isNew: boolean } | { k: 'del'; task: TaskRow; name: string } | { k: 'settings' };
 
 const ICON = {
   repeat: 'M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8M21 3v5h-5',
@@ -283,7 +283,10 @@ export default function DayPlanner() {
           </button>
           <button onClick={() => go(addDays(day, 1))} aria-label="다음 날" className="btn" style={{ width: 36, height: 36, padding: 0, color: 'var(--color-neutral-700)' }}><Icon name="chevronRight" /></button>
         </div>
-        {rel !== 0 && <button onClick={() => go(today)} className="btn btn-secondary" style={{ justifySelf: 'end', height: 30, padding: '0 12px', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 12 }}>오늘</button>}
+        <div style={{ justifySelf: 'end', display: 'flex', alignItems: 'center', gap: 2 }}>
+          {rel !== 0 && <button onClick={() => go(today)} className="btn btn-secondary" style={{ height: 30, padding: '0 12px', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 12 }}>오늘</button>}
+          <button onClick={() => setSheet({ k: 'settings' })} aria-label="설정" className="btn" style={{ width: 34, height: 34, padding: 0, color: 'var(--color-neutral-700)' }}><Icon name="settings" size={17} /></button>
+        </div>
       </div>
 
       {/* 요약 (R-S10) */}
@@ -407,6 +410,7 @@ export default function DayPlanner() {
         <span style={{ flex: 'none', width: 30, height: 30, borderRadius: '50%', background: 'var(--color-accent-200)', color: 'var(--color-accent-800)', display: 'grid', placeItems: 'center' }}><Icon name="chevronUp" size={14} /></span>
       </button>
 
+      {sheet?.k === 'settings' && <SettingsSheet name={profile?.name ?? ''} onClose={() => setSheet(null)} />}
       {sheet?.k === 'cal' && <CalendarSheet day={day} today={today} onPick={go} onClose={() => setSheet(null)} />}
       {sheet?.k === 'add' && (
         <AddSheet

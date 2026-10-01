@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { removeAllPhotos } from '../lib/photos';
 import { ensurePush } from '../mobile/push';
+import { THEME_OPTIONS, useThemePref } from '../lib/theme';
 import { errorText } from '../lib/errors';
 import { useAccount, type Profile } from '../account/AccountProvider';
 import { LIFE_STAGES } from '../lib/lifeStage';
@@ -98,6 +99,7 @@ export default function AccountPage() {
             ))}
           </div>
         </Row>
+        <ThemeRow />
         <Row title="회고 알림" sub="매일 정한 시간에 오늘 시간을 칠했는지 알려줘요.">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {profile.review_notify_enabled && (
@@ -211,5 +213,19 @@ function DeleteDialog({ onClose }: { onClose: () => void }) {
         <button className="btn btn-primary" disabled={busy} onClick={confirm}>삭제하기</button>
       </div>
     </Dialog>
+  );
+}
+
+// 화면 테마: 이 기기에만 저장 (2026-10-01 기획 결정)
+function ThemeRow() {
+  const [pref, setPref] = useThemePref();
+  return (
+    <Row title="화면 테마" sub="이 기기에만 적용돼요. 시스템 설정은 기기의 다크 모드를 따라가요.">
+      <div style={{ display: 'flex', gap: 6 }}>
+        {THEME_OPTIONS.map(([k, label]) => (
+          <button key={k} className={pill(pref === k)} aria-pressed={pref === k} onClick={() => setPref(k)} style={PILL_STYLE}>{label}</button>
+        ))}
+      </div>
+    </Row>
   );
 }

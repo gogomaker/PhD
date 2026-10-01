@@ -2,6 +2,8 @@ import { useState, type ReactNode } from 'react';
 import { dayLabel, toDayKey, type DayKey } from '../lib/day';
 import type { Tone } from '../desktop/plan/shared';
 import type { Journal } from './useDay';
+import { supabase } from '../lib/supabase';
+import { THEME_OPTIONS, useThemePref } from '../lib/theme';
 
 const pill = (on: boolean, tone: Tone) => ({ background: on ? tone.bg : 'var(--color-surface)', color: on ? tone.ink : 'var(--color-text)', boxShadow: on ? 'inset 0 0 0 2px ' + tone.dot : 'none' });
 const H = { fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 22 } as const;
@@ -10,7 +12,7 @@ const H = { fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 22 } a
 export function Sheet({ onClose, children, label }: { onClose: () => void; children: ReactNode; label: string }) {
   return (
     <>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'color-mix(in oklch, var(--color-text) 32%, transparent)' }} />
+      <div onClick={onClose} style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'var(--scrim)' }} />
       <div role="dialog" aria-label={label} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 11, maxHeight: '82%', overflowY: 'auto', background: 'var(--color-neutral-100)', borderRadius: '32px 32px 0 0', padding: '10px 20px max(28px, env(safe-area-inset-bottom))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 16, boxShadow: 'var(--shadow-lg)' }}>
         <span style={{ alignSelf: 'center', width: 40, height: 5, borderRadius: 99, background: 'var(--color-neutral-300)', flex: 'none' }} />
         {children}
@@ -235,3 +237,26 @@ export function ConfirmSheet({ title, body, confirmLabel, onConfirm, onClose }: 
   );
 }
 
+
+// 휴대폰 설정: 화면 테마(이 기기만) + 로그아웃
+export function SettingsSheet({ name, onClose }: { name: string; onClose: () => void }) {
+  const [pref, setPref] = useThemePref();
+  return (
+    <Sheet onClose={onClose} label="설정">
+      <span style={H}>설정</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <span style={{ fontSize: 13, fontWeight: 700 }}>화면 테마</span>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {THEME_OPTIONS.map(([k, label]) => (
+            <button key={k} className={pref === k ? 'btn btn-primary' : 'btn btn-secondary'} aria-pressed={pref === k} onClick={() => setPref(k)} style={{ flex: 1, height: 42, fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13.5 }}>{label}</button>
+          ))}
+        </div>
+        <span style={{ fontSize: 12.5, color: 'var(--color-neutral-700)' }}>이 휴대폰에만 적용돼요.</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingTop: 4 }}>
+        <span style={{ fontSize: 14, fontWeight: 600 }}>{name}</span>
+        <button className="btn btn-secondary" onClick={() => supabase.auth.signOut({ scope: 'local' })} style={{ height: 40, fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13.5 }}>로그아웃</button>
+      </div>
+    </Sheet>
+  );
+}
