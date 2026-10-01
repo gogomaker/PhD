@@ -10,6 +10,8 @@ import YearPlan from './plan/YearPlan';
 import MonthPlan from './plan/MonthPlan';
 import WeekPlan from './plan/WeekPlan';
 import AccountPage from './AccountPage';
+import TrackingPage from './TrackingPage';
+import ReviewsPage from './ReviewsPage';
 import { initials } from '../lib/initials';
 
 type ScreenKey = keyof typeof ICON;
@@ -22,19 +24,6 @@ const NAV: [string, [ScreenKey, string, string][]][] = [
   ['기록', [['track', '트래킹', '/tracking'], ['reviews', '회고 모음', '/reviews']]],
 ];
 
-// 각 화면이 만들어지는 단계 (SPEC 7장)
-const PAGES: { path: string; group: string; title: string; stage: string }[] = [
-  { path: '/dream', group: '꿈', title: '궁극적인 꿈', stage: 'M2' },
-  { path: '/categories', group: '목표', title: '인생 카테고리', stage: 'M1' },
-  { path: '/goals', group: '목표', title: '목표 설정', stage: 'M2' },
-  { path: '/board', group: '목표', title: '꿈 보드', stage: 'M2' },
-  { path: '/plan/year', group: '계획', title: '연간 계획', stage: 'M3' },
-  { path: '/plan/month', group: '계획', title: '월간 계획', stage: 'M3' },
-  { path: '/plan/week', group: '계획', title: '주간 계획', stage: 'M3' },
-  { path: '/tracking', group: '기록', title: '트래킹', stage: 'M5' },
-  { path: '/reviews', group: '기록', title: '회고 모음', stage: 'M5' },
-  { path: '/account', group: '계정', title: '계정 관리', stage: 'M1' },
-];
 
 export default function DesktopShell() {
   return (
@@ -50,9 +39,8 @@ export default function DesktopShell() {
           <Route path="/plan/year" element={<YearPlan />} />
           <Route path="/plan/month" element={<MonthPlan />} />
           <Route path="/plan/week" element={<WeekPlan />} />
-          {PAGES.filter(p => !['M1', 'M2', 'M3'].includes(p.stage)).map(p => (
-            <Route key={p.path} path={p.path} element={<Placeholder {...p} />} />
-          ))}
+          <Route path="/tracking" element={<TrackingPage />} />
+          <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="*" element={<Navigate to="/board" replace />} />
         </Routes>
       </main>
@@ -103,15 +91,5 @@ function Sidebar() {
         </NavLink>
       </div>
     </aside>
-  );
-}
-
-function Placeholder({ group, title, stage }: { group: string; title: string; stage: string }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 900 }}>
-      <span className="tag tag-accent" style={{ alignSelf: 'flex-start', fontWeight: 700 }}>{group} · {title}</span>
-      <h1 style={{ margin: 0, fontSize: 42 }}>{title}</h1>
-      <p style={{ margin: 0, fontSize: 14, color: 'var(--color-neutral-700)' }}>{stage} 단계에서 만들어요.</p>
-    </div>
   );
 }

@@ -49,6 +49,12 @@ export type Goal = {
   created_at: string;
   table_position: number;
   table_hidden: boolean;
+  /** 마무리 (R-G6) */
+  finished_at: string | null;
+  finish_photo_path: string | null;
+  retro_achieved: string | null;
+  retro_regret: string | null;
+  retro_next: string | null;
 };
 
 export type Subgoal = { id: string; goal_id: string; name: string; position: number };
@@ -121,7 +127,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
       supabase.from('categories').select('id, kind, name, color, aspiration, position').order('position'),
       supabase.from('daily_keywords').select('id, category_id, name, position, archived').order('position').order('created_at'),
-      supabase.from('goals').select('id, category_id, name, position, due_month, reason, importance, fallback, status, started_at, created_at, table_position, table_hidden').order('position').order('created_at'),
+      supabase.from('goals').select('id, category_id, name, position, due_month, reason, importance, fallback, status, started_at, created_at, table_position, table_hidden, finished_at, finish_photo_path, retro_achieved, retro_regret, retro_next').order('position').order('created_at'),
       supabase.from('subgoals').select('id, goal_id, name, position').order('position').order('created_at'),
       supabase.from('year_cells').select('id, goal_id, subgoal_id, start_month, end_month, memo'),
       supabase.from('month_cells').select('id, goal_id, subgoal_id, year_month, start_week, end_week, comment'),

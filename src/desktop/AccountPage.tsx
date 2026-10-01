@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { removeAllPhotos } from '../lib/photos';
+import { ensurePush } from '../mobile/push';
 import { errorText } from '../lib/errors';
 import { useAccount, type Profile } from '../account/AccountProvider';
 import { LIFE_STAGES } from '../lib/lifeStage';
@@ -108,7 +110,11 @@ export default function AccountPage() {
               role="switch"
               aria-checked={profile.review_notify_enabled}
               aria-label="회고 알림"
-              onClick={() => save({ review_notify_enabled: !profile.review_notify_enabled })}
+              onClick={() => {
+                const on = !profile.review_notify_enabled;
+                save({ review_notify_enabled: on });
+                if (on) ensurePush(); // 이 기기를 알림 받을 곳으로 (휴대폰은 하루 기록을 저장할 때 허락을 받는다)
+              }}
               style={{ width: 52, height: 30, borderRadius: 999, border: 0, padding: 3, cursor: 'pointer', background: profile.review_notify_enabled ? 'var(--color-accent-2)' : 'var(--color-neutral-400)', display: 'flex', justifyContent: profile.review_notify_enabled ? 'flex-end' : 'flex-start' }}
             >
               <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--color-neutral-100)', boxShadow: 'var(--shadow-sm)' }} />
@@ -182,11 +188,12 @@ function PasswordDialog({ onClose }: { onClose: () => void }) {
 }
 
 function DeleteDialog({ onClose }: { onClose: () => void }) {
-  const { toast } = useAccount();
+  const { toast, session } = useAccount();
   const [busy, setBusy] = useState(false);
 
   async function confirm() {
     setBusy(true);
+    if (session) await removeAllPhotos(session.user.id); // 인증사진 먼저 (저장소는 DB 삭제로 안 지워진다)
     const { error } = await supabase.rpc('delete_my_account');
     if (error) {
       setBusy(false);

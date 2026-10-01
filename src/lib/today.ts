@@ -52,8 +52,12 @@ export function relOf(day: DayKey, today: DayKey) {
 
 const once1 = (p: PracticeLite) => p.kind === 'once' && p.weekdays.length === 1;
 
-export function computeDay(day: DayKey, today: DayKey, practices: PracticeLite[], tasks: TaskRow[]): { repeat: DayItem[]; day: DayItem[] } {
+/**
+ * closedOn: 마무리한 목표 → 마무리한 날. 그 목표의 실천은 다음 날부터 나오지 않는다 (넘어온 일 포함, 2026-10-01 기획 결정)
+ */
+export function computeDay(day: DayKey, today: DayKey, allPractices: PracticeLite[], tasks: TaskRow[], closedOn?: Map<string, DayKey>): { repeat: DayItem[]; day: DayItem[] } {
   const rel = relOf(day, today);
+  const practices = closedOn?.size ? allPractices.filter(p => { const f = closedOn.get(p.goal_id); return !f || day <= f; }) : allPractices;
   const dates = new Map(practices.map(p => [p.id, practiceDates(p.week_start_date, p.weekdays)]));
   const rowOf = (pred: (t: TaskRow) => boolean) => tasks.find(pred);
   const item = (x: Omit<DayItem, 'done' | 'num'>): DayItem => ({ ...x, done: !!x.row?.done_at, num: 0 });

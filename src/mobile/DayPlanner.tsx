@@ -9,7 +9,7 @@ import type { Tone } from '../desktop/plan/shared';
 import { useDay } from './useDay';
 import { TimeTable, type BandView, type Cells, type PlanBoxView } from './TimeTable';
 import { AddSheet, CalendarSheet, ConfirmSheet, JournalSheet, PlanSheet } from './Sheets';
-import { ensurePush } from './push';
+import { ensurePush, pushSupported } from './push';
 
 type PlanInfo = { task_id?: string | null; keyword_id?: string | null; label?: string | null };
 type SheetState = null | { k: 'cal' } | { k: 'add' } | { k: 'journal' } | { k: 'plan'; key: string; isNew: boolean } | { k: 'del'; task: TaskRow; name: string };
@@ -54,6 +54,11 @@ export default function DayPlanner() {
   };
 
   // DB 블록 → 칸 배열
+  // 이미 알림을 허락한 기기는 조용히 다시 등록 (회고 알림·알람)
+  useEffect(() => {
+    if (profile?.review_notify_enabled && pushSupported() && Notification.permission === 'granted') ensurePush();
+  }, [profile?.review_notify_enabled]);
+
   useEffect(() => {
     const cells: Cells = Array(SLOTS).fill(null);
     const info: Record<string, PlanInfo> = {};
@@ -414,7 +419,11 @@ export default function DayPlanner() {
           onClose={() => setSheet(null)}
         />
       )}
-      {sheet?.k === 'journal' && <JournalSheet key={day + (D.journal?.id ?? '')} day={day} journal={D.journal} readOnly={rel !== 0} onSave={D.saveJournal} onClose={() => setSheet(null)} />}
+      {sheet?.k === 'journal' && <JournalSheet key={day + (D.journal?.id ?? '')} day={day} journal={D.journal} readOnly={rel !== 0} onSave={j => {
+            // 회고 알림(4.6)을 켰으면 이 휴대폰도 알림 받을 곳으로 — 처음 한 번 허락을 받는다
+            if (profile?.review_notify_enabled) ensurePush();
+            return D.saveJournal(j);
+          }} onClose={() => setSheet(null)} />}
       {sheet?.k === 'del' && (
         <ConfirmSheet
           title="할 일을 지울까요?"

@@ -19,6 +19,9 @@ export function errorText(e: unknown): string {
   };
   if (auth[code]) return auth[code];
   if (msg.includes('day_locked')) return '이 날은 시간표를 바꿀 수 없어요';
+  if (msg.includes('goal_not_in_progress')) return '진행 중인 목표만 마무리할 수 있어요';
+  if (msg.includes('finish_photo_invalid')) return '인증사진은 완성일 때만 올릴 수 있어요';
+  if (msg.includes('mime type') || msg.includes('exceeded the maximum allowed size')) return '사진은 5MB 이하 JPG·PNG·WEBP만 올릴 수 있어요';
   if (code === '42501') return '이 날은 바꿀 수 없어요';
   if (msg.includes('goal_category_limit')) return '목표 카테고리는 최대 6개예요';
   if (msg.includes('need_goal_category')) return '목표 카테고리를 1개 이상 골라 주세요';

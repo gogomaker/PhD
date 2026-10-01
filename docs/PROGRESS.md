@@ -9,7 +9,8 @@
 | M1 계정과 설정 | **승인 (2026-10-01, 수정 2건 반영 후 M2로)** | 브랜치 `claude/zealous-noether-nnc20w` |
 | M2 목표 | **승인 완료 (2026-10-01)** | 같은 브랜치 |
 | M3 계획 표 | **승인 완료 (2026-10-01)** | 같은 브랜치 |
-| M4 모바일 하루 플래너 | **검수 대기** | 같은 브랜치 |
+| M4 모바일 하루 플래너 | **승인 완료 (2026-10-01, 수정 2건 반영)** | 같은 브랜치 |
+| M5 기록과 회고 | **검수 대기** | 같은 브랜치 |
 
 ## 결정된 것 (기획자 승인)
 - 프레임워크: Vite + React + TypeScript (react-router-dom)
@@ -30,6 +31,10 @@
 - (M3) 실천을 모두 지우면 목표는 다시 시작 전 (M4부터는 할 일 기록이 있으면 되돌리지 않음)
 - 글꼴은 전부 Pretendard (npm `pretendard` 가변 글꼴을 앱에 포함, 제목 800). 목업의 Caprasimo·Figtree·Jua는 쓰지 않음
 - (M4) 못 한 할 일은 끝낼 때까지 넘어감 (R-T5), 오늘·내일 직접 추가한 할 일은 길게 눌러 삭제 (R-T6)
+- (M4 수정) 실천의 '속성(단발/반복)' 고르기 없앰: 요일 1개 = 단발(못 하면 넘어감), 2개 이상 = 고른 요일마다 반복 (DB 트리거로 강제). 모바일 '이번 주에서 담기' 없앰
+- (M4 수정) 로고 = 펼친 노트 그림 + PhD (`src/ui/Logo.tsx`), 앱 아이콘도 같은 그림
+- (M5) 마무리한 목표의 실천은 마무리한 다음 날부터 모바일 할 일로 안 나옴(넘어오던 일 포함)
+- (M5) 회고 알림을 실제로 보냄 (그날 하루 기록을 안 썼을 때만, SPEC 4.9)
 - (M3 수정) 지난 기간 계획은 무조건 잠금 (R-P12, DB 정책 + 화면). 한 주 시작은 일요일 고정 (R-P13, 계정 설정에서 뺌)
 
 ## 접속 정보
@@ -41,8 +46,8 @@
 
 ## DB 작업 방법
 - 마이그레이션: `supabase/migrations/*.sql` 에 파일을 추가하고 `scripts/db.sh <파일>` 로 적용 (관리 API 사용, CLI 없음)
-  - 적용 완료: `20261001000001_m1_accounts.sql`, `20261001000002_m1_color_by_order.sql`, `20261001000003_m2_goals.sql`, `20261001000004_m3_plans.sql`, `20261001000005_m3_lock_past.sql`, `20261001000006_m4_day.sql`, `20261001000007_m4_alarms.sql`
-- DB 테스트: `supabase/tests/m1_accounts.sql`, `m2_goals.sql`, `m3_plans.sql`, `m4_day.sql`
+  - 적용 완료: `20261001000001_m1_accounts.sql`, `20261001000002_m1_color_by_order.sql`, `20261001000003_m2_goals.sql`, `20261001000004_m3_plans.sql`, `20261001000005_m3_lock_past.sql`, `20261001000006_m4_day.sql`, `20261001000007_m4_alarms.sql`, `20261001000008_practice_kind_auto.sql`, `20261001000009_m5_records.sql`
+- DB 테스트: `supabase/tests/m1_accounts.sql`, `m2_goals.sql`, `m3_plans.sql`, `m4_day.sql`, `m5_records.sql`
 - DB 규칙 테스트: `scripts/db.sh supabase/tests/m1_accounts.sql` → `M1 DB 테스트 통과`. 한 트랜잭션 안에서 가짜 사용자 2명으로 돌리고 되돌림(흔적 없음)
 - Auth 설정(관리 API `config/auth`로 바꿈): site_url = https://phd-ashy.vercel.app, 비밀번호 8자 이상, 이메일 인증 끔,
   Redirect URLs = phd-ashy / `phd-*-gogomaker.vercel.app` / phd.yong-yong.com / localhost:5173
@@ -87,12 +92,20 @@
   - VAPID 공개 키는 `.env.*`의 `VITE_VAPID_PUBLIC_KEY`, 비밀 키는 Supabase Edge Function 비밀값(`VAPID_PRIVATE_KEY`)에만. 함수 배포: `npx supabase functions deploy send-alarms --project-ref vvhpabbqiguuobpivdbf --use-api`
 - 모바일 시간표 저장은 순서대로(큐), 성공하면 다시 읽지 않는다(화면 상태가 기준)
 
+## M5에서 만든 것
+- DB: goals에 마무리 칸(`finished_at`, `finish_photo_path`, `retro_*`), `finish_goal()`(진행 중만, 사진은 완성 + 본인 폴더만, 상태는 이 함수만 바꿈), `goal_progress`(바꿀 때마다 한 줄, 열린 목표만), 저장소 버킷 `goal-photos`(비공개, 5MB, 본인 폴더만)
+- 집계: `tracking_summary(시작, 끝)` → 계획·실제·목표에 안 붙은 계획·목표별(10분 칸 수), `goal_totals()` → 목표별 누적 칸·완료한 할 일 수·처음 기록한 날
+- 회고 알림: `claim_due_reviews()`(정한 시각부터 15분 안, 그날 기록 없음, 하루 한 번) — 같은 Edge Function `send-alarms`가 1분마다 보냄
+- 화면: `/tracking?r=week|month&k=`(숫자 3개, 목표별 계획 대비 실제, 진척도 슬라이더, 하루 점수 달력, 누적 시간), `/reviews`(카드, 필터), 꿈 보드 패널의 마무리 팝업(`WrapDialog`)
+- 사진은 브라우저에서 긴 변 1600px JPEG로 줄여서 올림. 계정 삭제 때 사진 먼저 지움
+- 모바일: `computeDay`에 마무리한 목표 → 마무리한 날 지도를 넘겨서 다음 날부터 뺌
+
 ## 남은 일 / 알려진 제약
 - 이메일 변경: Supabase 기본 메일은 기획자 계정 이메일에만 보내져서 지금은 이메일을 읽기 전용으로 둠. 메일 서비스(SMTP) 붙일 때 같이 연다
 - 비밀번호 찾기 메일도 같은 제약(기획자 본인 이메일로는 옴)
 - 데이터 내보내기 버튼은 M6에서 (지금은 꺼져 있음)
-- 회고 알림 켜기/시각은 저장만 됨. 실제 알림은 PWA 작업(M4) 이후
 - 키워드 삭제 시 지난 기록에 쓰인 키워드 처리(R-D2와 충돌 여부)는 M4에서 정한다
 - 계정 삭제는 모든 행을 지운다. M4에서 지난 날 잠금(R-D2)을 DB에 넣을 때 계정 삭제는 예외가 되게 해야 함
 - 알람은 이 환경에서 실제 휴대폰으로 확인할 수 없다(기획자가 Android에서 확인). 서버 쪽 고르기·한 번만 보내기는 DB 테스트로 확인
-- 회고 알림(매일 정한 시각)은 아직 안 보냄 — 같은 알람 장치로 M5에서 붙일 수 있음
+- 회고 알림도 실제 휴대폰 확인은 기획자 몫(서버 고르기는 DB 테스트로 확인)
+- 마무리한 목표만 남으면 주간 표 빈 상태 문구가 "세부목표를 만든 목표만…"으로 나옴 — M6 빈 상태 손질 때 같이

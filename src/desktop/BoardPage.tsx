@@ -7,6 +7,7 @@ import { IMPORTANCE, MAX_GOAL_NAME, MAX_SUBGOAL_NAME, STATUS_LABEL, dueShort, du
 import { BlurInput } from '../ui/BlurInput';
 import { MonthPicker, isMonth } from '../ui/MonthPicker';
 import { useDeleteGoal } from './goalActions';
+import { WrapDialog } from './WrapDialog';
 
 const pill = (on: boolean) => (on ? 'btn btn-primary' : 'btn btn-secondary');
 
@@ -90,7 +91,8 @@ export default function BoardPage() {
 }
 
 function EditPanel({ goal: g, subs, onClose }: { goal: Goal; subs: Subgoal[]; onClose: () => void }) {
-  const { goalCategories, goals, yearCells, monthCells, practices, run, toast } = useAccount();
+  const { goalCategories, goals, yearCells, monthCells, practices, run } = useAccount();
+  const [wrapOpen, setWrapOpen] = useState(false);
   // R-G9: 계획 표에 배치된 세부목표는 삭제 불가
   const placed = new Set([...yearCells, ...monthCells, ...practices].map(c => c.subgoal_id));
   const [traitsOpen, setTraitsOpen] = useState(false);
@@ -217,7 +219,7 @@ function EditPanel({ goal: g, subs, onClose }: { goal: Goal; subs: Subgoal[]; on
         <button onClick={() => ask(g)} style={{ alignSelf: 'flex-start', border: 0, background: 'transparent', cursor: 'pointer', font: 'inherit', fontSize: 13, fontWeight: 700, color: 'var(--color-accent-700)', padding: '4px 2px', textDecoration: 'underline', textUnderlineOffset: 3 }}>목표 삭제</button>
       )}
       {g.status === 'in_progress' && (
-        <button onClick={() => toast('목표 마무리는 M5 단계에서 만들어요')} className="btn btn-secondary" style={{ alignSelf: 'flex-start', fontFamily: 'var(--font-body)', fontWeight: 700 }}>목표 마무리하기</button>
+        <button onClick={() => setWrapOpen(true)} className="btn btn-secondary" style={{ alignSelf: 'flex-start', fontFamily: 'var(--font-body)', fontWeight: 700 }}>목표 마무리하기</button>
       )}
       {closed && (
         <div style={{ padding: '12px 14px', borderRadius: 20, background: 'var(--color-neutral-200)', fontSize: 13, fontWeight: 600, color: 'var(--color-neutral-800)', textWrap: 'pretty' }}>
@@ -225,6 +227,7 @@ function EditPanel({ goal: g, subs, onClose }: { goal: Goal; subs: Subgoal[]; on
         </div>
       )}
       {dialog}
+      {wrapOpen && g.status === 'in_progress' && <WrapDialog goal={g} onClose={() => setWrapOpen(false)} />}
     </aside>
   );
 }

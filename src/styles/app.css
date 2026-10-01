@@ -52,3 +52,12 @@ h1, h2, h3 { word-break: keep-all; }
 .plan-stack:hover .stack-add, .plan-stack:focus-within .stack-add, .stack-add:focus-visible { opacity: 1; }
 /* 지난 기간 (잠김) */
 .plan-locked { border-radius: 16px; background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--color-neutral-300) 45%, transparent) 6px 7px); }
+
+/* 트래킹 진척도 슬라이더: 채운 부분 = 목표 색, 나머지 = 연한 선 */
+.progress-range { appearance: none; -webkit-appearance: none; height: 22px; background: transparent; cursor: pointer; margin: 0; }
+.progress-range::-webkit-slider-runnable-track { height: 8px; border-radius: 99px; background: linear-gradient(to right, var(--fill) var(--pct), var(--color-neutral-100) var(--pct)); }
+.progress-range::-moz-range-track { height: 8px; border-radius: 99px; background: var(--color-neutral-100); }
+.progress-range::-moz-range-progress { height: 8px; border-radius: 99px; background: var(--fill); }
+.progress-range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -6px; border-radius: 50%; background: var(--color-neutral-100); border: 3px solid var(--fill); box-sizing: border-box; box-shadow: var(--shadow-sm); }
+.progress-range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--color-neutral-100); border: 3px solid var(--fill); box-sizing: border-box; box-shadow: var(--shadow-sm); }
+.progress-range:focus-visible { outline: 2px solid var(--color-text); outline-offset: 4px; border-radius: 99px; }

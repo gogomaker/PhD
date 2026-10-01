@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { errorText } from '../lib/errors';
 import { useAccount } from '../account/AccountProvider';
-import type { DayKey } from '../lib/day';
+import { userDayKey, type DayKey } from '../lib/day';
 import { computeDay, type DayItem, type TaskRow } from '../lib/today';
 
 export type BlockRow = { id: string; date: string; layer: 'plan' | 'actual'; start_slot: number; end_slot: number; task_id: string | null; daily_keyword_id: string | null; label: string | null; block_key: string | null };
@@ -10,7 +10,7 @@ export type Journal = { id?: string; date: string; score: number | null; reason:
 
 /** 한 날의 할 일·시간표·하루 기록. 할 일은 넘어가기 계산 때문에 전부 읽는다 */
 export function useDay(day: DayKey, today: DayKey) {
-  const { practices, toast } = useAccount();
+  const { practices, goals, profile, toast } = useAccount();
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [blocks, setBlocks] = useState<BlockRow[]>([]);
   const [journal, setJournal] = useState<Journal | null>(null);
@@ -39,7 +39,12 @@ export function useDay(day: DayKey, today: DayKey) {
     Promise.all([loadTasks(), loadDay()]).then(() => setLoaded(true));
   }, [loadTasks, loadDay]);
 
-  const list = useMemo(() => computeDay(day, today, practices, tasks), [day, today, practices, tasks]);
+  // 마무리한 목표 → 마무리한 날 (R-D1 기준)
+  const closedOn = useMemo(
+    () => new Map(goals.filter(g => g.finished_at).map(g => [g.id, userDayKey(new Date(g.finished_at!), profile?.timezone, profile?.day_start_hour)])),
+    [goals, profile?.timezone, profile?.day_start_hour],
+  );
+  const list = useMemo(() => computeDay(day, today, practices, tasks, closedOn), [day, today, practices, tasks, closedOn]);
 
   /** 행이 없는 할 일(반복·자동·넘어온 일)은 지금 만든다. 행 id를 돌려준다 */
   const ensureRow = useCallback(

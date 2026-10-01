@@ -66,6 +66,18 @@ describe('못 했을 때 (4.3)', () => {
   });
 });
 
+describe('마무리한 목표의 실천 (기획 결정)', () => {
+  const ps = [P('wed', 'once', [3]), P('rep', 'repeat', [3, 4, 5])];
+  const closed = new Map([['g', '2026-09-30']]);
+  it('마무리한 날까지는 나오고, 다음 날부터 사라진다 (넘어온 일 포함)', () => {
+    expect(keys(computeDay('2026-09-30', '2026-09-30', ps, [], closed))).toEqual(['rep:rep', 'auto:wed']);
+    expect(keys(computeDay('2026-10-01', '2026-10-01', ps, [], closed))).toEqual([]);
+  });
+  it('다른 목표의 실천은 그대로', () => {
+    expect(keys(computeDay('2026-10-01', '2026-10-01', ps, [], new Map([['other', '2026-09-30']])))).toEqual(['rep:rep', 'cauto:wed']);
+  });
+});
+
 describe('모레 이후', () => {
   it('배정된 실천만 (담은 일·직접 추가·넘어온 일 없음)', () => {
     const ps = [P('fri', 'once', [5]), P('wed', 'once', [3]), P('rep', 'repeat', [6])];
