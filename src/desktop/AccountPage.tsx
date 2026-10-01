@@ -3,8 +3,9 @@ import { supabase } from '../lib/supabase';
 import { removeAllPhotos } from '../lib/photos';
 import { ensurePush } from '../mobile/push';
 import { THEME_OPTIONS, useThemePref } from '../lib/theme';
+import { downloadExport } from '../lib/exportData';
 import { errorText } from '../lib/errors';
-import { useAccount, type Profile } from '../account/AccountProvider';
+import { useAccount, useToday, type Profile } from '../account/AccountProvider';
 import { LIFE_STAGES } from '../lib/lifeStage';
 import { initials } from '../lib/initials';
 
@@ -129,9 +130,7 @@ export default function AccountPage() {
         <Row title="로그인 계정" sub={'이메일 · ' + (session?.user.email ?? '')}>
           <button className="btn btn-secondary" onClick={() => setDialog('password')} style={PILL_STYLE}>비밀번호 변경</button>
         </Row>
-        <Row title="데이터 내보내기" sub="목표, 계획 표, 시간 기록을 CSV로 받아요.">
-          <button className="btn btn-secondary" disabled title="M6 단계에서 만들어요" style={PILL_STYLE}>내보내기</button>
-        </Row>
+        <ExportRow />
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', paddingTop: 4 }}>
           <button className="btn btn-primary" onClick={() => supabase.auth.signOut()}>로그아웃</button>
           <button className="btn btn-ghost" onClick={() => setDialog('delete')} style={{ color: 'var(--color-accent-700)', fontFamily: 'var(--font-body)', fontWeight: 700 }}>계정 삭제</button>
@@ -226,6 +225,27 @@ function ThemeRow() {
           <button key={k} className={pill(pref === k)} aria-pressed={pref === k} onClick={() => setPref(k)} style={PILL_STYLE}>{label}</button>
         ))}
       </div>
+    </Row>
+  );
+}
+
+// 데이터 내보내기: 압축 파일 하나에 엑셀용 CSV 여러 개 (2026-10-01 기획 결정)
+function ExportRow() {
+  const { toast } = useAccount();
+  const today = useToday();
+  const [busy, setBusy] = useState(false);
+  const go = async () => {
+    setBusy(true);
+    try {
+      await downloadExport(today);
+    } catch (e) {
+      toast(errorText(e));
+    }
+    setBusy(false);
+  };
+  return (
+    <Row title="데이터 내보내기" sub="꿈·목표, 계획 표, 할 일, 시간 기록, 하루 기록, 회고를 엑셀에서 열리는 표(CSV)로 묶어 받아요.">
+      <button className="btn btn-secondary" disabled={busy} onClick={go} style={PILL_STYLE}>{busy ? '만드는 중…' : '내보내기'}</button>
     </Row>
   );
 }

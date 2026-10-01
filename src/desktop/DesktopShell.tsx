@@ -1,6 +1,8 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { Icon, ICON } from '../Icon';
 import { Logo } from '../ui/Logo';
+import { ScrollArea } from '../ui/ScrollArea';
+import { StartChecklist } from './StartChecklist';
 import { useAccount } from '../account/AccountProvider';
 import CategoriesPage from './CategoriesPage';
 import DreamPage from './DreamPage';
@@ -54,11 +56,12 @@ function Sidebar() {
   const name = profile?.name ?? '';
   return (
     <aside style={{ flex: 'none', width: 236, position: 'sticky', top: 0, height: '100vh', padding: 14, boxSizing: 'border-box' }}>
-      <div style={{ height: '100%', background: 'var(--color-surface)', borderRadius: 32, padding: '24px 14px 14px', display: 'flex', flexDirection: 'column', gap: 22, boxSizing: 'border-box', overflowY: 'auto' }}>
+      <ScrollArea fade="var(--color-surface)" radius={32} style={{ height: '100%', background: 'var(--color-surface)', borderRadius: 32 }} innerStyle={{ padding: '24px 14px 14px', display: 'flex', flexDirection: 'column', gap: 22, boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 12px' }}>
           <Logo height={50} />
           <span style={{ fontSize: 12, color: 'var(--color-neutral-700)', letterSpacing: '.02em' }}>Plan Higher Dream</span>
         </div>
+        <StartChecklist />
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {NAV.map(([label, items]) => (
             <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -89,7 +92,7 @@ function Sidebar() {
             <span style={{ fontSize: 12, color: 'var(--color-neutral-700)' }}>계정 관리</span>
           </span>
         </NavLink>
-      </div>
+      </ScrollArea>
     </aside>
   );
 }

@@ -4,6 +4,7 @@ import type { Tone } from '../desktop/plan/shared';
 import type { Journal } from './useDay';
 import { supabase } from '../lib/supabase';
 import { THEME_OPTIONS, useThemePref } from '../lib/theme';
+import { ScrollArea } from '../ui/ScrollArea';
 
 const pill = (on: boolean, tone: Tone) => ({ background: on ? tone.bg : 'var(--color-surface)', color: on ? tone.ink : 'var(--color-text)', boxShadow: on ? 'inset 0 0 0 2px ' + tone.dot : 'none' });
 const H = { fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 22 } as const;
@@ -13,10 +14,10 @@ export function Sheet({ onClose, children, label }: { onClose: () => void; child
   return (
     <>
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'var(--scrim)' }} />
-      <div role="dialog" aria-label={label} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 11, maxHeight: '82%', overflowY: 'auto', background: 'var(--color-neutral-100)', borderRadius: '32px 32px 0 0', padding: '10px 20px max(28px, env(safe-area-inset-bottom))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 16, boxShadow: 'var(--shadow-lg)' }}>
+      <ScrollArea role="dialog" aria-label={label} fade="var(--color-neutral-100)" radius={32} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 11, maxHeight: '82%', background: 'var(--color-neutral-100)', borderRadius: '32px 32px 0 0', boxShadow: 'var(--shadow-lg)' }} innerStyle={{ padding: '10px 20px max(28px, env(safe-area-inset-bottom))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <span style={{ alignSelf: 'center', width: 40, height: 5, borderRadius: 99, background: 'var(--color-neutral-300)', flex: 'none' }} />
         {children}
-      </div>
+      </ScrollArea>
     </>
   );
 }

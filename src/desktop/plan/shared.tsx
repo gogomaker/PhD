@@ -99,10 +99,17 @@ export function PlanHeader({ kicker, title, sub, onPrev, onNext, prevLabel, next
 }
 
 // "+ 목표 열": 표에 없는 목표. 세부목표가 없으면 흐리게, 못 올림 (R-G2)
+const OPEN_COLUMN_MENU = 'phd:open-column-menu';
+
 export function ColumnMenu() {
   const { hidden, hasSubs, catOf, toneOf } = useTableGoals();
   const { show } = useColumnActions();
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const on = () => setOpen(true);
+    window.addEventListener(OPEN_COLUMN_MENU, on);
+    return () => window.removeEventListener(OPEN_COLUMN_MENU, on);
+  }, []);
   const anyEmpty = hidden.some(g => !hasSubs(g.id));
   return (
     <div style={{ position: 'relative' }}>
@@ -144,15 +151,20 @@ export function ColumnMenu() {
 }
 
 // 열이 하나도 없을 때
+// 표에 열이 없을 때: 상황마다 한 줄 안내 + 다음 행동 버튼 하나 (SPEC 5장 공통)
 export function NoColumns() {
+  const { goals } = useAccount();
   const { hidden, hasSubs } = useTableGoals();
-  const addable = hidden.some(g => hasSubs(g.id));
+  const open = goals.filter(g => !isClosed(g));
+  const [text, label, to]: [string, string, string | null] =
+    goals.length === 0 ? ['먼저 목표를 적어 주세요', '목표 설정', '/goals']
+    : open.length === 0 ? ['진행 중인 목표가 없어요. 새 목표를 적어 주세요', '목표 설정', '/goals']
+    : hidden.some(g => hasSubs(g.id)) ? ['계획할 목표를 표에 올려 주세요', '+ 목표 열 추가', null]
+    : ['꿈 보드에서 세부목표를 만든 목표만 열로 추가할 수 있어요', '꿈 보드로', '/board'];
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', background: 'var(--color-surface)', borderRadius: 28, padding: '20px 24px' }}>
-      <span style={{ fontSize: 15, fontWeight: 600, textWrap: 'pretty' }}>
-        {addable ? '오른쪽 위 "+ 목표 열"로 계획할 목표를 표에 올려 주세요' : '꿈 보드에서 세부목표를 만든 목표만 열로 추가할 수 있어요'}
-      </span>
-      {!addable && <Link to="/board" className="btn btn-primary">꿈 보드로</Link>}
+    <div data-testid="no-columns" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', background: 'var(--color-surface)', borderRadius: 28, padding: '20px 24px' }}>
+      <span style={{ fontSize: 15, fontWeight: 600, textWrap: 'pretty' }}>{text}</span>
+      {to ? <Link to={to} className="btn btn-primary">{label}</Link> : <button className="btn btn-primary" onClick={() => window.dispatchEvent(new Event(OPEN_COLUMN_MENU))}>{label}</button>}
     </div>
   );
 }

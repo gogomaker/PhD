@@ -7,6 +7,7 @@ import { userDayKey } from '../lib/day';
 import { hours, shortDate } from '../lib/tracking';
 import { removePhotos, shrinkPhoto, uploadPhoto } from '../lib/photos';
 import { PILL_STYLE } from '../ui/Dialog';
+import { ScrollArea } from '../ui/ScrollArea';
 
 const pill = (on: boolean) => (on ? 'btn btn-primary' : 'btn btn-secondary');
 type Kind = 'completed' | 'dropped';
@@ -77,7 +78,7 @@ export function WrapDialog({ goal: g, onClose }: { goal: Goal; onClose: () => vo
 
   return (
     <div className="dialog-backdrop" onClick={onClose} style={{ zIndex: 50, padding: 24 }}>
-      <div className="dialog" role="dialog" aria-label={g.name + ' 마무리하기'} onClick={e => e.stopPropagation()} style={{ width: 'min(560px, 100%)', maxHeight: 'calc(100vh - 48px)', overflowY: 'auto', gap: 20, boxSizing: 'border-box' }}>
+      <ScrollArea className="dialog" role="dialog" aria-label={g.name + ' 마무리하기'} onClick={e => e.stopPropagation()} fade="var(--color-surface)" radius={32} style={{ width: 'min(560px, 100%)', maxHeight: 'calc(100vh - 48px)', padding: 0, display: 'flex' }} innerStyle={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 20, boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: p.ink }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: p.dot }} />{cat?.name}
@@ -122,7 +123,7 @@ export function WrapDialog({ goal: g, onClose }: { goal: Goal; onClose: () => vo
           <button className="btn btn-ghost" onClick={onClose} style={PILL_STYLE}>취소</button>
           <button className="btn btn-primary" disabled={busy} onClick={confirm}>마무리하기</button>
         </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 }

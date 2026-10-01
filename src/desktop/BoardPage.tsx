@@ -8,6 +8,7 @@ import { BlurInput } from '../ui/BlurInput';
 import { MonthPicker, isMonth } from '../ui/MonthPicker';
 import { useDeleteGoal } from './goalActions';
 import { WrapDialog } from './WrapDialog';
+import { ScrollArea } from '../ui/ScrollArea';
 
 const pill = (on: boolean) => (on ? 'btn btn-primary' : 'btn btn-secondary');
 
@@ -121,7 +122,7 @@ function EditPanel({ goal: g, subs, onClose }: { goal: Goal; subs: Subgoal[]; on
   };
 
   return (
-    <aside data-testid="edit-panel" aria-label="목표 편집" style={{ position: 'sticky', top: 14, maxHeight: 'calc(100vh - 28px)', overflowY: 'auto', boxSizing: 'border-box', background: 'var(--color-surface)', borderRadius: 32, padding: '20px 22px 18px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <ScrollArea role="complementary" data-testid="edit-panel" aria-label="목표 편집" fade="var(--color-surface)" radius={32} style={{ position: 'sticky', top: 14, maxHeight: 'calc(100vh - 28px)', background: 'var(--color-surface)', borderRadius: 32 }} innerStyle={{ boxSizing: 'border-box', padding: '20px 22px 18px', display: 'flex', flexDirection: 'column', gap: 18 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: p.ink }}>
           <span style={{ width: 10, height: 10, borderRadius: '50%', background: p.dot }} />목표 편집 · {STATUS_LABEL[g.status]}
@@ -228,6 +229,6 @@ function EditPanel({ goal: g, subs, onClose }: { goal: Goal; subs: Subgoal[]; on
       )}
       {dialog}
       {wrapOpen && g.status === 'in_progress' && <WrapDialog goal={g} onClose={() => setWrapOpen(false)} />}
-    </aside>
+    </ScrollArea>
   );
 }

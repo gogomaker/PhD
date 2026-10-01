@@ -61,3 +61,6 @@ h1, h2, h3 { word-break: keep-all; }
 .progress-range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -6px; border-radius: 50%; background: var(--color-neutral-100); border: 3px solid var(--fill); box-sizing: border-box; box-shadow: var(--shadow-sm); }
 .progress-range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--color-neutral-100); border: 3px solid var(--fill); box-sizing: border-box; box-shadow: var(--shadow-sm); }
 .progress-range:focus-visible { outline: 2px solid var(--color-text); outline-offset: 4px; border-radius: 99px; }
+
+/* 시작 체크리스트 */
+.checklist-step:hover:not(:disabled) { background: var(--color-neutral-200) !important; }
