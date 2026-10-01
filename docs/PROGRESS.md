@@ -6,8 +6,8 @@
 | 단계 | 상태 | 비고 |
 |---|---|---|
 | M0 기반 | **승인 완료 (2026-10-01)** | main에 합침 |
-| M1 계정과 설정 | **검수 대기** | 브랜치 `claude/zealous-noether-nnc20w` |
-| M2 목표 | 다음 차례 | |
+| M1 계정과 설정 | **승인 (2026-10-01, 수정 2건 반영 후 M2로)** | 브랜치 `claude/zealous-noether-nnc20w` |
+| M2 목표 | 진행 중 | |
 
 ## 결정된 것 (기획자 승인)
 - 프레임워크: Vite + React + TypeScript (react-router-dom)
@@ -19,6 +19,9 @@
 - (M1) 로그인은 이메일+비밀번호만. Google은 나중에
 - (M1) 가입 시 이메일 인증 없음 (Supabase `mailer_autoconfirm = true`)
 - (M1) 가입 3단계 목표 카테고리 최소 1개
+- (M1 수정) 목표 카테고리 색은 순서대로 자동(일상 색 건너뜀). 일상 색만 직접 고름. 순서 바꾸기 = 색 바꾸기
+- (M1 수정) 휴대폰도 로그인 화면. "로그인 상태 유지" 체크(기본 켬, 끄면 창 닫을 때 로그아웃, 기기 브라우저마다 기억)
+- 휴대폰 검수: Vercel 미리보기 보호(Vercel Authentication)를 기획자가 끄기로 함
 
 ## 접속 정보
 - 공개 값(URL, anon key)은 `.env.production`, `.env.development`에 있음 — 공개되어도 되는 값
@@ -29,7 +32,7 @@
 
 ## DB 작업 방법
 - 마이그레이션: `supabase/migrations/*.sql` 에 파일을 추가하고 `scripts/db.sh <파일>` 로 적용 (관리 API 사용, CLI 없음)
-  - 적용 완료: `20261001000001_m1_accounts.sql`
+  - 적용 완료: `20261001000001_m1_accounts.sql`, `20261001000002_m1_color_by_order.sql`
 - DB 규칙 테스트: `scripts/db.sh supabase/tests/m1_accounts.sql` → `M1 DB 테스트 통과`. 한 트랜잭션 안에서 가짜 사용자 2명으로 돌리고 되돌림(흔적 없음)
 - Auth 설정(관리 API `config/auth`로 바꿈): site_url = https://phd-ashy.vercel.app, 비밀번호 8자 이상, 이메일 인증 끔,
   Redirect URLs = phd-ashy / `phd-*-gogomaker.vercel.app` / phd.yong-yong.com / localhost:5173

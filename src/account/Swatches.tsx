@@ -1,7 +1,7 @@
 import { CATEGORY_COLORS, PALETTE, type CategoryColor } from '../lib/palette';
 
-// 7색 고르기. 다른 카테고리가 쓰는 색은 흐리게, 고를 수 없음 (R-C1)
-export function Swatches({ value, used, onPick, size = 26 }: { value: CategoryColor; used: readonly string[]; onPick: (c: CategoryColor) => void; size?: number }) {
+// 7색 고르기. used에 든 색은 흐리게, 고를 수 없음
+export function Swatches({ value, used = [], onPick, size = 26 }: { value: CategoryColor; used?: readonly string[]; onPick: (c: CategoryColor) => void; size?: number }) {
   return (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
       {CATEGORY_COLORS.map(c => {

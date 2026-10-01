@@ -32,7 +32,7 @@ begin
 
   -- 가입 단계: 목표 카테고리 0개는 거절
   begin
-    perform public.complete_onboarding('student', '[]'::jsonb, 'purple', null);
+    perform public.complete_onboarding('student', array[]::text[], 'purple', null);
     raise exception 'FAIL 목표 카테고리 0개로 가입 완료됨';
   exception when raise_exception then
     if sqlerrm <> 'need_goal_category' then raise; end if;
@@ -40,44 +40,38 @@ begin
 
   -- R-C1: 7개는 거절
   begin
-    perform public.complete_onboarding('student',
-      '[{"name":"a","color":"red"},{"name":"b","color":"orange"},{"name":"c","color":"yellow"},{"name":"d","color":"green"},{"name":"e","color":"blue"},{"name":"f","color":"pink"},{"name":"g","color":"purple"}]'::jsonb,
-      'purple', null);
+    perform public.complete_onboarding('student', array['a', 'b', 'c', 'd', 'e', 'f', 'g'], 'purple', null);
     raise exception 'FAIL 목표 카테고리 7개로 가입 완료됨';
   exception when raise_exception then
     if sqlerrm <> 'goal_category_limit' then raise; end if;
   end;
 
-  -- R-C1: 일상과 같은 색은 거절
-  begin
-    perform public.complete_onboarding('student', '[{"name":"건강","color":"purple"}]'::jsonb, 'purple', null);
-    set constraints public.categories_user_color_key immediate;
-    raise exception 'FAIL 같은 색 두 카테고리로 가입 완료됨';
-  exception when unique_violation then null; end;
-  set constraints public.categories_user_color_key deferred;
-
   -- 정상 가입 완료 (꿈 건너뛰기)
-  perform public.complete_onboarding('military',
-    '[{"name":"건강","color":"red"},{"name":"어학","color":"purple"},{"name":"전공","color":"yellow"}]'::jsonb, 'green', '  ');
+  perform public.complete_onboarding('military', array['건강', '어학', '전공'], 'orange', '  ');
   set constraints public.categories_user_color_key immediate;
   set constraints public.categories_user_color_key deferred;
   select count(*) into n from public.profiles where onboarded_at is not null and life_stage = 'military' and dream is null;
   if n <> 1 then raise exception 'FAIL 가입 완료 저장'; end if;
   select string_agg(name || ':' || color, ',' order by position) into t from public.categories where kind = 'goal';
-  if t is distinct from '건강:red,어학:purple,전공:yellow' then raise exception 'FAIL 목표 카테고리 저장: %', t; end if;
+  -- 색은 순서대로, 일상 색(주황)은 건너뜀
+  if t is distinct from '건강:red,어학:yellow,전공:green' then raise exception 'FAIL 목표 카테고리 저장: %', t; end if;
   select color into t from public.categories where kind = 'daily';
-  if t <> 'green' then raise exception 'FAIL 일상 색 저장: %', t; end if;
+  if t <> 'orange' then raise exception 'FAIL 일상 색 저장: %', t; end if;
 
   -- 가입 완료는 한 번만
   begin
-    perform public.complete_onboarding('student', '[{"name":"x","color":"blue"}]'::jsonb, 'green', null);
+    perform public.complete_onboarding('student', array['x'], 'green', null);
     raise exception 'FAIL 가입 완료가 두 번 됨';
   exception when raise_exception then
     if sqlerrm <> 'already_onboarded' then raise; end if;
   end;
 
   -- R-C1: 목표 카테고리 6개까지, 7번째는 거절
-  insert into public.categories (kind, name, color, position) values ('goal', '취미', 'blue', 3), ('goal', '재정', 'orange', 4), ('goal', '관계', 'pink', 5);
+  insert into public.categories (kind, name, color, position) values ('goal', '취미', 'red', 3), ('goal', '재정', 'red', 4), ('goal', '관계', 'red', 5);
+  set constraints public.categories_user_color_key immediate;
+  set constraints public.categories_user_color_key deferred;
+  select string_agg(color, ',' order by position) into t from public.categories where kind = 'goal';
+  if t is distinct from 'red,yellow,green,blue,purple,pink' then raise exception 'FAIL 추가하면 순서대로 색: %', t; end if;
   begin
     insert into public.categories (kind, name, color, position) values ('goal', '일곱', 'red', 6);
     raise exception 'FAIL 7번째 목표 카테고리가 추가됨';
@@ -85,13 +79,17 @@ begin
     if sqlerrm <> 'goal_category_limit' then raise; end if;
   end;
 
-  -- R-C1: 이미 쓴 색으로 바꾸기 거절 (일상 색 포함)
-  begin
-    update public.categories set color = 'green' where name = '건강';
-    set constraints public.categories_user_color_key immediate;
-    raise exception 'FAIL 같은 색으로 바뀜';
-  exception when unique_violation then null; end;
+  -- 목표 카테고리 색을 직접 바꿔도 순서 색으로 되돌아간다
+  update public.categories set color = 'orange' where name = '건강';
+  select color into t from public.categories where name = '건강';
+  if t <> 'red' then raise exception 'FAIL 목표 색 직접 변경이 남음: %', t; end if;
+
+  -- 일상 색을 바꾸면 목표 색이 다시 매겨진다 (일상=빨강 → 목표는 주황부터)
+  update public.categories set color = 'red' where kind = 'daily';
+  set constraints public.categories_user_color_key immediate;
   set constraints public.categories_user_color_key deferred;
+  select string_agg(color, ',' order by position) into t from public.categories where kind = 'goal';
+  if t is distinct from 'orange,yellow,green,blue,purple,pink' then raise exception 'FAIL 일상 색 변경 후 다시 매기기: %', t; end if;
 
   -- 일상 카테고리는 삭제 불가 (지워지지 않음)
   delete from public.categories where kind = 'daily';
@@ -121,6 +119,14 @@ begin
   perform public.reorder_categories(array(select id from public.categories where kind = 'goal' order by position desc));
   select string_agg(name, ',' order by position) into t from public.categories where kind = 'goal';
   if t is distinct from '관계,재정,취미,전공,어학,건강' then raise exception 'FAIL 순서 바꾸기: %', t; end if;
+  -- 순서를 바꾸면 색도 바뀐다
+  select string_agg(name || ':' || color, ',' order by position) into t from public.categories where kind = 'goal';
+  if t is distinct from '관계:orange,재정:yellow,취미:green,전공:blue,어학:purple,건강:pink' then raise exception 'FAIL 순서 = 색: %', t; end if;
+
+  -- 지우면 뒤의 카테고리가 한 칸씩 당겨지고 색도 따라간다
+  delete from public.categories where name = '재정';
+  select string_agg(name || ':' || color || ':' || position, ',' order by position) into t from public.categories where kind = 'goal';
+  if t is distinct from '관계:orange:0,취미:yellow:1,전공:green:2,어학:blue:3,건강:purple:4' then raise exception 'FAIL 삭제 후 다시 매기기: %', t; end if;
 
   -- 키워드 추가·삭제
   insert into public.daily_keywords (category_id, name, position)
@@ -194,7 +200,7 @@ begin
   select count(*) into n from public.categories where user_id = 'a0000000-0000-0000-0000-00000000000a' and name = '해킹';
   if n <> 0 then raise exception 'FAIL A 카테고리 이름이 바뀜'; end if;
   select count(*) into n from public.categories where user_id = 'a0000000-0000-0000-0000-00000000000a';
-  if n <> 7 then raise exception 'FAIL A 카테고리 수: %', n; end if;
+  if n <> 6 then raise exception 'FAIL A 카테고리 수: %', n; end if;
 end $$;
 
 -- ── 계정 삭제: A의 모든 데이터가 함께 지워진다 ──

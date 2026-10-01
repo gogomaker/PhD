@@ -25,3 +25,6 @@ input::placeholder, textarea::placeholder { color: var(--color-neutral-600); }
 
 /* 한글 제목은 낱말 중간에서 줄바꿈하지 않는다 */
 h1, h2, h3 { word-break: keep-all; }
+
+/* 로그인 상태 유지 체크 상자: 키보드 초점 표시 */
+.remember-check input:focus-visible + span { outline: 2px solid var(--color-accent); outline-offset: 2px; }

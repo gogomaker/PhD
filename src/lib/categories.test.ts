@@ -1,35 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { firstFreeColor, toggleDraft, type DraftCategory } from './categories';
+import { goalColor, toggleDraft } from './categories';
 
-describe('firstFreeColor (R-C1)', () => {
-  it('쓰지 않은 첫 색', () => {
-    expect(firstFreeColor([])).toBe('red');
-    expect(firstFreeColor(['red', 'purple'])).toBe('orange');
+describe('goalColor (순서 = 색)', () => {
+  it('일상이 보라면 빨·주·노·초·파·분', () => {
+    expect([0, 1, 2, 3, 4, 5].map(i => goalColor(i, 'purple'))).toEqual(['red', 'orange', 'yellow', 'green', 'blue', 'pink']);
   });
-  it('7색을 다 쓰면 없음', () => {
-    expect(firstFreeColor(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink'])).toBeNull();
+  it('일상 색은 건너뛴다', () => {
+    expect([0, 1, 2].map(i => goalColor(i, 'red'))).toEqual(['orange', 'yellow', 'green']);
+  });
+  it('일상 색과 겹치는 목표 색은 없다 (R-C1)', () => {
+    for (const d of ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink'] as const) {
+      const colors = [0, 1, 2, 3, 4, 5].map(i => goalColor(i, d));
+      expect(colors).not.toContain(d);
+      expect(new Set(colors).size).toBe(6);
+    }
   });
 });
 
 describe('toggleDraft (가입 3단계 칩)', () => {
-  it('넣으면 일상 색을 피해 빈 색을 받는다', () => {
-    let d: DraftCategory[] = [];
-    d = toggleDraft(d, '건강', 'red');
-    expect(d).toEqual([{ name: '건강', color: 'orange' }]);
-  });
-  it('다시 누르면 빠진다', () => {
-    const d = toggleDraft(toggleDraft([], '건강', 'purple'), '건강', 'purple');
-    expect(d).toEqual([]);
+  it('넣고 다시 누르면 빠진다', () => {
+    expect(toggleDraft([], '건강')).toEqual(['건강']);
+    expect(toggleDraft(['건강', '어학'], '건강')).toEqual(['어학']);
   });
   it('7번째는 들어가지 않는다 (R-C1)', () => {
-    let d: DraftCategory[] = [];
-    for (const n of ['a', 'b', 'c', 'd', 'e', 'f', 'g']) d = toggleDraft(d, n, 'purple');
-    expect(d.map(x => x.name)).toEqual(['a', 'b', 'c', 'd', 'e', 'f']);
-    expect(new Set(d.map(x => x.color)).size).toBe(6);
-    expect(d.some(x => x.color === 'purple')).toBe(false);
+    let d: string[] = [];
+    for (const n of ['a', 'b', 'c', 'd', 'e', 'f', 'g']) d = toggleDraft(d, n);
+    expect(d).toEqual(['a', 'b', 'c', 'd', 'e', 'f']);
   });
   it('빈 이름은 무시하고 앞뒤 공백은 지운다', () => {
-    expect(toggleDraft([], '   ', 'purple')).toEqual([]);
-    expect(toggleDraft([], ' 어학 ', 'purple')[0].name).toBe('어학');
+    expect(toggleDraft([], '   ')).toEqual([]);
+    expect(toggleDraft([], ' 어학 ')).toEqual(['어학']);
   });
 });

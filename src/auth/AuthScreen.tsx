@@ -1,12 +1,12 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { getRemember, setRemember, supabase } from '../lib/supabase';
 import { errorText } from '../lib/errors';
 import { useAccount } from '../account/AccountProvider';
 import { useIsMobile } from '../useIsMobile';
 import { Swatches } from '../account/Swatches';
 import { CATEGORY_POOL, LIFE_STAGES, lifeStageOf, type LifeStage } from '../lib/lifeStage';
-import { MAX_CATEGORY_NAME, MAX_GOAL_CATEGORIES, toggleDraft, type DraftCategory } from '../lib/categories';
+import { MAX_CATEGORY_NAME, MAX_GOAL_CATEGORIES, goalColor, toggleDraft } from '../lib/categories';
 import { PALETTE, type CategoryColor } from '../lib/palette';
 
 const STEPS = ['계정', '나에 대해', '카테고리', '꿈'];
@@ -20,7 +20,10 @@ function AuthLayout({ step, children }: { step?: number; children: ReactNode }) 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexWrap: 'wrap', alignContent: mobile ? 'flex-start' : undefined, gap: 14, padding: 14, boxSizing: 'border-box' }}>
       {mobile ? (
-        <span style={{ width: '100%', padding: '18px 10px 0', fontFamily: 'var(--font-heading)', fontSize: 34, lineHeight: 1 }}>PhD</span>
+        <div style={{ width: '100%', padding: '18px 10px 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <span style={{ fontFamily: 'var(--font-heading)', fontSize: 34, lineHeight: 1 }}>PhD</span>
+          <span style={{ fontSize: 12, color: 'var(--color-neutral-700)', letterSpacing: '.02em' }}>Plan Higher Dream</span>
+        </div>
       ) : (
         <div style={{ flex: '1 1 440px', minHeight: 560, background: 'var(--color-accent-2-200)', color: 'var(--color-accent-2-900)', borderRadius: 40, position: 'relative', overflow: 'hidden', padding: '44px 48px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
           <span style={{ position: 'absolute', right: -90, bottom: -110, width: 380, height: 380, borderRadius: '50%', background: 'var(--color-accent-300)' }} />
@@ -61,6 +64,21 @@ function Heading({ title, sub }: { title: string; sub?: string }) {
   );
 }
 
+// 로그인 상태 유지: 끄면 이 브라우저 창을 닫을 때 로그아웃돼요
+function RememberCheck({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="remember-check" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>
+      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }} />
+      <span aria-hidden="true" style={{ width: 20, height: 20, borderRadius: 7, boxSizing: 'border-box', display: 'grid', placeItems: 'center', border: checked ? 0 : '2px solid var(--color-neutral-400)', background: checked ? 'var(--color-accent)' : 'transparent', color: 'var(--color-neutral-100)' }}>
+        {checked && (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+        )}
+      </span>
+      로그인 상태 유지
+    </label>
+  );
+}
+
 function FormError({ text }: { text: string | null }) {
   if (!text) return null;
   return <p role="alert" style={{ margin: 0, padding: '10px 16px', borderRadius: 16, background: 'var(--color-accent-100)', color: 'var(--color-accent-800)', fontSize: 13.5, fontWeight: 600 }}>{text}</p>;
@@ -70,6 +88,7 @@ function FormError({ text }: { text: string | null }) {
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRememberState] = useState(getRemember);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,6 +96,7 @@ export function Login() {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setRemember(remember);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
     if (error) setError(errorText(error));
@@ -89,7 +109,10 @@ export function Login() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div className="field"><label htmlFor="login-email">이메일</label><input id="login-email" className="input" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} /></div>
           <div className="field"><label htmlFor="login-password">비밀번호</label><input id="login-password" className="input" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} /></div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}><Link to="/forgot-password" style={{ fontSize: 13 }}>비밀번호를 잊었어요</Link></div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <RememberCheck checked={remember} onChange={setRememberState} />
+            <Link to="/forgot-password" style={{ fontSize: 13 }}>비밀번호를 잊었어요</Link>
+          </div>
         </div>
         <FormError text={error} />
         <button className="btn btn-primary" type="submit" disabled={busy} style={BIG}>{busy ? '로그인 중…' : '로그인'}</button>
@@ -113,6 +136,7 @@ export function SignupAccount() {
     if (password.length < 8) return setError('비밀번호는 8자 이상이어야 해요');
     setBusy(true);
     setError(null);
+    setRemember(true);
     const { data, error } = await supabase.auth.signUp({ email: email.trim(), password, options: { data: { name: name.trim() } } });
     setBusy(false);
     if (error) return setError(errorText(error));
@@ -142,7 +166,7 @@ export function Onboarding() {
   const { profile, dailyCategory, run } = useAccount();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [stage, setStage] = useState<LifeStage | null>((profile?.life_stage as LifeStage) ?? null);
-  const [cats, setCats] = useState<DraftCategory[]>([]);
+  const [cats, setCats] = useState<string[]>([]);
   const [dailyColor, setDailyColor] = useState<CategoryColor>(dailyCategory?.color ?? 'purple');
   const [dream, setDream] = useState('');
   const [busy, setBusy] = useState(false);
@@ -175,13 +199,15 @@ export function Onboarding() {
 
   if (step === 2) {
     const rec: readonly string[] = lifeStageOf(stage).cats;
-    const pool = [...CATEGORY_POOL, ...cats.map(c => c.name).filter(n => !CATEGORY_POOL.includes(n))];
+    const pool = [...CATEGORY_POOL, ...cats.filter(n => !CATEGORY_POOL.includes(n))];
     const full = cats.length >= MAX_GOAL_CATEGORIES;
     const chip = (name: string) => {
-      const c = cats.find(x => x.name === name);
-      const p = c && PALETTE[c.color];
+      // 색은 고른 순서대로 (빨강부터, 일상 색은 건너뜀)
+      const i = cats.indexOf(name);
+      const c = i >= 0;
+      const p = c ? PALETTE[goalColor(i, dailyColor)] : null;
       return (
-        <button key={name} type="button" aria-pressed={!!c} onClick={() => setCats(d => toggleDraft(d, name, dailyColor))} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 40, padding: '0 16px', borderRadius: 999, border: 0, cursor: !c && full ? 'not-allowed' : 'pointer', font: 'inherit', fontSize: 14, fontWeight: 700, background: p ? p.bg : 'var(--color-surface)', color: p ? p.ink : 'var(--color-neutral-800)', boxShadow: p ? 'inset 0 0 0 2px ' + p.dot : 'none', opacity: !c && full ? 0.45 : 1 }}>
+        <button key={name} type="button" aria-pressed={!!c} onClick={() => setCats(d => toggleDraft(d, name))} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 40, padding: '0 16px', borderRadius: 999, border: 0, cursor: !c && full ? 'not-allowed' : 'pointer', font: 'inherit', fontSize: 14, fontWeight: 700, background: p ? p.bg : 'var(--color-surface)', color: p ? p.ink : 'var(--color-neutral-800)', boxShadow: p ? 'inset 0 0 0 2px ' + p.dot : 'none', opacity: !c && full ? 0.45 : 1 }}>
           {c ? '✓ ' : '+ '}{name}
         </button>
       );
@@ -204,7 +230,7 @@ export function Onboarding() {
               onKeyDown={e => {
                 const v = e.currentTarget.value.trim();
                 if (e.key === 'Enter' && v && !e.nativeEvent.isComposing) {
-                  if (!cats.some(c => c.name === v)) setCats(d => toggleDraft(d, v, dailyColor));
+                  if (!cats.includes(v)) setCats(d => toggleDraft(d, v));
                   e.currentTarget.value = '';
                 }
               }}
@@ -219,8 +245,8 @@ export function Onboarding() {
             <span style={{ fontWeight: 700, fontSize: 14 }}>{dailyCategory?.name ?? '일상'}</span>
             <span className="tag tag-neutral" style={{ fontWeight: 700, fontSize: 11 }}>기본 포함</span>
           </div>
-          <span style={{ fontSize: 12.5, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>목표 없이 시간 기록과 생활 할 일에 쓰는 카테고리예요. 색만 골라 주세요.</span>
-          <Swatches value={dailyColor} used={cats.map(c => c.color)} onPick={setDailyColor} />
+          <span style={{ fontSize: 12.5, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>목표 없이 시간 기록과 생활 할 일에 쓰는 카테고리예요. 색만 골라 주세요. 목표 카테고리는 고른 순서대로 남은 색을 받아요.</span>
+          <Swatches value={dailyColor} onPick={setDailyColor} />
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn btn-secondary" onClick={() => setStep(1)} style={BACK}>이전</button>

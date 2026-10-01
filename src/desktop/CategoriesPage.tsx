@@ -4,7 +4,7 @@ import { useAccount, type Category } from '../account/AccountProvider';
 import { Swatches } from '../account/Swatches';
 import { PALETTE } from '../lib/palette';
 import { lifeStageOf } from '../lib/lifeStage';
-import { MAX_CATEGORY_NAME, MAX_GOAL_CATEGORIES, MAX_KEYWORD_NAME, firstFreeColor } from '../lib/categories';
+import { MAX_CATEGORY_NAME, MAX_GOAL_CATEGORIES, MAX_KEYWORD_NAME } from '../lib/categories';
 
 const chevronUp = 'm18 15-6-6-6 6';
 const chevronDown = 'm6 9 6 6 6-6';
@@ -43,7 +43,6 @@ function NameInput({ value, onSave, label, maxLength }: { value: string; onSave:
 
 export default function CategoriesPage() {
   const { profile, goalCategories: cats, dailyCategory: daily, keywords, run } = useAccount();
-  const used = [...cats.map(c => c.color), ...(daily ? [daily.color] : [])];
   const full = cats.length >= MAX_GOAL_CATEGORIES;
   const stage = lifeStageOf(profile?.life_stage);
   const suggest = stage.cats.filter(n => !cats.some(c => c.name === n));
@@ -56,11 +55,11 @@ export default function CategoriesPage() {
     [ids[i], ids[j]] = [ids[j], ids[i]];
     run(() => supabase.rpc('reorder_categories', { p_ids: ids }));
   };
+  // 색은 DB가 순서대로 다시 매긴다. 여기서 넣는 색은 임시값
   const add = (name = '새 카테고리') => {
-    const color = firstFreeColor(used);
-    if (full || !color) return;
+    if (full) return;
     const position = cats.length ? Math.max(...cats.map(c => c.position)) + 1 : 0;
-    run(() => supabase.from('categories').insert({ kind: 'goal', name, color, position }));
+    run(() => supabase.from('categories').insert({ kind: 'goal', name, color: 'red', position }));
   };
   // M1: 목표 카테고리는 1개 이상 남긴다 (가입 때와 같은 기준). 목표가 든 카테고리 삭제 규칙은 M2에서
   const remove = (c: Category) => run(() => supabase.from('categories').delete().eq('id', c.id));
@@ -70,7 +69,7 @@ export default function CategoriesPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <span className="tag tag-accent-2" style={{ alignSelf: 'flex-start', fontWeight: 700 }}>설정 · 인생 카테고리</span>
         <h1 style={{ margin: 0, fontSize: 42 }}>삶을 몇 개의 영역으로 나눠 볼까요</h1>
-        <p style={{ margin: 0, fontSize: 14, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>목표 카테고리는 목표를 묶는 큰 영역이에요. 순서는 보드의 순서가 되고, 색은 계획 표와 모바일 타임 테이블에 그대로 쓰여요. 7색은 일상 카테고리까지 하나씩 나눠 가져요.</p>
+        <p style={{ margin: 0, fontSize: 14, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>목표 카테고리는 목표를 묶는 큰 영역이에요. 순서는 보드의 순서가 되고, 색은 순서대로 정해져요. 순서를 바꾸면 색도 함께 바뀌고, 계획 표와 모바일 타임 테이블에 그대로 쓰여요.</p>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -86,7 +85,6 @@ export default function CategoriesPage() {
               <div style={{ flex: '1 1 220px', display: 'flex', alignItems: 'center', background: p.bg, borderRadius: 999, padding: '0 20px', height: 48, transform: 'rotate(-0.6deg)' }}>
                 <NameInput value={c.name} label="카테고리 이름" maxLength={MAX_CATEGORY_NAME} onSave={name => update(c, { name })} />
               </div>
-              <Swatches size={24} value={c.color} used={used} onPick={color => update(c, { color })} />
               <button
                 title={cats.length <= 1 ? '목표 카테고리는 1개 이상 있어야 해요' : '삭제'}
                 aria-label="삭제"
@@ -124,13 +122,13 @@ export default function CategoriesPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, background: 'var(--color-surface)', borderRadius: 30, padding: '20px 22px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', color: 'var(--color-neutral-600)' }}>일상 카테고리 · 1개 고정</span>
-            <span style={{ fontSize: 13, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>목표 없이 시간 기록과 생활 할 일에 써요. 목표 설정, 꿈 보드, 계획 표에는 나오지 않고, 모바일에서 키워드로 할 일을 적고 시간을 칠해요.</span>
+            <span style={{ fontSize: 13, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>목표 없이 시간 기록과 생활 할 일에 써요. 목표 설정, 꿈 보드, 계획 표에는 나오지 않고, 모바일에서 키워드로 할 일을 적고 시간을 칠해요. 일상 색은 직접 고르고, 목표 카테고리는 이 색을 건너뛰고 순서대로 색을 받아요.</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 220px', display: 'flex', alignItems: 'center', background: PALETTE[daily.color].bg, borderRadius: 999, padding: '0 20px', height: 48 }}>
               <NameInput value={daily.name} label="일상 카테고리 이름" maxLength={MAX_CATEGORY_NAME} onSave={name => update(daily, { name })} />
             </div>
-            <Swatches value={daily.color} used={used} onPick={color => update(daily, { color })} />
+            <Swatches value={daily.color} onPick={color => update(daily, { color })} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--color-neutral-700)' }}>키워드 · 모바일에서 일상 할 일과 시간 칠하기에 쓰여요</span>
