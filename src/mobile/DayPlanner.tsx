@@ -210,7 +210,7 @@ export default function DayPlanner() {
         onContextMenu={e => e.preventDefault()}
         style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 5, padding: '6px 6px 6px 3px', borderRadius: 16, background: sel ? 'var(--color-neutral-100)' : 'transparent', boxShadow: sel ? 'inset 0 0 0 2px ' + m.tone.dot : 'none', cursor: canAct ? 'pointer' : 'default', opacity: rel > 1 ? 0.5 : 1, WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
       >
-        <span style={{ flex: 'none', width: 12, textAlign: 'right', fontFamily: 'var(--font-heading)', fontSize: 12, lineHeight: 1, color: 'var(--color-neutral-700)' }}>{it.num}</span>
+        <span style={{ flex: 'none', width: 12, textAlign: 'right', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 12, lineHeight: 1, color: 'var(--color-neutral-700)' }}>{it.num}</span>
         <span title={SRC[it.source] + (it.carried ? ' · ' + carriedLabel : '')} style={{ flex: 'none', width: 14, display: 'grid', placeItems: 'center', color: 'var(--color-neutral-600)' }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round" aria-label={SRC[it.source]}><path d={ICON[it.source]} /></svg>
         </span>
@@ -289,8 +289,8 @@ export default function DayPlanner() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <button onClick={() => go(addDays(day, -1))} aria-label="전날" className="btn" style={{ width: 36, height: 36, padding: 0, color: 'var(--color-neutral-700)' }}><Icon name="chevronLeft" /></button>
           <button onClick={() => setSheet({ k: 'cal' })} aria-label="달력 열기" style={{ border: 0, background: 'transparent', cursor: 'pointer', font: 'inherit', color: 'var(--color-text)', padding: '4px 10px', borderRadius: 999, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-            <span data-testid="day-label" style={{ fontFamily: 'var(--font-heading)', fontSize: 26, lineHeight: 1 }}>{md}</span>
-            <span style={{ fontFamily: 'var(--font-heading)', fontSize: 17, color: 'var(--color-accent-700)' }}>{dow}</span>
+            <span data-testid="day-label" style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 26, lineHeight: 1 }}>{md}</span>
+            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 17, color: 'var(--color-accent-700)' }}>{dow}</span>
           </button>
           <button onClick={() => go(addDays(day, 1))} aria-label="다음 날" className="btn" style={{ width: 36, height: 36, padding: 0, color: 'var(--color-neutral-700)' }}><Icon name="chevronRight" /></button>
         </div>

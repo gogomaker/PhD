@@ -32,7 +32,7 @@ export default function GoalsPage() {
       {dream && (
         <div style={{ background: 'var(--color-accent-200)', borderRadius: 32, padding: '20px 20px 20px 26px', display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', color: 'var(--color-accent-800)' }}>나의 꿈</span>
-          <span style={{ fontFamily: 'var(--font-heading)', fontSize: 30, lineHeight: 1.2 }}>{dream}</span>
+          <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 30, lineHeight: 1.2 }}>{dream}</span>
         </div>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: '200px minmax(0,1fr)', columnGap: 24 }}>
@@ -58,8 +58,8 @@ function CategoryRow({ category: c, num, goals, onDelete, first }: { category: C
   return (
     <div data-testid="goal-row" style={{ display: 'grid', gridTemplateColumns: '200px minmax(0,1fr)', gap: 24, alignItems: 'start' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: p.bg, borderRadius: 999, padding: '0 18px 0 8px', height: 48, transform: 'rotate(-0.6deg)' }}>
-        <span style={{ flex: 'none', width: 32, height: 32, borderRadius: '50%', background: p.dot, color: 'var(--color-neutral-100)', display: 'grid', placeItems: 'center', fontFamily: 'var(--font-heading)', fontSize: 15 }}>{num}</span>
-        <span style={{ fontFamily: 'var(--font-heading)', fontSize: 19, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+        <span style={{ flex: 'none', width: 32, height: 32, borderRadius: '50%', background: p.dot, color: 'var(--color-neutral-100)', display: 'grid', placeItems: 'center', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 15 }}>{num}</span>
+        <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 19, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

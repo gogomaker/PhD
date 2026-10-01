@@ -67,7 +67,7 @@ function Sidebar() {
     <aside style={{ flex: 'none', width: 236, position: 'sticky', top: 0, height: '100vh', padding: 14, boxSizing: 'border-box' }}>
       <div style={{ height: '100%', background: 'var(--color-surface)', borderRadius: 32, padding: '24px 14px 14px', display: 'flex', flexDirection: 'column', gap: 22, boxSizing: 'border-box', overflowY: 'auto' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 12px' }}>
-          <span style={{ fontFamily: 'var(--font-heading)', fontSize: 34, lineHeight: 1 }}>PhD</span>
+          <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 34, lineHeight: 1 }}>PhD</span>
           <span style={{ fontSize: 12, color: 'var(--color-neutral-700)', letterSpacing: '.02em' }}>Plan Higher Dream</span>
         </div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -86,7 +86,7 @@ function Sidebar() {
         <NavLink to="/dream" title="꿈 작성으로 이동" className="side-card dream-card" style={{ marginTop: 'auto', borderRadius: 24, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: 'var(--color-accent-800)' }}>나의 꿈</span>
           {dream ? (
-            <span style={{ fontFamily: 'var(--font-heading)', fontSize: 16, lineHeight: 1.3 }}>{dream}</span>
+            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 16, lineHeight: 1.3 }}>{dream}</span>
           ) : (
             <span style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.4, color: 'var(--color-accent-900)' }}>
               아직 꿈을 적지 않았어요 · <span style={{ textDecoration: 'underline', textUnderlineOffset: 3 }}>쓰기</span>

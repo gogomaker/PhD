@@ -39,7 +39,7 @@ export default function BoardPage() {
                 <div key={c.id} data-testid="board-column" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 4px 4px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ flex: 'none', width: 34, height: 34, borderRadius: '50%', background: p.dot, color: 'var(--color-neutral-100)', display: 'grid', placeItems: 'center', fontFamily: 'var(--font-heading)', fontSize: 16 }}>{i + 1}</span>
+                      <span style={{ flex: 'none', width: 34, height: 34, borderRadius: '50%', background: p.dot, color: 'var(--color-neutral-100)', display: 'grid', placeItems: 'center', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 16 }}>{i + 1}</span>
                       <h3 style={{ margin: 0, fontSize: 24 }}>{c.name}</h3>
                     </div>
                     <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>{c.aspiration || '되고 싶은 모습을 적어보세요'}</p>
@@ -131,7 +131,7 @@ function EditPanel({ goal: g, subs, onClose }: { goal: Goal; subs: Subgoal[]; on
 
       <fieldset disabled={closed} style={{ border: 0, margin: 0, padding: 0, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <BlurInput label="목표명" placeholder="목표명" maxLength={MAX_GOAL_NAME} value={g.name} onSave={name => save({ name })} style={{ fontFamily: 'var(--font-heading)', fontSize: 28, lineHeight: 1.2, background: 'transparent', border: 0, borderBottom: '2px dashed var(--color-neutral-300)', outline: 'none', padding: '0 0 8px', color: 'var(--color-text)', width: '100%', boxSizing: 'border-box' }} />
+          <BlurInput label="목표명" placeholder="목표명" maxLength={MAX_GOAL_NAME} value={g.name} onSave={name => save({ name })} style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 28, lineHeight: 1.2, background: 'transparent', border: 0, borderBottom: '2px dashed var(--color-neutral-300)', outline: 'none', padding: '0 0 8px', color: 'var(--color-text)', width: '100%', boxSizing: 'border-box' }} />
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.25fr)', gap: 10, alignItems: 'start' }}>
             <div className="field">
               <label htmlFor="ed-cat">카테고리</label>

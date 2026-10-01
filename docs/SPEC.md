@@ -303,9 +303,10 @@ Claude Code가 BaaS에 맞게 다듬되, **아래 관계와 제약은 유지**�
 --color-accent-700: #8c491a;   --color-accent-800: #643312;
 --radius-sm: 8px;  --radius-md: 16px;  --radius-lg: 28px;
 
-/* 폰트: 제목 Caprasimo + Jua(한글), 본문 Figtree + Pretendard(한글) */
---font-heading: "Caprasimo", "Jua", system-ui, sans-serif;
---font-body: "Figtree", "Pretendard", system-ui, sans-serif;
+/* 폰트: 전부 Pretendard (2026-10-01 기획 결정). 제목은 굵게(800). 글꼴 파일은 앱에 함께 넣는다 */
+--font-heading: "Pretendard Variable", Pretendard, system-ui, sans-serif;
+--font-heading-weight: 800;
+--font-body: "Pretendard Variable", Pretendard, system-ui, sans-serif;
 ```
 
 카테고리 7색 (배경 / 글자 / 점·진한 칠):

@@ -31,7 +31,7 @@ export default function DreamPage() {
           placeholder="한 문장으로 적어보세요"
           value={profile.dream ?? ''}
           onSave={v => save({ dream: v || null })}
-          style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 10, fontFamily: 'var(--font-heading)', fontSize: 46, lineHeight: 1.15, background: 'transparent', border: 0, outline: 'none', resize: 'none', color: 'var(--color-text)', padding: 0, fieldSizing: 'content' } as CSSProperties}
+          style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 10, fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 46, lineHeight: 1.15, background: 'transparent', border: 0, outline: 'none', resize: 'none', color: 'var(--color-text)', padding: 0, fieldSizing: 'content' } as CSSProperties}
         />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>

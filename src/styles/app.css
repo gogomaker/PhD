@@ -1,8 +1,11 @@
-/* 목업 helmet의 공통 규칙. 한글은 제목 Jua, 본문 Pretendard로 대신 표시 */
+/* 글꼴은 전부 Pretendard (2026-10-01 기획 결정). 제목은 굵게(800), 앱에 글꼴 파일을 함께 넣어 외부 글꼴 사이트에 기대지 않는다 */
 :root {
-  --font-heading: "Caprasimo", "Jua", system-ui, sans-serif;
-  --font-body: "Figtree", "Pretendard", system-ui, sans-serif;
+  --font-heading: "Pretendard Variable", Pretendard, system-ui, sans-serif;
+  --font-heading-weight: 800;
+  --font-body: "Pretendard Variable", Pretendard, system-ui, sans-serif;
 }
+h1, h2, h3, h4 { letter-spacing: -0.02em; }
+.btn { font-weight: 700; }
 html, body, #root { margin: 0; min-height: 100%; }
 body { background: var(--color-bg); font-family: var(--font-body); color: var(--color-text); }
 a { color: var(--color-accent-700); }

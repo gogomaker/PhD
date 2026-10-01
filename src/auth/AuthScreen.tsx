@@ -21,7 +21,7 @@ function AuthLayout({ step, children }: { step?: number; children: ReactNode }) 
     <div style={{ minHeight: '100dvh', display: 'flex', flexWrap: 'wrap', alignContent: mobile ? 'flex-start' : undefined, gap: 14, padding: 14, boxSizing: 'border-box' }}>
       {mobile ? (
         <div style={{ width: '100%', padding: '18px 10px 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontFamily: 'var(--font-heading)', fontSize: 34, lineHeight: 1 }}>PhD</span>
+          <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 34, lineHeight: 1 }}>PhD</span>
           <span style={{ fontSize: 12, color: 'var(--color-neutral-700)', letterSpacing: '.02em' }}>Plan Higher Dream</span>
         </div>
       ) : (
@@ -29,7 +29,7 @@ function AuthLayout({ step, children }: { step?: number; children: ReactNode }) 
           <span style={{ position: 'absolute', right: -90, bottom: -110, width: 380, height: 380, borderRadius: '50%', background: 'var(--color-accent-300)' }} />
           <span style={{ position: 'absolute', right: 190, bottom: 170, width: 120, height: 120, borderRadius: '50%', background: 'var(--color-accent-2-400)' }} />
           <span style={{ position: 'absolute', right: 70, top: 90, width: 64, height: 64, borderRadius: '50%', background: 'oklch(0.85 0.1 85)' }} />
-          <span style={{ position: 'relative', fontFamily: 'var(--font-heading)', fontSize: 40, lineHeight: 1 }}>PhD</span>
+          <span style={{ position: 'relative', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 40, lineHeight: 1 }}>PhD</span>
           <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 440 }}>
             <h1 style={{ margin: 0, fontSize: 60, lineHeight: 1.02 }}>Plan Higher Dream</h1>
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, textWrap: 'pretty' }}>꿈을 카테고리와 목표로 나누고, 연간·월간·주간 계획을 거쳐 오늘 할 일까지 이어요.</p>
@@ -260,7 +260,7 @@ export function Onboarding() {
     <AuthLayout step={3}>
       <Heading title="궁극적인 꿈은 무엇인가요?" sub="모든 목표와 계획이 이 한 문장을 향해요. 언제든 꿈 작성에서 다듬을 수 있어요." />
       <div style={{ background: 'var(--color-accent-200)', borderRadius: 28, padding: '18px 22px' }}>
-        <textarea value={dream} onChange={e => setDream(e.target.value)} maxLength={200} rows={2} placeholder="한 문장으로 적어보세요" aria-label="나의 꿈" style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'var(--font-heading)', fontSize: 26, lineHeight: 1.25, background: 'transparent', border: 0, outline: 'none', resize: 'none', color: 'var(--color-text)', padding: 0 }} />
+        <textarea value={dream} onChange={e => setDream(e.target.value)} maxLength={200} rows={2} placeholder="한 문장으로 적어보세요" aria-label="나의 꿈" style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 26, lineHeight: 1.25, background: 'transparent', border: 0, outline: 'none', resize: 'none', color: 'var(--color-text)', padding: 0 }} />
       </div>
       <div style={{ display: 'flex', gap: 10 }}>
         <button className="btn btn-secondary" disabled={busy} onClick={() => setStep(2)} style={BACK}>이전</button>

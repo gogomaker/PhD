@@ -39,7 +39,7 @@ export default function App() {
 function Splash() {
   return (
     <div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center' }}>
-      <span style={{ fontFamily: 'var(--font-heading)', fontSize: 40, color: 'var(--color-neutral-500)' }}>PhD</span>
+      <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 40, color: 'var(--color-neutral-500)' }}>PhD</span>
     </div>
   );
 }

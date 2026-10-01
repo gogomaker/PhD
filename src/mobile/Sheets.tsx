@@ -5,7 +5,7 @@ import type { Tone } from '../desktop/plan/shared';
 import type { Journal } from './useDay';
 
 const pill = (on: boolean, tone: Tone) => ({ background: on ? tone.bg : 'var(--color-surface)', color: on ? tone.ink : 'var(--color-text)', boxShadow: on ? 'inset 0 0 0 2px ' + tone.dot : 'none' });
-const H = { fontFamily: 'var(--font-heading)', fontSize: 22 } as const;
+const H = { fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 22 } as const;
 
 // 아래에서 올라오는 시트
 export function Sheet({ onClose, children, label }: { onClose: () => void; children: ReactNode; label: string }) {
@@ -235,7 +235,7 @@ export function JournalSheet({ day, journal, readOnly, onSave, onClose }: { day:
           {[1, 2, 3, 4, 5].map(n => {
             const on = j.score === n;
             return (
-              <button key={n} aria-label={n + '점'} aria-pressed={on} disabled={readOnly} onClick={() => setJ({ ...j, score: on ? null : n })} style={{ width: 44, height: 44, borderRadius: '50%', border: 0, padding: 0, cursor: readOnly ? 'default' : 'pointer', fontFamily: 'var(--font-heading)', fontSize: 18, background: on ? 'var(--color-accent)' : 'var(--color-surface)', color: on ? 'var(--color-neutral-100)' : 'var(--color-text)', boxShadow: on ? 'none' : 'inset 0 0 0 2px var(--color-neutral-300)' }}>{n}</button>
+              <button key={n} aria-label={n + '점'} aria-pressed={on} disabled={readOnly} onClick={() => setJ({ ...j, score: on ? null : n })} style={{ width: 44, height: 44, borderRadius: '50%', border: 0, padding: 0, cursor: readOnly ? 'default' : 'pointer', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 18, background: on ? 'var(--color-accent)' : 'var(--color-surface)', color: on ? 'var(--color-neutral-100)' : 'var(--color-text)', boxShadow: on ? 'none' : 'inset 0 0 0 2px var(--color-neutral-300)' }}>{n}</button>
             );
           })}
         </div>
@@ -246,7 +246,7 @@ export function JournalSheet({ day, journal, readOnly, onSave, onClose }: { day:
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {j.thanks.map((v, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ flex: 'none', width: 16, fontFamily: 'var(--font-heading)', fontSize: 15, color: 'var(--color-accent-700)' }}>{i + 1}.</span>
+              <span style={{ flex: 'none', width: 16, fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 15, color: 'var(--color-accent-700)' }}>{i + 1}.</span>
               <input className="input" aria-label={`감사 ${i + 1}`} maxLength={100} value={v} readOnly={readOnly} onChange={e => setJ({ ...j, thanks: j.thanks.map((x, k) => (k === i ? e.target.value : x)) })} placeholder="감사한 일" />
             </div>
           ))}

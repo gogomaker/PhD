@@ -36,7 +36,7 @@ function NameInput({ value, onSave, label, maxLength }: { value: string; onSave:
       onChange={e => setDraft(e.target.value)}
       onBlur={commit}
       onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && e.currentTarget.blur()}
-      style={{ width: '100%', fontFamily: 'var(--font-heading)', fontSize: 21, background: 'transparent', border: 0, color: 'var(--color-text)', outline: 'none', padding: 0 }}
+      style={{ width: '100%', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 21, background: 'transparent', border: 0, color: 'var(--color-text)', outline: 'none', padding: 0 }}
     />
   );
 }
@@ -85,7 +85,7 @@ export default function CategoriesPage() {
                 <button title="위로" aria-label="위로" disabled={i === 0} onClick={() => move(i, -1)} className="btn" style={{ width: 26, height: 22, padding: 0, color: 'var(--color-neutral-600)' }}><Svg d={chevronUp} size={13} /></button>
                 <button title="아래로" aria-label="아래로" disabled={i === cats.length - 1} onClick={() => move(i, 1)} className="btn" style={{ width: 26, height: 22, padding: 0, color: 'var(--color-neutral-600)' }}><Svg d={chevronDown} size={13} /></button>
               </div>
-              <span style={{ flex: 'none', width: 34, height: 34, borderRadius: '50%', background: p.dot, color: 'var(--color-neutral-100)', display: 'grid', placeItems: 'center', fontFamily: 'var(--font-heading)', fontSize: 16 }}>{i + 1}</span>
+              <span style={{ flex: 'none', width: 34, height: 34, borderRadius: '50%', background: p.dot, color: 'var(--color-neutral-100)', display: 'grid', placeItems: 'center', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 16 }}>{i + 1}</span>
               <div style={{ flex: '1 1 220px', display: 'flex', alignItems: 'center', background: p.bg, borderRadius: 999, padding: '0 20px', height: 48, transform: 'rotate(-0.6deg)' }}>
                 <NameInput value={c.name} label="카테고리 이름" maxLength={MAX_CATEGORY_NAME} onSave={name => update(c, { name })} />
               </div>
