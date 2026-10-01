@@ -42,7 +42,7 @@ function NameInput({ value, onSave, label, maxLength }: { value: string; onSave:
 }
 
 export default function CategoriesPage() {
-  const { profile, goalCategories: cats, dailyCategory: daily, keywords, goals, run, toast } = useAccount();
+  const { profile, goalCategories: cats, dailyCategory: daily, keywords, allKeywords, goals, run, toast } = useAccount();
   const full = cats.length >= MAX_GOAL_CATEGORIES;
   const stage = lifeStageOf(profile?.life_stage);
   const suggest = stage.cats.filter(n => !cats.some(c => c.name === n));
@@ -141,7 +141,7 @@ export default function CategoriesPage() {
               {keywords.map(k => (
                 <span key={k.id} data-testid="keyword" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 36, padding: '0 6px 0 14px', borderRadius: 999, background: PALETTE[daily.color].bg, color: PALETTE[daily.color].ink, fontSize: 13.5, fontWeight: 700 }}>
                   {k.name}
-                  <button title="키워드 삭제" aria-label={k.name + ' 삭제'} onClick={() => run(() => supabase.from('daily_keywords').delete().eq('id', k.id))} style={{ width: 24, height: 24, borderRadius: '50%', border: 0, background: 'transparent', color: 'inherit', cursor: 'pointer', display: 'grid', placeItems: 'center', padding: 0 }}>
+                  <button title="키워드 삭제" aria-label={k.name + ' 삭제'} onClick={() => run(() => supabase.from('daily_keywords').update({ archived: true }).eq('id', k.id))} style={{ width: 24, height: 24, borderRadius: '50%', border: 0, background: 'transparent', color: 'inherit', cursor: 'pointer', display: 'grid', placeItems: 'center', padding: 0 }}>
                     <Svg d={cross} size={12} />
                   </button>
                 </span>
@@ -156,8 +156,11 @@ export default function CategoriesPage() {
                   if (e.key !== 'Enter' || !v || e.nativeEvent.isComposing) return;
                   input.value = '';
                   if (keywords.some(k => k.name === v)) return;
-                  const position = keywords.length ? Math.max(...keywords.map(k => k.position)) + 1 : 0;
-                  run(() => supabase.from('daily_keywords').insert({ category_id: daily.id, name: v, position }));
+                  const position = allKeywords.length ? Math.max(...allKeywords.map(k => k.position)) + 1 : 0;
+                  // 지운(보관한) 키워드를 다시 적으면 되살린다 — 지난 기록이 그 키워드를 가리키므로 실제로 지우지 않는다
+                  const old = allKeywords.find(k => k.name === v);
+                  if (old) run(() => supabase.from('daily_keywords').update({ archived: false, position }).eq('id', old.id));
+                  else run(() => supabase.from('daily_keywords').insert({ category_id: daily.id, name: v, position }));
                 }}
                 style={{ height: 36, width: 180, borderRadius: 999, border: '2px dashed var(--color-neutral-400)', background: 'transparent', padding: '0 14px', font: 'inherit', fontSize: 13, color: 'var(--color-text)', outline: 'none', boxSizing: 'border-box' }}
               />

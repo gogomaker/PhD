@@ -18,6 +18,8 @@ export function errorText(e: unknown): string {
     session_not_found: '로그인이 풀렸어요. 다시 로그인해 주세요',
   };
   if (auth[code]) return auth[code];
+  if (msg.includes('day_locked')) return '이 날은 시간표를 바꿀 수 없어요';
+  if (code === '42501') return '이 날은 바꿀 수 없어요';
   if (msg.includes('goal_category_limit')) return '목표 카테고리는 최대 6개예요';
   if (msg.includes('need_goal_category')) return '목표 카테고리를 1개 이상 골라 주세요';
   if (code === '23503' && (msg.includes('year_cells') || msg.includes('month_cells') || msg.includes('practices'))) return '계획 표에 배치된 세부목표는 지울 수 없어요';

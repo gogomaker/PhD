@@ -131,8 +131,8 @@ begin
   -- 키워드 추가·삭제
   insert into public.daily_keywords (category_id, name, position)
     select id, '운동', 4 from public.categories where kind = 'daily';
-  delete from public.daily_keywords where name = '이동';
-  select string_agg(name, ',' order by position) into t from public.daily_keywords;
+  update public.daily_keywords set archived = true where name = '이동';
+  select string_agg(name, ',' order by position) into t from public.daily_keywords where not archived;
   if t is distinct from '업무,생활,휴식,운동' then raise exception 'FAIL 키워드 추가·삭제: %', t; end if;
 end $$;
 
@@ -152,7 +152,7 @@ begin
   update public.categories set name = '해킹' where user_id = 'a0000000-0000-0000-0000-00000000000a';
   update public.profiles set name = '해킹' where id = 'a0000000-0000-0000-0000-00000000000a';
   delete from public.categories where user_id = 'a0000000-0000-0000-0000-00000000000a';
-  delete from public.daily_keywords where user_id = 'a0000000-0000-0000-0000-00000000000a';
+  update public.daily_keywords set archived = true where user_id = 'a0000000-0000-0000-0000-00000000000a';
 
   -- A의 일상 카테고리에 키워드 끼워 넣기 시도
   begin

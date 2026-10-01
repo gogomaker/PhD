@@ -152,12 +152,12 @@ end $$;
 reset role;
 insert into public.year_cells (user_id, goal_id, subgoal_id, start_month, end_month, memo)
   select 'a0000000-0000-0000-0000-00000000000a', g.id, s.id, (d.this_m - interval '1 month')::date, d.this_m, '지난달부터'
-  from public.goals g join public.subgoals s on s.goal_id = g.id and s.name = 'RC', d where g.name = '토익 850';
+  from public.goals g join public.subgoals s on s.goal_id = g.id and s.name = 'RC', d where g.name = '토익 850' and g.user_id = 'a0000000-0000-0000-0000-00000000000a';
 insert into public.notes (user_id, scope, period_key, start_index, end_index, text)
   select 'a0000000-0000-0000-0000-00000000000a', 'week', d.sun - 7, 0, 0, '지난주 메모' from d;
 insert into public.practices (user_id, goal_id, subgoal_id, week_start_date, name, weekdays)
   select 'a0000000-0000-0000-0000-00000000000a', g.id, s.id, d.sun - 7, '지난주 실천', '{3}'
-  from public.goals g join public.subgoals s on s.goal_id = g.id and s.name = 'LC', d where g.name = '토익 850';
+  from public.goals g join public.subgoals s on s.goal_id = g.id and s.name = 'LC', d where g.name = '토익 850' and g.user_id = 'a0000000-0000-0000-0000-00000000000a';
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-00000000000a","role":"authenticated"}', true);
 do $$

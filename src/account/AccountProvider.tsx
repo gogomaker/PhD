@@ -30,7 +30,7 @@ export type Category = {
   position: number;
 };
 
-export type Keyword = { id: string; category_id: string; name: string; position: number };
+export type Keyword = { id: string; category_id: string; name: string; position: number; archived: boolean };
 
 export type GoalStatus = 'not_started' | 'in_progress' | 'completed' | 'dropped';
 
@@ -67,7 +67,10 @@ type AccountValue = {
   profile: Profile | null;
   goalCategories: Category[];
   dailyCategory: Category | null;
+  /** 쓰는 키워드 (보관한 것 제외) */
   keywords: Keyword[];
+  /** 보관한 것까지 (지난 기록 표시용) */
+  allKeywords: Keyword[];
   goals: Goal[];
   subgoals: Subgoal[];
   yearCells: YearCell[];
@@ -117,7 +120,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const [p, c, k, g, sg, yc, mc, nt, pr] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
       supabase.from('categories').select('id, kind, name, color, aspiration, position').order('position'),
-      supabase.from('daily_keywords').select('id, category_id, name, position').order('position').order('created_at'),
+      supabase.from('daily_keywords').select('id, category_id, name, position, archived').order('position').order('created_at'),
       supabase.from('goals').select('id, category_id, name, position, due_month, reason, importance, fallback, status, started_at, created_at, table_position, table_hidden').order('position').order('created_at'),
       supabase.from('subgoals').select('id, goal_id, name, position').order('position').order('created_at'),
       supabase.from('year_cells').select('id, goal_id, subgoal_id, start_month, end_month, memo'),
@@ -199,7 +202,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       profile: d.profile,
       goalCategories: d.categories.filter(c => c.kind === 'goal'),
       dailyCategory: d.categories.find(c => c.kind === 'daily') ?? null,
-      keywords: d.keywords,
+      keywords: d.keywords.filter(k => !k.archived),
+      allKeywords: d.keywords,
       goals: d.goals,
       subgoals: d.subgoals,
       yearCells: d.yearCells,

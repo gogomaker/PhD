@@ -8,7 +8,8 @@
 | M0 기반 | **승인 완료 (2026-10-01)** | main에 합침 |
 | M1 계정과 설정 | **승인 (2026-10-01, 수정 2건 반영 후 M2로)** | 브랜치 `claude/zealous-noether-nnc20w` |
 | M2 목표 | **승인 완료 (2026-10-01)** | 같은 브랜치 |
-| M3 계획 표 | **검수 대기** | 같은 브랜치 |
+| M3 계획 표 | **승인 완료 (2026-10-01)** | 같은 브랜치 |
+| M4 모바일 하루 플래너 | **검수 대기** | 같은 브랜치 |
 
 ## 결정된 것 (기획자 승인)
 - 프레임워크: Vite + React + TypeScript (react-router-dom)
@@ -27,6 +28,7 @@
 - (M2) 목표를 적을 때 기한(연·월)도 바로 받는다
 - (M3) 연간 표는 1~12월 달력 연도 + 앞뒤 해 이동
 - (M3) 실천을 모두 지우면 목표는 다시 시작 전 (M4부터는 할 일 기록이 있으면 되돌리지 않음)
+- (M4) 못 한 할 일은 끝낼 때까지 넘어감 (R-T5), 오늘·내일 직접 추가한 할 일은 길게 눌러 삭제 (R-T6)
 - (M3 수정) 지난 기간 계획은 무조건 잠금 (R-P12, DB 정책 + 화면). 한 주 시작은 일요일 고정 (R-P13, 계정 설정에서 뺌)
 
 ## 접속 정보
@@ -38,8 +40,8 @@
 
 ## DB 작업 방법
 - 마이그레이션: `supabase/migrations/*.sql` 에 파일을 추가하고 `scripts/db.sh <파일>` 로 적용 (관리 API 사용, CLI 없음)
-  - 적용 완료: `20261001000001_m1_accounts.sql`, `20261001000002_m1_color_by_order.sql`, `20261001000003_m2_goals.sql`, `20261001000004_m3_plans.sql`, `20261001000005_m3_lock_past.sql`
-- DB 테스트: `supabase/tests/m1_accounts.sql`, `m2_goals.sql`, `m3_plans.sql`
+  - 적용 완료: `20261001000001_m1_accounts.sql`, `20261001000002_m1_color_by_order.sql`, `20261001000003_m2_goals.sql`, `20261001000004_m3_plans.sql`, `20261001000005_m3_lock_past.sql`, `20261001000006_m4_day.sql`, `20261001000007_m4_alarms.sql`
+- DB 테스트: `supabase/tests/m1_accounts.sql`, `m2_goals.sql`, `m3_plans.sql`, `m4_day.sql`
 - DB 규칙 테스트: `scripts/db.sh supabase/tests/m1_accounts.sql` → `M1 DB 테스트 통과`. 한 트랜잭션 안에서 가짜 사용자 2명으로 돌리고 되돌림(흔적 없음)
 - Auth 설정(관리 API `config/auth`로 바꿈): site_url = https://phd-ashy.vercel.app, 비밀번호 8자 이상, 이메일 인증 끔,
   Redirect URLs = phd-ashy / `phd-*-gogomaker.vercel.app` / phd.yong-yong.com / localhost:5173
@@ -75,6 +77,15 @@
 - 실천 화면 위치: 요일 1개 → 그 요일 칸, 2개 이상 → 이번 주 줄 (R-P8). 칸에 실천이 있으면 마우스를 올렸을 때 "+ 실천" 버튼
 - 꿈 보드 패널: 배치된 세부목표에 "계획 표에 배치됨", 삭제 버튼 꺼짐 (R-G9)
 
+## M4에서 만든 것
+- 테이블: `tasks`(할 일), `time_blocks`(10분 시간표, 계획/실제 층), `day_journals`(하루 기록), `push_subscriptions`(알림 받을 기기). `daily_keywords.archived`(지우면 보관 — 지난 기록이 가리키므로)
+- 할 일 계산(`src/lib/today.ts`): 반복·자동 배정은 주간 표 실천에서 계산, 행은 체크·칠하기·이름 붙이기 때 만든다(`ensureRow`). 넘어온 일은 `carried_from_date`(+ 직접 추가는 `carried_task_id`)로 그날 행을 만든다
+- 날짜 권한(R-D2, 4.4)은 DB 정책: 할 일 추가·삭제 = 오늘·내일, 체크 = 오늘, 계획 블록 = 오늘·내일, 실제 칠하기·하루 기록 = 오늘. 시간표는 `save_day_blocks(날짜, 층, 블록들)`로 그날 한 층을 통째로 바꾼다
+- R-D1: `user_day_at(사용자, 시각)` / `user_today()`. 새벽(하루 시작 전) 예약은 달력으로 다음 날 울린다(`task_alarm_at`)
+- 알람(R-T3): 서비스 워커 `public/sw.js`, 설치 정보 `public/manifest.webmanifest`, 아이콘 192/512. 예약 할 일을 추가할 때 알림 허락을 받고 기기를 저장. pg_cron이 1분마다 Edge Function `send-alarms`를 부르고, 그 함수가 `claim_due_alarms()`로 시각이 된 것을 골라 웹 푸시로 보낸다
+  - VAPID 공개 키는 `.env.*`의 `VITE_VAPID_PUBLIC_KEY`, 비밀 키는 Supabase Edge Function 비밀값(`VAPID_PRIVATE_KEY`)에만. 함수 배포: `npx supabase functions deploy send-alarms --project-ref vvhpabbqiguuobpivdbf --use-api`
+- 모바일 시간표 저장은 순서대로(큐), 성공하면 다시 읽지 않는다(화면 상태가 기준)
+
 ## 남은 일 / 알려진 제약
 - 이메일 변경: Supabase 기본 메일은 기획자 계정 이메일에만 보내져서 지금은 이메일을 읽기 전용으로 둠. 메일 서비스(SMTP) 붙일 때 같이 연다
 - 비밀번호 찾기 메일도 같은 제약(기획자 본인 이메일로는 옴)
@@ -82,3 +93,5 @@
 - 회고 알림 켜기/시각은 저장만 됨. 실제 알림은 PWA 작업(M4) 이후
 - 키워드 삭제 시 지난 기록에 쓰인 키워드 처리(R-D2와 충돌 여부)는 M4에서 정한다
 - 계정 삭제는 모든 행을 지운다. M4에서 지난 날 잠금(R-D2)을 DB에 넣을 때 계정 삭제는 예외가 되게 해야 함
+- 알람은 이 환경에서 실제 휴대폰으로 확인할 수 없다(기획자가 Android에서 확인). 서버 쪽 고르기·한 번만 보내기는 DB 테스트로 확인
+- 회고 알림(매일 정한 시각)은 아직 안 보냄 — 같은 알람 장치로 M5에서 붙일 수 있음
