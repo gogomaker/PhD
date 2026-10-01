@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeDay, paint, pickCandidates, segments, slotOf, timeOf, timedSlots, type PracticeLite, type TaskRow } from './today';
+import { computeDay, paint, segments, slotOf, timeOf, timedSlots, type PracticeLite, type TaskRow } from './today';
 
 // 2026-09-27(일) 주. 목 = 10-01
 const W = '2026-09-27';
@@ -12,20 +12,20 @@ const T = (x: Partial<TaskRow> & Pick<TaskRow, 'date' | 'source'>): TaskRow => (
 const keys = (d: { repeat: { key: string }[]; day: { key: string }[] }) => [...d.repeat, ...d.day].map(x => x.key);
 
 describe('할 일이 생기는 방법 (4.3)', () => {
-  const ps = [P('thu', 'once', [4]), P('rep', 'repeat', [1, 2, 3, 4, 5, 6, 7]), P('wedfri', 'once', [3, 4, 5])];
+  const ps = [P('thu', 'once', [4]), P('rep', 'repeat', [1, 2, 3, 4, 5, 6, 7]), P('wedfri', 'repeat', [3, 4, 5])];
   it('주간 표 목요일 칸 실천이 목요일 "오늘 할 일"에 자동으로', () => {
     const d = computeDay('2026-10-01', '2026-10-01', ps, []);
     expect(d.day.map(x => x.key)).toContain('auto:thu');
-    expect(d.repeat.map(x => x.key)).toEqual(['rep:rep']);
+    expect(d.repeat.map(x => x.key)).toEqual(['rep:rep', 'rep:wedfri']);
   });
-  it('기간 실천(요일 2개 이상)은 자동으로 들어오지 않고 담기 후보', () => {
+  it('여러 요일 실천은 고른 요일마다 반복으로 (기획 결정)', () => {
     const d = computeDay('2026-10-01', '2026-10-01', ps, []);
-    expect(keys(d)).not.toContain('auto:wedfri');
-    expect(pickCandidates('2026-10-01', ps, []).map(p => p.id)).toEqual(['wedfri']);
+    expect(d.repeat.map(x => x.key)).toEqual(['rep:rep', 'rep:wedfri']);
+    expect(keys(computeDay('2026-10-04', '2026-10-01', ps, []))).not.toContain('rep:wedfri');
   });
   it('번호는 반복 섹션부터 이어서 (R-S8)', () => {
     const d = computeDay('2026-10-01', '2026-10-01', ps, []);
-    expect([...d.repeat, ...d.day].map(x => x.num)).toEqual([1, 2]);
+    expect([...d.repeat, ...d.day].map(x => x.num)).toEqual([1, 2, 3]);
   });
 });
 
@@ -63,24 +63,6 @@ describe('못 했을 때 (4.3)', () => {
     const d = computeDay('2026-10-01', '2026-10-01', [], [plain, timed]);
     expect(keys(d)).toEqual(['cdir:' + plain.id]);
     expect(d.day[0].insert).toEqual({ date: '2026-10-01', source: 'direct', carried_task_id: plain.id, carried_from_date: '2026-09-30' });
-  });
-  it('담은 일을 못 하면 기간 안에서 다시 후보로', () => {
-    const ps2 = [P('wedfri', 'once', [3, 4, 5])];
-    const pickedWed = T({ date: '2026-09-30', source: 'picked', practice_id: 'wedfri' });
-    expect(keys(computeDay('2026-10-01', '2026-10-01', ps2, [pickedWed]))).toEqual([]);
-    expect(pickCandidates('2026-10-01', ps2, [pickedWed]).map(p => p.id)).toEqual(['wedfri']);
-  });
-});
-
-describe('R-T1, R-T2', () => {
-  const ps = [P('wedfri', 'once', [3, 4, 5]), P('monwed', 'once', [1, 3])];
-  it('수–금 단발 실천을 수요일에 완료하면 목·금 담기 목록에 안 나온다', () => {
-    const done = T({ date: '2026-09-30', source: 'picked', practice_id: 'wedfri', done_at: 'x' });
-    expect(pickCandidates('2026-10-01', ps, [done]).map(p => p.id)).toEqual([]);
-    expect(pickCandidates('2026-10-02', ps, [done]).map(p => p.id)).toEqual([]);
-  });
-  it('오늘이 기간(요일)에 없으면 후보가 아니다', () => {
-    expect(pickCandidates('2026-10-01', ps, []).map(p => p.id)).toEqual(['wedfri']);
   });
 });
 

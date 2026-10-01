@@ -8,11 +8,11 @@ import { fmtMinutes, relOf, segments, SLOTS, timedSlots, timeOf, type DayItem, t
 import type { Tone } from '../desktop/plan/shared';
 import { useDay } from './useDay';
 import { TimeTable, type BandView, type Cells, type PlanBoxView } from './TimeTable';
-import { AddSheet, CalendarSheet, ConfirmSheet, JournalSheet, PickSheet, PlanSheet, type PickRow } from './Sheets';
+import { AddSheet, CalendarSheet, ConfirmSheet, JournalSheet, PlanSheet } from './Sheets';
 import { ensurePush } from './push';
 
 type PlanInfo = { task_id?: string | null; keyword_id?: string | null; label?: string | null };
-type SheetState = null | { k: 'cal' } | { k: 'pick' } | { k: 'add' } | { k: 'journal' } | { k: 'plan'; key: string; isNew: boolean } | { k: 'del'; task: TaskRow; name: string };
+type SheetState = null | { k: 'cal' } | { k: 'add' } | { k: 'journal' } | { k: 'plan'; key: string; isNew: boolean } | { k: 'del'; task: TaskRow; name: string };
 
 const ICON = {
   repeat: 'M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8M21 3v5h-5',
@@ -196,7 +196,6 @@ export default function DayPlanner() {
     const sel = canAct && !!it.row && brush === 'task:' + it.row.id;
     const t = it.direct;
     const carriedLabel = it.carried ? (diffDays(it.originDate, day) === 1 ? '어제에서' : md0(it.originDate) + '에서') : '';
-    const period = it.source === 'picked' && it.practice ? '기간' : '';
     return (
       <div
         key={it.key}
@@ -218,7 +217,6 @@ export default function DayPlanner() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
             <span data-testid="todo-tag" style={{ flex: '0 1 auto', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 10.5, fontWeight: 700, lineHeight: 1.2, padding: '2px 7px', borderRadius: 999, background: m.tone.bg, color: m.tone.ink }}>{m.tag}</span>
             {carriedLabel && <span data-testid="carried" style={{ flex: 'none', fontSize: 10, fontWeight: 700, color: 'var(--color-accent-700)', whiteSpace: 'nowrap' }}>{carriedLabel}</span>}
-            {period && <span style={{ flex: 'none', fontSize: 10, fontWeight: 700, color: 'var(--color-neutral-700)', whiteSpace: 'nowrap' }}>{period}</span>}
             {t?.is_timed && (
               <span style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 700, color: 'var(--color-neutral-700)', whiteSpace: 'nowrap' }}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round" aria-label="알람"><path d={ICON.alarm} /></svg>
@@ -245,20 +243,6 @@ export default function DayPlanner() {
   };
 
   const doneCount = D.list.day.filter(x => x.done).length;
-  const pickRows: PickRow[] = useMemo(() => {
-    const picked = D.tasks.filter(t => t.source === 'picked' && t.date === day);
-    const ids = new Set([...D.candidates.map(p => p.id), ...picked.map(t => t.practice_id!)]);
-    return practices
-      .filter(p => ids.has(p.id))
-      .map(p => {
-        const m = practiceMeta(p.id);
-        const g = goals.find(x => x.id === p.goal_id);
-        const pr = picked.find(t => t.practice_id === p.id);
-        return { id: p.id, tag: m.tag, goal: g?.name ?? '', name: p.name, weekStart: p.week_start_date, weekdays: p.weekdays, tone: m.tone, on: !!pr, done: !!pr?.done_at };
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [D.tasks, D.candidates, practices, day, goals, subgoals, goalCategories]);
-
   const planSheet = sheet?.k === 'plan' ? sheet : null;
   const planRange = (() => {
     if (!planSheet) return '';
@@ -339,7 +323,6 @@ export default function DayPlanner() {
             )}
             {canAdd && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5, padding: '8px 2px 2px' }}>
-                <button onClick={() => setSheet({ k: 'pick' })} className="btn add-dashed" style={{ height: 36, border: '2px dashed var(--color-neutral-400)', color: 'var(--color-neutral-800)', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 12.5, borderRadius: 16, padding: '0 10px' }}>+ 이번 주에서 담기</button>
                 <button onClick={() => setSheet({ k: 'add' })} className="btn add-dashed" style={{ height: 36, border: '2px dashed var(--color-neutral-400)', color: 'var(--color-neutral-800)', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 12.5, borderRadius: 16, padding: '0 10px' }}>+ 직접 추가</button>
               </div>
             )}
@@ -420,7 +403,6 @@ export default function DayPlanner() {
       </button>
 
       {sheet?.k === 'cal' && <CalendarSheet day={day} today={today} onPick={go} onClose={() => setSheet(null)} />}
-      {sheet?.k === 'pick' && <PickSheet rows={pickRows} onToggle={r => D.togglePick(r.id, D.tasks.find(t => t.source === 'picked' && t.date === day && t.practice_id === r.id))} onClose={() => setSheet(null)} />}
       {sheet?.k === 'add' && (
         <AddSheet
           keywords={keywords}

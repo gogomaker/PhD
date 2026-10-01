@@ -81,8 +81,8 @@ end $$;
 -- ── 관리자 시점: 진행 중 / 마무리 상태를 만들어 본다 (M3·M5에서 서버가 바꾸는 값) ──
 reset role;
 update public.goals set status = 'in_progress', started_at = now() where name = '체력 만들기' and user_id = 'a0000000-0000-0000-0000-00000000000a';
-insert into public.goals (user_id, category_id, name, due_month, status)
-  select 'a0000000-0000-0000-0000-00000000000a', id, '6시 기상', '2026-09-01', 'completed' from public.categories where name = '건강' and user_id = 'a0000000-0000-0000-0000-00000000000a';
+insert into public.goals (user_id, category_id, name, due_month, status, finished_at)
+  select 'a0000000-0000-0000-0000-00000000000a', id, '6시 기상', '2026-09-01', 'completed', now() from public.categories where name = '건강' and user_id = 'a0000000-0000-0000-0000-00000000000a';
 insert into public.subgoals (user_id, goal_id, name)
   select 'a0000000-0000-0000-0000-00000000000a', id, '기상 기록' from public.goals where name = '6시 기상' and user_id = 'a0000000-0000-0000-0000-00000000000a';
 

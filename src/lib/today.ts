@@ -1,4 +1,5 @@
 // 모바일 하루 플래너: 그날의 할 일 목록 계산 (SPEC 4.3)
+// 실천 종류는 요일 수로 정해진다: 요일 1개 = 단발(못 하면 넘어감), 여러 요일 = 반복 (2026-10-01 기획 결정)
 // 반복·자동 배정 할 일은 주간 표 실천에서 계산하고, 행(tasks)은 체크하거나 칠하거나 이름을 붙일 때 만든다.
 import { diffDays, type DayKey } from './day';
 import { practiceDates } from './plan';
@@ -76,11 +77,6 @@ export function computeDay(day: DayKey, today: DayKey, practices: PracticeLite[]
   // 모레 이후: 배정된 실천만
   if (rel > 1) return number({ repeat, day: auto });
 
-  // 담은 일
-  const picked = tasks
-    .filter(t => t.source === 'picked' && t.date === day)
-    .map(t => item({ key: 'pick:' + t.id, section: 'day', source: 'picked', practice: practices.find(p => p.id === t.practice_id), row: t, originDate: day, carried: false }));
-
   // 직접 추가 (그날 처음 적은 것)
   const direct = tasks
     .filter(t => t.source === 'direct' && !t.carried_task_id && t.date === day)
@@ -108,30 +104,12 @@ export function computeDay(day: DayKey, today: DayKey, practices: PracticeLite[]
     carried.sort((a, b) => a.originDate.localeCompare(b.originDate));
   }
 
-  return number({ repeat, day: [...auto, ...picked, ...carried, ...direct] });
+  return number({ repeat, day: [...auto, ...carried, ...direct] });
 }
 
 function number(x: { repeat: DayItem[]; day: DayItem[] }) {
   [...x.repeat, ...x.day].forEach((it, i) => { it.num = i + 1; });
   return x;
-}
-
-/**
- * "이번 주에서 담기" 후보 (R-T1, R-T2): 요일이 2개 이상인 단발 실천 중 그날이 포함되고,
- * 아직 완료하지 않았고, 그날 이미 담지 않은 것
- */
-export function pickCandidates(day: DayKey, practices: PracticeLite[], tasks: TaskRow[]) {
-  return practices.filter(
-    p =>
-      p.kind === 'once' &&
-      p.weekdays.length > 1 &&
-      practiceDates(p.week_start_date, p.weekdays).includes(day) &&
-      !tasks.some(t => t.source === 'picked' && t.practice_id === p.id && t.done_at),
-  );
-}
-
-export function isPicked(day: DayKey, practiceId: string, tasks: TaskRow[]) {
-  return tasks.find(t => t.source === 'picked' && t.practice_id === practiceId && t.date === day);
 }
 
 // ───────── 10분 칸 (R-S1: 하루 시작 시각부터 144칸) ─────────

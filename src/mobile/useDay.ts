@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { errorText } from '../lib/errors';
 import { useAccount } from '../account/AccountProvider';
 import type { DayKey } from '../lib/day';
-import { computeDay, pickCandidates, type DayItem, type TaskRow } from '../lib/today';
+import { computeDay, type DayItem, type TaskRow } from '../lib/today';
 
 export type BlockRow = { id: string; date: string; layer: 'plan' | 'actual'; start_slot: number; end_slot: number; task_id: string | null; daily_keyword_id: string | null; label: string | null; block_key: string | null };
 export type Journal = { id?: string; date: string; score: number | null; reason: string; thanks: string[]; memo: string };
@@ -40,7 +40,6 @@ export function useDay(day: DayKey, today: DayKey) {
   }, [loadTasks, loadDay]);
 
   const list = useMemo(() => computeDay(day, today, practices, tasks), [day, today, practices, tasks]);
-  const candidates = useMemo(() => pickCandidates(day, practices, tasks), [day, practices, tasks]);
 
   /** 행이 없는 할 일(반복·자동·넘어온 일)은 지금 만든다. 행 id를 돌려준다 */
   const ensureRow = useCallback(
@@ -75,9 +74,6 @@ export function useDay(day: DayKey, today: DayKey) {
     if (!id) return;
     await mutate(supabase.from('tasks').update({ done_at: it.done ? null : new Date().toISOString() }).eq('id', id));
   };
-
-  const togglePick = (practiceId: string, picked: TaskRow | undefined) =>
-    picked ? mutate(supabase.from('tasks').delete().eq('id', picked.id), 'both') : mutate(supabase.from('tasks').insert({ date: day, source: 'picked', practice_id: practiceId }));
 
   const addDirect = (x: { name: string; keywordId: string; timed: null | { start: string; end: string } }) =>
     mutate(
@@ -118,5 +114,5 @@ export function useDay(day: DayKey, today: DayKey) {
     return true;
   };
 
-  return { loaded, tasks, blocks, journal, list, candidates, ensureRow, toggleDone, togglePick, addDirect, removeTask, saveLayer, saveJournal };
+  return { loaded, tasks, blocks, journal, list, ensureRow, toggleDone, addDirect, removeTask, saveLayer, saveJournal };
 }

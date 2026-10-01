@@ -10,7 +10,7 @@ import { Chip, ColumnHeader, ICONS, LockNote, NOTE, NoColumns, PlanHeader, PopHe
 const MAX_SHOWN = 3; // R-P9
 const pill = (on: boolean) => (on ? 'btn btn-primary' : 'btn btn-secondary');
 
-type Pop = { goalId: string; row: number; anchor: DOMRect; sub: string | null; name: string; repeat: boolean; days: number[] };
+type Pop = { goalId: string; row: number; anchor: DOMRect; sub: string | null; name: string; days: number[] };
 
 // 주간 계획: "이번 주" 줄 + 요일 7줄. 목표 열에는 병합 없이 실천을 쌓는다 (R-P6). 참고사항 열만 병합
 export default function WeekPlan() {
@@ -60,7 +60,7 @@ export default function WeekPlan() {
   const submit = async () => {
     if (!pop || !pop.sub || !pop.name.trim() || pop.days.length === 0) return;
     const weekdays = [...new Set(pop.days.map(i => isoDow(days[i])))].sort((a, b) => a - b);
-    const ok = await run(() => supabase.from('practices').insert({ goal_id: pop.goalId, subgoal_id: pop.sub, week_start_date: week, name: pop.name.trim(), kind: pop.repeat ? 'repeat' : 'once', weekdays }));
+    const ok = await run(() => supabase.from('practices').insert({ goal_id: pop.goalId, subgoal_id: pop.sub, week_start_date: week, name: pop.name.trim(), weekdays }));
     if (ok) setPop(null);
   };
 
@@ -144,7 +144,7 @@ export default function WeekPlan() {
                   setSel={setSel}
                   popOn={pop?.goalId === g.id && pop.row === row}
                   label={`${g.name} ${row === -1 ? '이번 주' : labels[row] + '요일'}`}
-                  onAdd={anchor => { setSel(null); setPop({ goalId: g.id, row, anchor, sub: null, name: '', repeat: false, days: row === -1 ? [] : [row] }); }}
+                  onAdd={anchor => { setSel(null); setPop({ goalId: g.id, row, anchor, sub: null, name: '', days: row === -1 ? [] : [row] }); }}
                   onDelete={p => { setSel(null); run(() => supabase.from('practices').delete().eq('id', p.id)); }}
                 />
               );
@@ -153,7 +153,7 @@ export default function WeekPlan() {
         </TableFrame>
       )}
       <p style={{ margin: 0, fontSize: 13, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>
-        하루짜리 실천은 요일 칸에, 여러 날에 걸친 실천은 '이번 주' 줄에 모여요. 반복(↻) 실천은 고른 요일마다 할 일로 나타나고, 단발 실천은 그 기간 안에 한 번 하면 사라져요.
+        요일을 하나 고르면 그 요일 칸에, 여러 개 고르면 '이번 주' 줄에 모여요. 실천은 고른 요일마다 모바일 할 일이 돼요. 요일 하나짜리는 못 하면 다음 날로 넘어가고, 여러 요일(↻)은 그날만 해요.
       </p>
       {pop && popGoal && (
         <Popover anchor={pop.anchor} width={300} height={560} onClose={() => setPop(null)}>
@@ -253,7 +253,7 @@ function StackCell({ gridRow, col, tone, items, locked, labels, multi, subName, 
   );
 }
 
-// R-P7: 세부목표 → 이름 → 반복/단발(기본 단발) → 요일 칩(복수). 요일 칸에서 열면 그 요일이 미리 골라져 있다
+// R-P7: 세부목표 → 이름 → 요일 칩(복수). 요일 칸에서 열면 그 요일이 미리 골라져 있다. 단발/반복은 요일 수로 정해진다(기획 결정)
 function PracticeForm({ goal, tone, subs, highlight, when, labels, lockedDays, pop, setPop, onSubmit }: {
   goal: Goal;
   tone: Tone;
@@ -268,7 +268,7 @@ function PracticeForm({ goal, tone, subs, highlight, when, labels, lockedDays, p
   onSubmit: () => void;
 }) {
   const ds = pop.days;
-  const dayHint = ds.length === 0 ? '요일을 하나 이상 골라 주세요.' : ds.length === 1 ? `${labels[ds[0]]}요일 칸에 들어가요.` : `'이번 주' 줄에 들어가요 · ${fmtDays(ds, labels)}`;
+  const dayHint = ds.length === 0 ? '요일을 하나 이상 골라 주세요.' : ds.length === 1 ? `${labels[ds[0]]}요일 칸에 들어가요. 못 하면 다음 날로 넘어가요.` : `'이번 주' 줄에 들어가요 · ${fmtDays(ds, labels)}마다 할 일이 돼요.`;
   return (
     <>
       <PopHead dot={tone.dot} title={`${goal.name} · ${when}`} hint="세부목표를 고르고 실천을 적어요" />
@@ -284,16 +284,7 @@ function PracticeForm({ goal, tone, subs, highlight, when, labels, lockedDays, p
           <input id="practice-name" className="input" maxLength={40} value={pop.name} onChange={e => setPop({ ...pop, name: e.target.value })} onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && onSubmit()} placeholder="예: 매일 단어 40개" />
         </div>
         <div className="field">
-          <label>3. 속성</label>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {([['단발', false], ['반복', true]] as const).map(([k, v]) => (
-              <button key={k} type="button" className={pill(pop.repeat === v)} aria-pressed={pop.repeat === v} onClick={() => setPop({ ...pop, repeat: v })} style={{ flex: 1, fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13 }}>{k}</button>
-            ))}
-          </div>
-          <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: 'var(--color-neutral-700)' }}>{pop.repeat ? '고른 요일마다 할 일로 나타나요.' : '그 기간 안에 한 번 하면 사라져요.'}</span>
-        </div>
-        <div className="field">
-          <label>4. 요일</label>
+          <label>3. 요일</label>
           <div style={{ display: 'flex', gap: 4 }}>
             {labels.map((k, i) => {
               const on = ds.includes(i);

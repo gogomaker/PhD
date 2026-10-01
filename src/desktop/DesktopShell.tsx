@@ -1,5 +1,6 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { Icon, ICON } from '../Icon';
+import { Logo } from '../ui/Logo';
 import { useAccount } from '../account/AccountProvider';
 import CategoriesPage from './CategoriesPage';
 import DreamPage from './DreamPage';
@@ -67,7 +68,7 @@ function Sidebar() {
     <aside style={{ flex: 'none', width: 236, position: 'sticky', top: 0, height: '100vh', padding: 14, boxSizing: 'border-box' }}>
       <div style={{ height: '100%', background: 'var(--color-surface)', borderRadius: 32, padding: '24px 14px 14px', display: 'flex', flexDirection: 'column', gap: 22, boxSizing: 'border-box', overflowY: 'auto' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 12px' }}>
-          <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 34, lineHeight: 1 }}>PhD</span>
+          <Logo height={50} />
           <span style={{ fontSize: 12, color: 'var(--color-neutral-700)', letterSpacing: '.02em' }}>Plan Higher Dream</span>
         </div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

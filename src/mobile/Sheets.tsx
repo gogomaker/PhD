@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from 'react';
 import { dayLabel, toDayKey, type DayKey } from '../lib/day';
-import { fmtDays, practiceDates } from '../lib/plan';
 import type { Tone } from '../desktop/plan/shared';
 import type { Journal } from './useDay';
 
@@ -49,41 +48,6 @@ export function CalendarSheet({ day, today, onPick, onClose }: { day: DayKey; to
           );
         })}
       </div>
-    </Sheet>
-  );
-}
-
-export type PickRow = { id: string; tag: string; goal: string; name: string; weekStart: string; weekdays: number[]; tone: Tone; on: boolean; done: boolean };
-
-// 이번 주에서 담기 (R-T2)
-export function PickSheet({ rows, onToggle, onClose }: { rows: PickRow[]; onToggle: (r: PickRow) => void; onClose: () => void }) {
-  return (
-    <Sheet onClose={onClose} label="이번 주에서 담기">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={H}>이번 주에서 담기</span>
-        <span style={{ fontSize: 13, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>주간 표 '이번 주' 줄의 기간 단발 실천이에요. 기간 안에 한 번 하면 돼요.</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {rows.map(r => {
-          const dates = practiceDates(r.weekStart, r.weekdays);
-          const period = fmtDays(dates.map(d => new Date(d + 'T00:00:00Z').getUTCDay()), ['일', '월', '화', '수', '목', '금', '토']);
-          return (
-            <button key={r.id} data-testid="pick-row" aria-pressed={r.on} disabled={r.done} onClick={() => onToggle(r)} style={{ border: 0, cursor: r.done ? 'default' : 'pointer', font: 'inherit', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 20, ...pill(r.on, r.tone) }}>
-              <span style={{ flex: 'none', width: 22, height: 22, borderRadius: 7, border: '2px solid ' + r.tone.dot, background: r.on ? r.tone.ink : 'transparent', display: 'grid', placeItems: 'center', color: 'var(--color-neutral-100)', boxSizing: 'border-box', fontSize: 12 }}>{r.on ? '✓' : ''}</span>
-              <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3, color: 'var(--color-text)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: r.tone.bg, color: r.tone.ink }}>{r.tag}</span>
-                  <span style={{ fontSize: 11.5, color: 'var(--color-neutral-700)' }}>{r.goal}</span>
-                </span>
-                <span style={{ fontSize: 14.5, fontWeight: 700 }}>{r.name}</span>
-              </span>
-              <span style={{ flex: 'none', fontSize: 12, fontWeight: 700, color: r.tone.ink }}>{period}</span>
-            </button>
-          );
-        })}
-        {rows.length === 0 && <span style={{ fontSize: 13, color: 'var(--color-neutral-700)', padding: '8px 4px' }}>이 날 담을 수 있는 실천이 없어요.</span>}
-      </div>
-      <button onClick={onClose} className="btn btn-primary" style={{ height: 46 }}>완료</button>
     </Sheet>
   );
 }

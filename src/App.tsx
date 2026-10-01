@@ -4,6 +4,7 @@ import { useAccount } from './account/AccountProvider';
 import { ForgotPassword, Login, Onboarding, ResetPassword, SignupAccount } from './auth/AuthScreen';
 import DesktopShell from './desktop/DesktopShell';
 import DayPlanner from './mobile/DayPlanner';
+import { Logo } from './ui/Logo';
 
 export default function App() {
   const { status } = useAccount();
@@ -39,7 +40,7 @@ export default function App() {
 function Splash() {
   return (
     <div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center' }}>
-      <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 40, color: 'var(--color-neutral-500)' }}>PhD</span>
+      <span style={{ opacity: 0.6 }}><Logo height={64} /></span>
     </div>
   );
 }

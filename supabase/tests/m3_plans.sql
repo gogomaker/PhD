@@ -181,7 +181,7 @@ end $$;
 
 -- ── 마무리한 목표에는 계획을 못 쓴다 (R-G7) ──
 reset role;
-update public.goals set status = 'completed' where name = '토익 850' and user_id = 'a0000000-0000-0000-0000-00000000000a';
+update public.goals set status = 'completed', finished_at = now() where name = '토익 850' and user_id = 'a0000000-0000-0000-0000-00000000000a';
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-00000000000a","role":"authenticated"}', true);
 do $$
@@ -197,7 +197,7 @@ begin
   if n <> 1 then raise exception 'FAIL 마무리한 목표의 실천이 지워짐'; end if;
 end $$;
 reset role;
-update public.goals set status = 'in_progress' where name = '토익 850' and user_id = 'a0000000-0000-0000-0000-00000000000a';
+update public.goals set status = 'in_progress', finished_at = null where name = '토익 850' and user_id = 'a0000000-0000-0000-0000-00000000000a';
 
 -- ── B: A의 계획은 안 보이고 못 건드린다 ──
 set local role authenticated;

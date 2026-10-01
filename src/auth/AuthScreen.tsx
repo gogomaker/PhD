@@ -4,6 +4,7 @@ import { getRemember, setRemember, supabase } from '../lib/supabase';
 import { errorText } from '../lib/errors';
 import { useAccount } from '../account/AccountProvider';
 import { useIsMobile } from '../useIsMobile';
+import { Logo } from '../ui/Logo';
 import { Swatches } from '../account/Swatches';
 import { CATEGORY_POOL, LIFE_STAGES, lifeStageOf, type LifeStage } from '../lib/lifeStage';
 import { MAX_CATEGORY_NAME, MAX_GOAL_CATEGORIES, goalColor, toggleDraft } from '../lib/categories';
@@ -21,7 +22,7 @@ function AuthLayout({ step, children }: { step?: number; children: ReactNode }) 
     <div style={{ minHeight: '100dvh', display: 'flex', flexWrap: 'wrap', alignContent: mobile ? 'flex-start' : undefined, gap: 14, padding: 14, boxSizing: 'border-box' }}>
       {mobile ? (
         <div style={{ width: '100%', padding: '18px 10px 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 34, lineHeight: 1 }}>PhD</span>
+          <Logo height={52} />
           <span style={{ fontSize: 12, color: 'var(--color-neutral-700)', letterSpacing: '.02em' }}>Plan Higher Dream</span>
         </div>
       ) : (
@@ -29,7 +30,7 @@ function AuthLayout({ step, children }: { step?: number; children: ReactNode }) 
           <span style={{ position: 'absolute', right: -90, bottom: -110, width: 380, height: 380, borderRadius: '50%', background: 'var(--color-accent-300)' }} />
           <span style={{ position: 'absolute', right: 190, bottom: 170, width: 120, height: 120, borderRadius: '50%', background: 'var(--color-accent-2-400)' }} />
           <span style={{ position: 'absolute', right: 70, top: 90, width: 64, height: 64, borderRadius: '50%', background: 'oklch(0.85 0.1 85)' }} />
-          <span style={{ position: 'relative', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 40, lineHeight: 1 }}>PhD</span>
+          <span style={{ position: 'relative', alignSelf: 'flex-start' }}><Logo height={76} /></span>
           <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 440 }}>
             <h1 style={{ margin: 0, fontSize: 60, lineHeight: 1.02 }}>Plan Higher Dream</h1>
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, textWrap: 'pretty' }}>꿈을 카테고리와 목표로 나누고, 연간·월간·주간 계획을 거쳐 오늘 할 일까지 이어요.</p>
