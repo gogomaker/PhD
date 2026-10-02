@@ -15,42 +15,77 @@ const BIG = { height: 48, fontSize: 16 } as const;
 const SECONDARY = { height: 48, fontFamily: 'var(--font-body)', fontWeight: 700 } as const;
 const BACK = { ...SECONDARY, flex: 'none', padding: '0 22px' } as const;
 
-// 로그인·가입 화면: 왼쪽 브랜드 판 + 오른쪽 폼 (목업 isAuth)
-function AuthLayout({ step, children }: { step?: number; children: ReactNode }) {
+// 로그인·가입 화면: 왼쪽 브랜드 판 + 오른쪽 폼 (목업 isAuth).
+// 휴대폰은 'PhD only for Mobile v2' 목업: 맨 위 ‹ 뒤로 + 단계 막대, 그 아래 폼 (docs/MOBILE.md)
+function AuthLayout({ step, onBack, children }: { step?: number; onBack?: () => void; children: ReactNode }) {
   const mobile = useIsMobile();
-  return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexWrap: 'wrap', alignContent: mobile ? 'flex-start' : undefined, gap: 14, padding: 14, boxSizing: 'border-box' }}>
-      {mobile ? (
-        <div style={{ width: '100%', padding: '18px 10px 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <Logo height={52} />
-          <span style={{ fontSize: 12, color: 'var(--color-neutral-700)', letterSpacing: '.02em' }}>Plan Higher Dream</span>
+  const steps = step !== undefined && (
+    <div style={{ flex: 1, display: 'flex', gap: 6 }}>
+      {STEPS.map((label, i) => (
+        <div key={label} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={{ height: 6, borderRadius: 99, background: i <= step ? 'var(--color-accent)' : 'var(--color-neutral-300)' }} />
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: i <= step ? 'var(--color-accent-700)' : 'var(--color-neutral-600)' }}>{label}</span>
         </div>
-      ) : (
-        <div style={{ flex: '1 1 440px', minHeight: 560, background: 'var(--color-accent-2-200)', color: 'var(--color-accent-2-900)', borderRadius: 40, position: 'relative', overflow: 'hidden', padding: '44px 48px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
-          <span style={{ position: 'absolute', right: -90, bottom: -110, width: 380, height: 380, borderRadius: '50%', background: 'var(--color-accent-300)' }} />
-          <span style={{ position: 'absolute', right: 190, bottom: 170, width: 120, height: 120, borderRadius: '50%', background: 'var(--color-accent-2-400)' }} />
-          <span style={{ position: 'absolute', right: 70, top: 90, width: 64, height: 64, borderRadius: '50%', background: 'oklch(0.85 0.1 85)' }} />
-          <span style={{ position: 'relative', alignSelf: 'flex-start' }}><Logo height={76} /></span>
-          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 440 }}>
-            <h1 style={{ margin: 0, fontSize: 60, lineHeight: 1.02 }}>Plan Higher Dream</h1>
-            <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, textWrap: 'pretty' }}>꿈을 카테고리와 목표로 나누고, 연간·월간·주간 계획을 거쳐 오늘 할 일까지 이어요.</p>
-          </div>
-        </div>
-      )}
-      <div style={{ flex: '1 1 400px', display: 'flex', alignItems: mobile ? 'flex-start' : 'center', justifyContent: 'center', padding: mobile ? '16px 10px 40px' : '40px 24px' }}>
-        <div style={{ width: '100%', maxWidth: 384, display: 'flex', flexDirection: 'column', gap: 24 }}>
-          {step !== undefined && (
-            <div style={{ display: 'flex', gap: 6 }}>
-              {STEPS.map((label, i) => (
-                <div key={label} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span style={{ height: 6, borderRadius: 99, background: i <= step ? 'var(--color-accent)' : 'var(--color-neutral-300)' }} />
-                  <span style={{ fontSize: 11.5, fontWeight: 700, color: i <= step ? 'var(--color-accent-700)' : 'var(--color-neutral-600)' }}>{label}</span>
-                </div>
-              ))}
-            </div>
+      ))}
+    </div>
+  );
+  if (mobile) {
+    return (
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', padding: 'max(14px, env(safe-area-inset-top)) 24px max(28px, env(safe-area-inset-bottom))', boxSizing: 'border-box', gap: 22 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minHeight: 40, marginLeft: -10 }}>
+          {onBack ? (
+            <button onClick={onBack} aria-label="뒤로" className="btn" style={{ flex: 'none', width: 40, height: 40, padding: 0, marginTop: step !== undefined ? -12 : 0, color: 'var(--color-text)' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+            </button>
+          ) : (
+            <span style={{ flex: 'none', width: 10 }} />
           )}
+          {steps}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>{children}</div>
+      </div>
+    );
+  }
+  return (
+    <div style={{ minHeight: '100dvh', display: 'flex', flexWrap: 'wrap', gap: 14, padding: 14, boxSizing: 'border-box' }}>
+      <div style={{ flex: '1 1 440px', minHeight: 560, background: 'var(--color-accent-2-200)', color: 'var(--color-accent-2-900)', borderRadius: 40, position: 'relative', overflow: 'hidden', padding: '44px 48px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+        <span style={{ position: 'absolute', right: -90, bottom: -110, width: 380, height: 380, borderRadius: '50%', background: 'var(--color-accent-300)' }} />
+        <span style={{ position: 'absolute', right: 190, bottom: 170, width: 120, height: 120, borderRadius: '50%', background: 'var(--color-accent-2-400)' }} />
+        <span style={{ position: 'absolute', right: 70, top: 90, width: 64, height: 64, borderRadius: '50%', background: 'oklch(0.85 0.1 85)' }} />
+        <span style={{ position: 'relative', alignSelf: 'flex-start' }}><Logo height={76} /></span>
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 440 }}>
+          <h1 style={{ margin: 0, fontSize: 60, lineHeight: 1.02 }}>Plan Higher Dream</h1>
+          <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, textWrap: 'pretty' }}>꿈을 카테고리와 목표로 나누고, 연간·월간·주간 계획을 거쳐 오늘 할 일까지 이어요.</p>
+        </div>
+      </div>
+      <div style={{ flex: '1 1 400px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+        <div style={{ width: '100%', maxWidth: 384, display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {steps && <div style={{ display: 'flex' }}>{steps}</div>}
           {children}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** 휴대폰 첫 화면 (로그인 전): 브랜드 판 + 시작하기 / 이미 계정이 있어요 (목업 landing) */
+export function Landing() {
+  const navigate = useNavigate();
+  return (
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', gap: 24, padding: 'max(12px, env(safe-area-inset-top)) 12px max(28px, env(safe-area-inset-bottom))', boxSizing: 'border-box' }}>
+      <div style={{ flex: 1, minHeight: 440, position: 'relative', overflow: 'hidden', background: 'var(--color-accent-2-200)', color: 'var(--color-accent-2-900)', borderRadius: 40, padding: '28px 18px 34px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <span aria-hidden="true" style={{ position: 'absolute', right: -90, bottom: -130, width: 330, height: 330, borderRadius: '50%', background: 'var(--color-accent-300)' }} />
+        <span aria-hidden="true" style={{ position: 'absolute', left: '37%', bottom: 190, width: 92, height: 92, borderRadius: '50%', background: 'var(--color-accent-2-400)' }} />
+        <span aria-hidden="true" style={{ position: 'absolute', right: 46, top: 112, width: 52, height: 52, borderRadius: '50%', background: 'oklch(0.85 0.1 85)' }} />
+        <span style={{ position: 'relative', alignSelf: 'flex-start' }}><Logo height={60} /></span>
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 12, padding: '0 4px' }}>
+          <h1 style={{ margin: 0, fontSize: 46, lineHeight: 1.02 }}>Plan Higher Dream</h1>
+          <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, textWrap: 'pretty' }}>꿈을 카테고리와 목표로 나누고, 연간·월간·주간 계획을 거쳐 오늘의 10분까지 이어요.</p>
+        </div>
+      </div>
+      <div style={{ flex: 'none', display: 'flex', flexDirection: 'column', gap: 10, padding: '0 12px' }}>
+        <button className="btn btn-primary" onClick={() => navigate('/signup')} style={{ height: 52, fontSize: 16 }}>시작하기</button>
+        <button className="btn btn-secondary" onClick={() => navigate('/login')} style={{ height: 52, fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 15 }}>이미 계정이 있어요</button>
       </div>
     </div>
   );
@@ -87,6 +122,7 @@ function FormError({ text }: { text: string | null }) {
 
 // ───────── 로그인 ─────────
 export function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRememberState] = useState(getRemember);
@@ -104,7 +140,7 @@ export function Login() {
   }
 
   return (
-    <AuthLayout>
+    <AuthLayout onBack={() => navigate('/')}>
       <Heading title="다시 만나서 반가워요" sub="로그인하고 오늘의 계획을 이어가세요." />
       <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -125,6 +161,7 @@ export function Login() {
 
 // ───────── 가입 1단계: 계정 ─────────
 export function SignupAccount() {
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -146,7 +183,7 @@ export function SignupAccount() {
   }
 
   return (
-    <AuthLayout step={0}>
+    <AuthLayout step={0} onBack={() => navigate('/')}>
       <Heading title="계정 만들기" sub="계획은 계정마다 따로 저장돼요." />
       <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -214,7 +251,7 @@ export function Onboarding() {
       );
     };
     return (
-      <AuthLayout step={2}>
+      <AuthLayout step={2} onBack={() => setStep(1)}>
         <Heading title="삶을 어떤 영역으로 나눌까요?" sub="목표 카테고리는 최대 6개까지 고를 수 있어요. 고른 카테고리마다 목표를 세우게 돼요." />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-accent-700)' }}>{lifeStageOf(stage).label}에게 추천</span>
@@ -258,7 +295,7 @@ export function Onboarding() {
   }
 
   return (
-    <AuthLayout step={3}>
+    <AuthLayout step={3} onBack={() => setStep(2)}>
       <Heading title="궁극적인 꿈은 무엇인가요?" sub="모든 목표와 계획이 이 한 문장을 향해요. 언제든 꿈 작성에서 다듬을 수 있어요." />
       <div style={{ background: 'var(--color-accent-200)', borderRadius: 28, padding: '18px 22px' }}>
         <textarea value={dream} onChange={e => setDream(e.target.value)} maxLength={200} rows={2} placeholder="한 문장으로 적어보세요" aria-label="나의 꿈" style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 26, lineHeight: 1.25, background: 'transparent', border: 0, outline: 'none', resize: 'none', color: 'var(--color-text)', padding: 0 }} />
@@ -274,6 +311,7 @@ export function Onboarding() {
 
 // ───────── 비밀번호 찾기 ─────────
 export function ForgotPassword() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -290,7 +328,7 @@ export function ForgotPassword() {
   }
 
   return (
-    <AuthLayout>
+    <AuthLayout onBack={() => navigate('/login')}>
       <Heading title="비밀번호 다시 만들기" sub={sent ? '메일함을 확인해 주세요. 메일의 링크를 누르면 새 비밀번호를 정할 수 있어요.' : '가입한 이메일로 비밀번호를 다시 만드는 링크를 보내 드려요.'} />
       {!sent && (
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>

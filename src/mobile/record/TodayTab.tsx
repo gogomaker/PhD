@@ -1,18 +1,20 @@
+// 기록 › 오늘: 할 일 + 10분 시간표 + 하루 기록 (SPEC 4.3~4.5, 기존 모바일 하루 플래너를 새 틀에)
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Icon } from '../Icon';
-import { useAccount, useToday } from '../account/AccountProvider';
-import { addDays, dayLabel, diffDays, DEFAULT_DAY_START_HOUR, type DayKey } from '../lib/day';
-import { PALETTE } from '../lib/palette';
-import { isClosed } from '../lib/goals';
-import { fmtMinutes, relOf, segments, SLOTS, timedSlots, timeOf, type DayItem, type TaskRow } from '../lib/today';
-import type { Tone } from '../desktop/plan/shared';
-import { useDay } from './useDay';
-import { TimeTable, type BandView, type Cells, type PlanBoxView } from './TimeTable';
-import { AddSheet, CalendarSheet, ConfirmSheet, JournalSheet, PlanSheet, SettingsSheet } from './Sheets';
-import { ensurePush, pushSupported } from './push';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Icon } from '../../Icon';
+import { useAccount, useToday } from '../../account/AccountProvider';
+import { addDays, dayLabel, diffDays, DEFAULT_DAY_START_HOUR, type DayKey } from '../../lib/day';
+import { PALETTE } from '../../lib/palette';
+import { fmtMinutes, relOf, segments, SLOTS, timedSlots, timeOf, type DayItem, type TaskRow } from '../../lib/today';
+import type { Tone } from '../../desktop/plan/shared';
+import { useDay } from '../useDay';
+import { TimeTable, type BandView, type Cells, type PlanBoxView } from '../TimeTable';
+import { AddSheet, CalendarSheet, ConfirmSheet, JournalSheet, PlanSheet } from '../Sheets';
+import { ensurePush } from '../push';
+import { BODY, ICON as MI, Svg } from '../ui';
 
 type PlanInfo = { task_id?: string | null; keyword_id?: string | null; label?: string | null };
-type SheetState = null | { k: 'cal' } | { k: 'add' } | { k: 'journal' } | { k: 'plan'; key: string; isNew: boolean } | { k: 'del'; task: TaskRow; name: string } | { k: 'settings' };
+type SheetState = null | { k: 'cal' } | { k: 'add' } | { k: 'journal' } | { k: 'plan'; key: string; isNew: boolean } | { k: 'del'; task: TaskRow; name: string };
 
 const ICON = {
   repeat: 'M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8M21 3v5h-5',
@@ -24,11 +26,15 @@ const ICON = {
 };
 const SRC: Record<DayItem['source'], string> = { repeat: '반복', auto: '자동 배정', picked: '담은 일', direct: '직접 추가' };
 
-export default function DayPlanner() {
-  const { profile, goals, subgoals, goalCategories, dailyCategory, keywords, allKeywords, practices } = useAccount();
+export default function TodayTab() {
+  const { profile, subgoals, goals, goalCategories, dailyCategory, keywords, allKeywords, practices } = useAccount();
   const dayStart = profile?.day_start_hour ?? DEFAULT_DAY_START_HOUR;
   const today = useToday();
-  const [day, setDay] = useState(today);
+  const loc = useLocation();
+  const navigate = useNavigate();
+  // 보는 날은 주소에 (?d=날짜, 없으면 오늘)
+  const asked = new URLSearchParams(loc.search).get('d');
+  const day = asked && /^\d{4}-\d{2}-\d{2}$/.test(asked) ? asked : today;
   const rel = relOf(day, today);
   const D = useDay(day, today);
   const [sheet, setSheet] = useState<SheetState>(null);
@@ -47,18 +53,16 @@ export default function DayPlanner() {
   const effMode = canAct ? mode : 'plan';
 
   const go = (d: DayKey) => {
-    setDay(d);
     setSheet(null);
-    setBrush(null);
-    setMode(d === today ? 'actual' : 'plan');
+    navigate(d === today ? '/record' : '/record?d=' + d, { replace: true });
   };
+  // 날이 바뀌면 붓과 모드를 처음으로
+  useEffect(() => {
+    setBrush(null);
+    setMode(day === today ? 'actual' : 'plan');
+  }, [day, today]);
 
   // DB 블록 → 칸 배열
-  // 이미 알림을 허락한 기기는 조용히 다시 등록 (회고 알림·알람)
-  useEffect(() => {
-    if (profile?.review_notify_enabled && pushSupported() && Notification.permission === 'granted') ensurePush();
-  }, [profile?.review_notify_enabled]);
-
   useEffect(() => {
     const cells: Cells = Array(SLOTS).fill(null);
     const info: Record<string, PlanInfo> = {};
@@ -134,21 +138,9 @@ export default function DayPlanner() {
   const saveActual = (cells: Cells) =>
     enqueue(() => D.saveLayer('actual', segments(cells).map(s => (s.value.startsWith('task:') ? { start: s.start, end: s.end, task_id: s.value.slice(5) } : { start: s.start, end: s.end, keyword_id: s.value.slice(3) }))));
 
-  // R-S10: 계획 시간 / 실제 시간, 가장 가까운 목표 기한
+  // R-S10: 계획 시간 / 실제 시간 (가장 가까운 목표 기한은 탭 줄 오른쪽)
   const plannedMin = plan.cells.filter((v, i) => v || reserved[i]).length * 10;
   const actualMin = actual.filter(Boolean).length * 10;
-  const dday = useMemo(() => {
-    const cand = goals
-      .filter(g => !isClosed(g))
-      .map(g => {
-        const [y, m] = g.due_month.split('-').map(Number);
-        const end = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
-        return { g, n: diffDays(day, end) };
-      })
-      .filter(x => x.n >= 0)
-      .sort((a, b) => a.n - b.n)[0];
-    return cand ? { n: 'D-' + cand.n, goal: cand.g.name } : null;
-  }, [goals, day]);
 
   const { md, dow } = dayLabel(day);
   const badge = rel === 0 ? ['오늘', 'tag tag-accent'] : rel === 1 ? ['내일', 'tag tag-accent-2'] : rel > 1 ? ['보기 전용', 'tag tag-neutral'] : ['지난 기록', 'tag tag-neutral'];
@@ -262,8 +254,8 @@ export default function DayPlanner() {
   };
 
   return (
-    <div style={{ position: 'relative', height: '100dvh', overflow: 'hidden', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', padding: 'max(12px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom))', boxSizing: 'border-box', gap: 8 }}>
-      {/* 앱바 */}
+    <div data-testid="today-tab" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8, padding: '0 12px max(16px, env(safe-area-inset-bottom))' }}>
+      {/* 날짜 줄: ‹ 10.1 목 › 오늘 · 계획/실제 (R-D3: 이 줄을 좌우로 밀면 날짜 이동) */}
       <div
         onPointerDown={e => { sw.current = e.clientX; }}
         onPointerUp={e => {
@@ -272,33 +264,20 @@ export default function DayPlanner() {
           sw.current = null;
           if (Math.abs(dx) > 50) go(addDays(day, dx < 0 ? 1 : -1));
         }}
-        style={{ flex: 'none', height: 46, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)', alignItems: 'center', gap: 4, touchAction: 'pan-y', userSelect: 'none' }}
+        style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 2, padding: '0 4px 0 0', minHeight: 40, touchAction: 'pan-y', userSelect: 'none' }}
       >
-        <span data-testid="day-badge" className={badge[1]} style={{ justifySelf: 'start', fontWeight: 700, fontSize: 11.5 }}>{badge[0]}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <button onClick={() => go(addDays(day, -1))} aria-label="전날" className="btn" style={{ width: 36, height: 36, padding: 0, color: 'var(--color-neutral-700)' }}><Icon name="chevronLeft" /></button>
-          <button onClick={() => setSheet({ k: 'cal' })} aria-label="달력 열기" style={{ border: 0, background: 'transparent', cursor: 'pointer', font: 'inherit', color: 'var(--color-text)', padding: '4px 10px', borderRadius: 999, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-            <span data-testid="day-label" style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 26, lineHeight: 1 }}>{md}</span>
-            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 17, color: 'var(--color-accent-700)' }}>{dow}</span>
-          </button>
-          <button onClick={() => go(addDays(day, 1))} aria-label="다음 날" className="btn" style={{ width: 36, height: 36, padding: 0, color: 'var(--color-neutral-700)' }}><Icon name="chevronRight" /></button>
-        </div>
-        <div style={{ justifySelf: 'end', display: 'flex', alignItems: 'center', gap: 2 }}>
-          {rel !== 0 && <button onClick={() => go(today)} className="btn btn-secondary" style={{ height: 30, padding: '0 12px', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 12 }}>오늘</button>}
-          <button onClick={() => setSheet({ k: 'settings' })} aria-label="설정" className="btn" style={{ width: 34, height: 34, padding: 0, color: 'var(--color-neutral-700)' }}><Icon name="settings" size={17} /></button>
-        </div>
-      </div>
-
-      {/* 요약 (R-S10) */}
-      <div style={{ flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '0 4px' }}>
-        {dday ? (
-          <span className="tag" style={{ flex: '0 1 auto', background: 'var(--color-text)', color: 'var(--color-neutral-100)', fontWeight: 700, fontSize: 11.5, gap: 5, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
-            <span>{dday.n}</span><span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{dday.goal}</span>
-          </span>
-        ) : <span />}
-        <div style={{ flex: 'none', display: 'flex', gap: 10, fontSize: 12, color: 'var(--color-neutral-700)', whiteSpace: 'nowrap' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 9, height: 9, borderRadius: 3, background: 'var(--color-neutral-400)' }} />계획 <b data-testid="planned" style={{ color: 'var(--color-text)' }}>{fmtMinutes(plannedMin)}</b></span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 9, height: 9, borderRadius: 3, background: 'var(--color-accent)' }} />실제 <b data-testid="actual" style={{ color: 'var(--color-accent-700)' }}>{fmtMinutes(actualMin)}</b></span>
+        <button onClick={() => go(addDays(day, -1))} aria-label="전날" className="btn m-hover" style={{ width: 32, height: 32, padding: 0, color: 'var(--color-neutral-700)' }}><Svg d={MI.left} /></button>
+        <button onClick={() => setSheet({ k: 'cal' })} aria-label="달력 열기" style={{ border: 0, background: 'transparent', cursor: 'pointer', font: 'inherit', color: 'var(--color-text)', padding: '4px 2px', borderRadius: 999, display: 'flex', alignItems: 'baseline', gap: 5 }}>
+          <span data-testid="day-label" style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 22, lineHeight: 1 }}>{md}</span>
+          <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 15, color: 'var(--color-accent-700)' }}>{dow}</span>
+        </button>
+        <button onClick={() => go(addDays(day, 1))} aria-label="다음 날" className="btn m-hover" style={{ width: 32, height: 32, padding: 0, color: 'var(--color-neutral-700)' }}><Svg d={MI.right} /></button>
+        <span data-testid="day-badge" className={badge[1]} style={{ fontWeight: 700, fontSize: 11.5, whiteSpace: 'nowrap' }}>{badge[0]}</span>
+        {rel !== 0 && <button onClick={() => go(today)} className="btn btn-secondary" style={{ height: 28, padding: '0 10px', marginLeft: 4, ...BODY, fontSize: 12 }}>오늘</button>}
+        <div style={{ flex: 1 }} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, fontSize: 11.5, color: 'var(--color-neutral-700)', whiteSpace: 'nowrap' }}>
+          <span>계획 <b data-testid="planned" style={{ color: 'var(--color-text)' }}>{fmtMinutes(plannedMin)}</b></span>
+          <span>실제 <b data-testid="actual" style={{ color: 'var(--color-accent-700)' }}>{fmtMinutes(actualMin)}</b></span>
         </div>
       </div>
 
@@ -325,13 +304,14 @@ export default function DayPlanner() {
             </div>
             {D.list.day.map(row)}
             {D.list.day.length === 0 && (
-              <span style={{ fontSize: 12, color: 'var(--color-neutral-600)', padding: '4px 8px 6px', lineHeight: 1.45 }}>
-                {D.loaded && items.length === 0 && rel <= 1 ? '데스크톱 주간 표에서 실천을 적으면 여기에 나타나요' : '할 일이 없어요'}
+              <span style={{ fontSize: 12, color: 'var(--color-neutral-600)', padding: '4px 8px 6px', lineHeight: 1.45, textWrap: 'pretty' }}>
+                {D.loaded && items.length === 0 && rel <= 1 ? '주간 계획에서 실천을 적으면 여기에 나타나요' : '할 일이 없어요'}
               </span>
             )}
-            {canAdd && (
+            {(canAdd || (D.loaded && items.length === 0 && rel <= 1)) && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5, padding: '8px 2px 2px' }}>
-                <button onClick={() => setSheet({ k: 'add' })} className="btn add-dashed" style={{ height: 36, border: '2px dashed var(--color-neutral-400)', color: 'var(--color-neutral-800)', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 12.5, borderRadius: 16, padding: '0 10px' }}>+ 직접 추가</button>
+                {D.loaded && items.length === 0 && rel <= 1 && <button onClick={() => navigate('/plan/schedule?z=week')} className="btn btn-secondary" style={{ height: 36, ...BODY, fontSize: 12.5, borderRadius: 16, padding: '0 10px' }}>주간 실천 적으러 가기</button>}
+                {canAdd && <button onClick={() => setSheet({ k: 'add' })} className="btn add-dashed" style={{ height: 36, border: '2px dashed var(--color-neutral-400)', color: 'var(--color-neutral-800)', ...BODY, fontSize: 12.5, borderRadius: 16, padding: '0 10px' }}>+ 직접 추가</button>}
               </div>
             )}
           </div>
@@ -410,7 +390,6 @@ export default function DayPlanner() {
         <span style={{ flex: 'none', width: 30, height: 30, borderRadius: '50%', background: 'var(--color-accent-200)', color: 'var(--color-accent-800)', display: 'grid', placeItems: 'center' }}><Icon name="chevronUp" size={14} /></span>
       </button>
 
-      {sheet?.k === 'settings' && <SettingsSheet name={profile?.name ?? ''} onClose={() => setSheet(null)} />}
       {sheet?.k === 'cal' && <CalendarSheet day={day} today={today} onPick={go} onClose={() => setSheet(null)} />}
       {sheet?.k === 'add' && (
         <AddSheet

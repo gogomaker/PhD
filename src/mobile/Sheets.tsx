@@ -1,26 +1,14 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
+import { Sheet } from './ui';
 import { dayLabel, toDayKey, type DayKey } from '../lib/day';
 import type { Tone } from '../desktop/plan/shared';
 import type { Journal } from './useDay';
-import { supabase } from '../lib/supabase';
-import { THEME_OPTIONS, useThemePref } from '../lib/theme';
-import { ScrollArea } from '../ui/ScrollArea';
 
 const pill = (on: boolean, tone: Tone) => ({ background: on ? tone.bg : 'var(--color-surface)', color: on ? tone.ink : 'var(--color-text)', boxShadow: on ? 'inset 0 0 0 2px ' + tone.dot : 'none' });
 const H = { fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 22 } as const;
 
-// 아래에서 올라오는 시트
-export function Sheet({ onClose, children, label }: { onClose: () => void; children: ReactNode; label: string }) {
-  return (
-    <>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'var(--scrim)' }} />
-      <ScrollArea role="dialog" aria-label={label} fade="var(--color-neutral-100)" radius={32} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 11, maxHeight: '82%', background: 'var(--color-neutral-100)', borderRadius: '32px 32px 0 0', boxShadow: 'var(--shadow-lg)' }} innerStyle={{ padding: '10px 20px max(28px, env(safe-area-inset-bottom))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <span style={{ alignSelf: 'center', width: 40, height: 5, borderRadius: 99, background: 'var(--color-neutral-300)', flex: 'none' }} />
-        {children}
-      </ScrollArea>
-    </>
-  );
-}
+// 아래에서 올라오는 시트: 뒤로 가기로 닫히는 모바일 공통 시트 (./ui)
+export { Sheet } from './ui';
 
 // R-D3: 달력에서 날짜 고르기 (일요일 시작)
 export function CalendarSheet({ day, today, onPick, onClose }: { day: DayKey; today: DayKey; onPick: (d: DayKey) => void; onClose: () => void }) {
@@ -239,25 +227,3 @@ export function ConfirmSheet({ title, body, confirmLabel, onConfirm, onClose }: 
 }
 
 
-// 휴대폰 설정: 화면 테마(이 기기만) + 로그아웃
-export function SettingsSheet({ name, onClose }: { name: string; onClose: () => void }) {
-  const [pref, setPref] = useThemePref();
-  return (
-    <Sheet onClose={onClose} label="설정">
-      <span style={H}>설정</span>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 700 }}>화면 테마</span>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {THEME_OPTIONS.map(([k, label]) => (
-            <button key={k} className={pref === k ? 'btn btn-primary' : 'btn btn-secondary'} aria-pressed={pref === k} onClick={() => setPref(k)} style={{ flex: 1, height: 42, fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13.5 }}>{label}</button>
-          ))}
-        </div>
-        <span style={{ fontSize: 12.5, color: 'var(--color-neutral-700)' }}>이 휴대폰에만 적용돼요.</span>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingTop: 4 }}>
-        <span style={{ fontSize: 14, fontWeight: 600 }}>{name}</span>
-        <button className="btn btn-secondary" onClick={() => supabase.auth.signOut({ scope: 'local' })} style={{ height: 40, fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13.5 }}>로그아웃</button>
-      </div>
-    </Sheet>
-  );
-}
