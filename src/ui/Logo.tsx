@@ -1,6 +1,6 @@
 // PhD 로고: 펼친 노트 위에 "PhD" (2026-10-01 기획 요청)
-// 노트 표지 = 주 색, 책장 = 밝은 종이, 줄 = 연한 선, 책갈피 = 보조 색
-export const LOGO_COLORS = { cover: '#c67139', coverDark: '#b2622d', paper: '#f9f4ed', line: '#dcd3c4', spine: '#c0b6a5', ribbon: '#7a8a5e', ink: '#201e1d' };
+// 노트 표지 = 주 색(어스 브라운), 책장 = 밝은 종이, 줄 = 연한 선, 책갈피 = 보조 색(슬레이트)
+export const LOGO_COLORS = { cover: '#5e4b3b', coverDark: '#4a3b2e', paper: '#f3f2ec', line: '#cfcec6', spine: '#a9aca9', ribbon: '#6b7b84', ink: '#2e2e2e' };
 
 /** 노트 그림 (viewBox 0 0 132 72). 글자는 따로 */
 export function NotebookArt() {

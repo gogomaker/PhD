@@ -295,21 +295,21 @@ Claude Code가 BaaS에 맞게 다듬되, **아래 관계와 제약은 유지**�
 
 ## 6. 디자인 토큰
 
-목업 디자인 시스템에서 추출. 그대로 사용한다.
+색은 **차분한 뉴트럴 팔레트**로 바꿨다 (2026-10-02 기획 요청): Ivory Mist `#E6E4DA` · Charcoal `#2E2E2E` · Earth Brown `#5E4B3B` · Slate Blue-Grey `#6B7B84` · Fog Grey `#A9ACA9`. 값의 기준은 `src/styles/organic.css`(라이트)·`src/styles/theme.css`(다크·카테고리 색).
 
 ```css
-/* 기본 */
---color-bg: #f5ead8;
---color-surface: #ebddc5;
---color-text: #201e1d;
---color-accent: #c67139;      /* 주 버튼, 선택 상태 */
---color-accent-2: #7a8a5e;    /* 보조(토글 켜짐 등) */
---color-neutral-100: #f9f4ed;  --color-neutral-200: #eee7db;  --color-neutral-300: #dcd3c4;
---color-neutral-400: #c0b6a5;  --color-neutral-500: #a19786;  --color-neutral-600: #82796a;
---color-neutral-700: #645c50;  --color-neutral-800: #474238;  --color-neutral-900: #2e2b25;
---color-accent-100: #fff2eb;   --color-accent-200: #ffe1d0;   --color-accent-300: #ffc6a5;
---color-accent-400: #f6a06b;   --color-accent-500: #d67f48;   --color-accent-600: #b2622d;
---color-accent-700: #8c491a;   --color-accent-800: #643312;
+/* 기본 (라이트) */
+--color-bg: #e6e4da;          /* Ivory Mist */
+--color-surface: #d9d7cc;     /* 카드 */
+--color-text: #2e2e2e;        /* Charcoal */
+--color-accent: #5e4b3b;      /* Earth Brown — 주 버튼, 기록 쪽 */
+--color-accent-2: #6b7b84;    /* Slate Blue-Grey — 보조(계획 쪽, 고른 단위·토글 켜짐) */
+--color-neutral-100: #f3f2ec;  --color-neutral-200: #dfddd3;  --color-neutral-300: #c8c8c1;
+--color-neutral-400: #a9aca9 /* Fog Grey */;  --color-neutral-500: #8d908d;  --color-neutral-600: #737673;
+--color-neutral-700: #5a5c5a;  --color-neutral-800: #424342;  --color-neutral-900: #2e2e2e;
+--color-accent-100: #f3eee8;   --color-accent-200: #e8dfd5;   --color-accent-300: #d6c8b9;
+--color-accent-400: #bba691;   --color-accent-500: #957d67;   --color-accent-600: #6e5848;
+--color-accent-700: #4e3d2f;   --color-accent-800: #3d2f24;
 --radius-sm: 8px;  --radius-md: 16px;  --radius-lg: 28px;
 
 /* 폰트: 전부 Pretendard (2026-10-01 기획 결정). 제목은 굵게(800). 글꼴 파일은 앱에 함께 넣는다 */
@@ -318,22 +318,22 @@ Claude Code가 BaaS에 맞게 다듬되, **아래 관계와 제약은 유지**�
 --font-body: "Pretendard Variable", Pretendard, system-ui, sans-serif;
 ```
 
-카테고리 7색 (배경 / 글자 / 점·진한 칠):
+카테고리 7색 (배경 / 글자 / 점·진한 칠). 팔레트에 맞춰 채도를 낮췄다:
 
 | 색 | bg | ink | dot |
 |---|---|---|---|
-| red | `oklch(0.9 0.055 25)` | `oklch(0.42 0.11 25)` | `oklch(0.7 0.13 25)` |
-| orange | `oklch(0.91 0.06 60)` | `oklch(0.44 0.1 55)` | `oklch(0.74 0.13 60)` |
-| yellow | `oklch(0.93 0.07 95)` | `oklch(0.44 0.09 85)` | `oklch(0.82 0.13 92)` |
-| green | `oklch(0.91 0.06 145)` | `oklch(0.4 0.08 145)` | `oklch(0.72 0.12 145)` |
-| blue | `oklch(0.91 0.045 245)` | `oklch(0.4 0.09 250)` | `oklch(0.7 0.1 245)` |
-| purple | `oklch(0.9 0.05 300)` | `oklch(0.42 0.1 300)` | `oklch(0.7 0.11 300)` |
-| pink | `oklch(0.91 0.05 350)` | `oklch(0.43 0.1 350)` | `oklch(0.74 0.11 350)` |
+| red | `oklch(0.885 0.035 25)` | `oklch(0.42 0.08 25)` | `oklch(0.66 0.1 25)` |
+| orange | `oklch(0.89 0.038 60)` | `oklch(0.43 0.07 55)` | `oklch(0.7 0.095 60)` |
+| yellow | `oklch(0.91 0.045 95)` | `oklch(0.43 0.065 85)` | `oklch(0.78 0.1 90)` |
+| green | `oklch(0.89 0.035 145)` | `oklch(0.4 0.06 145)` | `oklch(0.66 0.08 145)` |
+| blue | `oklch(0.89 0.028 245)` | `oklch(0.4 0.065 250)` | `oklch(0.65 0.075 245)` |
+| purple | `oklch(0.885 0.032 300)` | `oklch(0.42 0.07 300)` | `oklch(0.66 0.08 300)` |
+| pink | `oklch(0.89 0.032 350)` | `oklch(0.43 0.07 350)` | `oklch(0.7 0.08 350)` |
 
 접근성(색각 이상 대응, 호버 툴팁)은 이번 범위에서 고려하지 않는다(기획 결정).
 
 **화면 테마 (2026-10-01 기획 결정)**: 시스템 설정(기본) / 라이트 / 다크. **기기마다 따로** 저장한다(다른 기기로 안 넘어감). 데스크톱은 계정 관리, 휴대폰은 설정 시트에서 고른다.
-다크 값은 `src/styles/theme.css` — 같은 토큰 이름에 다크용 값을 따로 정했다(중립·강조 단계는 뒤집음: 100 = 카드보다 살짝 밝은 면, 900 = 가장 밝은 글자). 카테고리 7색도 다크용 bg(어두운 색조)·ink(밝은 글자)·dot(칠하기)를 따로 둔다. 로고 그림은 두 테마 모두 그대로.
+다크 값은 `src/styles/theme.css` — 차콜 바탕(`#1f2020`, 카드 `#2e2e2e`) + 아이보리 글자, 갈색(`#a58a72`)·슬레이트(`#8a9aa3`)는 어두운 바탕에서 읽히게 밝혔다. 같은 토큰 이름에 다크용 값을 따로 정했다(중립·강조 단계는 뒤집음: 100 = 카드보다 살짝 밝은 면, 900 = 가장 밝은 글자). 카테고리 7색도 다크용 bg·ink·dot를 따로 둔다. 로고·앱 아이콘은 표지 = 어스 브라운, 책갈피 = 슬레이트 (2026-10-02).
 
 ---
 

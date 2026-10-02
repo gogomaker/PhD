@@ -132,7 +132,10 @@ export default function TodayTab() {
 
   // 시간표 저장은 순서대로 하나씩 (빠르게 이어서 그려도 나중 것이 이긴다)
   const queue = useRef<Promise<unknown>>(Promise.resolve());
-  const enqueue = (fn: () => Promise<unknown>) => (queue.current = queue.current.then(fn, fn));
+  const enqueue = (fn: () => Promise<unknown>) => {
+    D.noteEdit();
+    return (queue.current = queue.current.then(fn, fn));
+  };
   const savePlan = (cells: Cells, info: Record<string, PlanInfo>) =>
     enqueue(() => D.saveLayer('plan', segments(cells).map(s => ({ start: s.start, end: s.end, key: s.value, ...info[s.value] }))));
   const saveActual = (cells: Cells) =>

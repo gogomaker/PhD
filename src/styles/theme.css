@@ -4,70 +4,74 @@
    - 중립·강조 단계는 뒤집는다 (100 = 카드보다 살짝 밝은 면, 900 = 가장 밝은 글자)
    - 카테고리 색: bg = 어두운 색조 면, ink = 밝은 글자, dot = 칠하기용 중간 밝기 */
 
-/* 카테고리 7색 (SPEC 6장) */
+/* 카테고리 7색 (SPEC 6장). 차분한 뉴트럴 팔레트에 맞춰 채도를 낮췄다 (2026-10-02) */
 :root {
   /* 시트·팝업 뒤 어둡게 */
-  --scrim: color-mix(in oklch, #201e1d 32%, transparent);
-  --cat-red-bg: oklch(0.9 0.055 25); --cat-red-ink: oklch(0.42 0.11 25); --cat-red-dot: oklch(0.7 0.13 25);
-  --cat-orange-bg: oklch(0.91 0.06 60); --cat-orange-ink: oklch(0.44 0.1 55); --cat-orange-dot: oklch(0.74 0.13 60);
-  --cat-yellow-bg: oklch(0.93 0.07 95); --cat-yellow-ink: oklch(0.44 0.09 85); --cat-yellow-dot: oklch(0.82 0.13 92);
-  --cat-green-bg: oklch(0.91 0.06 145); --cat-green-ink: oklch(0.4 0.08 145); --cat-green-dot: oklch(0.72 0.12 145);
-  --cat-blue-bg: oklch(0.91 0.045 245); --cat-blue-ink: oklch(0.4 0.09 250); --cat-blue-dot: oklch(0.7 0.1 245);
-  --cat-purple-bg: oklch(0.9 0.05 300); --cat-purple-ink: oklch(0.42 0.1 300); --cat-purple-dot: oklch(0.7 0.11 300);
-  --cat-pink-bg: oklch(0.91 0.05 350); --cat-pink-ink: oklch(0.43 0.1 350); --cat-pink-dot: oklch(0.74 0.11 350);
+  --scrim: color-mix(in oklch, #2e2e2e 34%, transparent);
+  /* 하루 점수 4~5점 칸 글자 (진한 칸 위) */
+  --score-fg-hi: #f3f2ec;
+  --cat-red-bg: oklch(0.885 0.035 25); --cat-red-ink: oklch(0.42 0.08 25); --cat-red-dot: oklch(0.66 0.1 25);
+  --cat-orange-bg: oklch(0.89 0.038 60); --cat-orange-ink: oklch(0.43 0.07 55); --cat-orange-dot: oklch(0.7 0.095 60);
+  --cat-yellow-bg: oklch(0.91 0.045 95); --cat-yellow-ink: oklch(0.43 0.065 85); --cat-yellow-dot: oklch(0.78 0.1 90);
+  --cat-green-bg: oklch(0.89 0.035 145); --cat-green-ink: oklch(0.4 0.06 145); --cat-green-dot: oklch(0.66 0.08 145);
+  --cat-blue-bg: oklch(0.89 0.028 245); --cat-blue-ink: oklch(0.4 0.065 250); --cat-blue-dot: oklch(0.65 0.075 245);
+  --cat-purple-bg: oklch(0.885 0.032 300); --cat-purple-ink: oklch(0.42 0.07 300); --cat-purple-dot: oklch(0.66 0.08 300);
+  --cat-pink-bg: oklch(0.89 0.032 350); --cat-pink-ink: oklch(0.43 0.07 350); --cat-pink-dot: oklch(0.7 0.08 350);
 }
 
+/* 다크: 차콜 바탕 + 아이보리 글자, 갈색·슬레이트는 밝게 */
 :root[data-theme="dark"] {
   color-scheme: dark;
   --scrim: rgb(0 0 0 / 0.55);
-  --color-bg: #1b1916;
-  --color-surface: #262320;
-  --color-text: #f1e8da;
-  --color-accent: #d9814a;
-  --color-accent-2: #93a476;
-  --color-divider: color-mix(in srgb, #f1e8da 16%, transparent);
+  --score-fg-hi: #1f2020;
+  --color-bg: #1f2020;
+  --color-surface: #2e2e2e;
+  --color-text: #e6e4da;
+  --color-accent: #a58a72;
+  --color-accent-2: #8a9aa3;
+  --color-divider: color-mix(in srgb, #e6e4da 16%, transparent);
 
-  --color-neutral-100: #322e29;
-  --color-neutral-200: #3b3631;
-  --color-neutral-300: #49433c;
-  --color-neutral-400: #5f584f;
-  --color-neutral-500: #7b7367;
-  --color-neutral-600: #9a9184;
-  --color-neutral-700: #b7ae9f;
-  --color-neutral-800: #d4cbbd;
-  --color-neutral-900: #ece4d7;
+  --color-neutral-100: #363737;
+  --color-neutral-200: #3f403f;
+  --color-neutral-300: #4c4d4c;
+  --color-neutral-400: #626462;
+  --color-neutral-500: #7d807d;
+  --color-neutral-600: #9a9d9a;
+  --color-neutral-700: #b6b8b3;
+  --color-neutral-800: #d0cfc8;
+  --color-neutral-900: #e6e4da;
 
-  --color-accent-100: #2f2118;
-  --color-accent-200: #3e2a1b;
-  --color-accent-300: #58361e;
-  --color-accent-400: #7b4925;
-  --color-accent-500: #a65f30;
-  --color-accent-600: #c4743f;
-  --color-accent-700: #e0975f;
-  --color-accent-800: #f0b58a;
-  --color-accent-900: #fad6bd;
+  --color-accent-100: #2c2622;
+  --color-accent-200: #3a3029;
+  --color-accent-300: #4e4034;
+  --color-accent-400: #6a5645;
+  --color-accent-500: #8a7059;
+  --color-accent-600: #b59a82;
+  --color-accent-700: #c6ad96;
+  --color-accent-800: #d8c5b2;
+  --color-accent-900: #eadbcc;
 
-  --color-accent-2-100: #20271a;
-  --color-accent-2-200: #2a3320;
-  --color-accent-2-300: #38432a;
-  --color-accent-2-400: #4d5b39;
-  --color-accent-2-500: #66784b;
-  --color-accent-2-600: #83966a;
-  --color-accent-2-700: #a2b386;
-  --color-accent-2-800: #c1d0a6;
-  --color-accent-2-900: #dde8c8;
+  --color-accent-2-100: #222729;
+  --color-accent-2-200: #2b3236;
+  --color-accent-2-300: #374147;
+  --color-accent-2-400: #4a5860;
+  --color-accent-2-500: #62727b;
+  --color-accent-2-600: #7b8b94;
+  --color-accent-2-700: #a0aeb6;
+  --color-accent-2-800: #bdc8ce;
+  --color-accent-2-900: #dce3e7;
 
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
   --shadow-md: 0 3px 10px rgb(0 0 0 / 0.4);
-  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.5), 0 0 0 1px color-mix(in srgb, #f1e8da 8%, transparent);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.5), 0 0 0 1px color-mix(in srgb, #e6e4da 8%, transparent);
 
-  --cat-red-bg: oklch(0.33 0.045 25); --cat-red-ink: oklch(0.87 0.07 25); --cat-red-dot: oklch(0.7 0.12 25);
-  --cat-orange-bg: oklch(0.33 0.045 60); --cat-orange-ink: oklch(0.87 0.07 55); --cat-orange-dot: oklch(0.72 0.12 60);
-  --cat-yellow-bg: oklch(0.33 0.045 95); --cat-yellow-ink: oklch(0.87 0.07 90); --cat-yellow-dot: oklch(0.78 0.12 92);
-  --cat-green-bg: oklch(0.33 0.045 145); --cat-green-ink: oklch(0.87 0.07 145); --cat-green-dot: oklch(0.7 0.12 145);
-  --cat-blue-bg: oklch(0.33 0.045 245); --cat-blue-ink: oklch(0.87 0.07 250); --cat-blue-dot: oklch(0.7 0.12 245);
-  --cat-purple-bg: oklch(0.33 0.045 300); --cat-purple-ink: oklch(0.87 0.07 300); --cat-purple-dot: oklch(0.7 0.12 300);
-  --cat-pink-bg: oklch(0.33 0.045 350); --cat-pink-ink: oklch(0.87 0.07 350); --cat-pink-dot: oklch(0.72 0.12 350);
+  --cat-red-bg: oklch(0.34 0.03 25); --cat-red-ink: oklch(0.86 0.05 25); --cat-red-dot: oklch(0.68 0.09 25);
+  --cat-orange-bg: oklch(0.34 0.03 60); --cat-orange-ink: oklch(0.86 0.05 55); --cat-orange-dot: oklch(0.7 0.085 60);
+  --cat-yellow-bg: oklch(0.34 0.032 95); --cat-yellow-ink: oklch(0.87 0.055 90); --cat-yellow-dot: oklch(0.76 0.09 92);
+  --cat-green-bg: oklch(0.34 0.03 145); --cat-green-ink: oklch(0.86 0.05 145); --cat-green-dot: oklch(0.68 0.08 145);
+  --cat-blue-bg: oklch(0.34 0.028 245); --cat-blue-ink: oklch(0.86 0.045 250); --cat-blue-dot: oklch(0.68 0.075 245);
+  --cat-purple-bg: oklch(0.34 0.03 300); --cat-purple-ink: oklch(0.86 0.05 300); --cat-purple-dot: oklch(0.68 0.08 300);
+  --cat-pink-bg: oklch(0.34 0.03 350); --cat-pink-ink: oklch(0.86 0.05 350); --cat-pink-dot: oklch(0.7 0.08 350);
 }
 
 /* 다크에서 뒤집으면 안 되는 곳 */

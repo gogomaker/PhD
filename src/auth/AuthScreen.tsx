@@ -49,9 +49,9 @@ function AuthLayout({ step, onBack, children }: { step?: number; onBack?: () => 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexWrap: 'wrap', gap: 14, padding: 14, boxSizing: 'border-box' }}>
       <div style={{ flex: '1 1 440px', minHeight: 560, background: 'var(--color-accent-2-200)', color: 'var(--color-accent-2-900)', borderRadius: 40, position: 'relative', overflow: 'hidden', padding: '44px 48px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
-        <span style={{ position: 'absolute', right: -90, bottom: -110, width: 380, height: 380, borderRadius: '50%', background: 'var(--color-accent-300)' }} />
+        <span style={{ position: 'absolute', right: -90, bottom: -110, width: 380, height: 380, borderRadius: '50%', background: 'var(--color-neutral-100)' }} />
         <span style={{ position: 'absolute', right: 190, bottom: 170, width: 120, height: 120, borderRadius: '50%', background: 'var(--color-accent-2-400)' }} />
-        <span style={{ position: 'absolute', right: 70, top: 90, width: 64, height: 64, borderRadius: '50%', background: 'oklch(0.85 0.1 85)' }} />
+        <span style={{ position: 'absolute', right: 70, top: 90, width: 64, height: 64, borderRadius: '50%', background: 'var(--color-accent-300)' }} />
         <span style={{ position: 'relative', alignSelf: 'flex-start' }}><Logo height={76} /></span>
         <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 440 }}>
           <h1 style={{ margin: 0, fontSize: 60, lineHeight: 1.02 }}>Plan Higher Dream</h1>
@@ -74,9 +74,9 @@ export function Landing() {
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', gap: 24, padding: 'max(12px, env(safe-area-inset-top)) 12px max(28px, env(safe-area-inset-bottom))', boxSizing: 'border-box' }}>
       <div style={{ flex: 1, minHeight: 440, position: 'relative', overflow: 'hidden', background: 'var(--color-accent-2-200)', color: 'var(--color-accent-2-900)', borderRadius: 40, padding: '28px 18px 34px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        <span aria-hidden="true" style={{ position: 'absolute', right: -90, bottom: -130, width: 330, height: 330, borderRadius: '50%', background: 'var(--color-accent-300)' }} />
+        <span aria-hidden="true" style={{ position: 'absolute', right: -90, bottom: -130, width: 330, height: 330, borderRadius: '50%', background: 'var(--color-neutral-100)' }} />
         <span aria-hidden="true" style={{ position: 'absolute', left: '37%', bottom: 190, width: 92, height: 92, borderRadius: '50%', background: 'var(--color-accent-2-400)' }} />
-        <span aria-hidden="true" style={{ position: 'absolute', right: 46, top: 112, width: 52, height: 52, borderRadius: '50%', background: 'oklch(0.85 0.1 85)' }} />
+        <span aria-hidden="true" style={{ position: 'absolute', right: 46, top: 112, width: 52, height: 52, borderRadius: '50%', background: 'var(--color-accent-300)' }} />
         <span style={{ position: 'relative', alignSelf: 'flex-start' }}><Logo height={60} /></span>
         <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 12, padding: '0 4px' }}>
           <h1 style={{ margin: 0, fontSize: 46, lineHeight: 1.02 }}>Plan Higher Dream</h1>

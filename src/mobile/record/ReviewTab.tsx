@@ -165,7 +165,7 @@ function Scores({ period, today, scores, isCurrent }: { period: Period; today: D
               aria-pressed={on}
               aria-label={`${l.md} ${s ? s + '점' : '점수 없음'}`}
               onClick={() => setSel(d)}
-              style={{ height: 38, border: 0, borderRadius: 12, cursor: future ? 'default' : 'pointer', ...BODY, fontSize: 12, background: s ? SCORE_BG[s - 1] : future ? 'transparent' : 'var(--color-bg)', color: s ? (s >= 4 ? 'var(--color-neutral-100)' : 'var(--color-accent-900)') : 'var(--color-neutral-500)', boxShadow: on ? '0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-text)' : d === today ? 'inset 0 0 0 2px var(--color-accent)' : 'none', opacity: future ? 0.5 : 1 }}
+              style={{ height: 38, border: 0, borderRadius: 12, cursor: future ? 'default' : 'pointer', ...BODY, fontSize: 12, background: s ? SCORE_BG[s - 1] : future ? 'transparent' : 'var(--color-bg)', color: s ? (s >= 4 ? 'var(--score-fg-hi)' : 'var(--color-accent-900)') : 'var(--color-neutral-500)', boxShadow: on ? '0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-text)' : d === today ? 'inset 0 0 0 2px var(--color-accent)' : 'none', opacity: future ? 0.5 : 1 }}
             >
               {period.range === 'week' || Number(d.slice(8)) === 1 ? l.md : Number(d.slice(8))}
             </button>
