@@ -209,6 +209,13 @@ function ProgressRow({ g, tone, last, onSaved, tz, dayStart }: { g: Goal; tone: 
   const [v, setV] = useState(last?.percent ?? 0);
   const sent = useRef(last?.percent ?? 0);
   const timer = useRef<number | undefined>(undefined);
+  // 저장된 값은 화면이 열린 뒤에 읽혀 온다 → 그때 슬라이더도 맞춘다
+  const saved = last?.percent;
+  useEffect(() => {
+    if (saved == null || saved === sent.current) return;
+    sent.current = saved;
+    setV(saved);
+  }, [saved]);
   // 손을 떼면 한 번 저장 (바뀐 기록을 남긴다). 키보드는 잠깐 멈췄을 때
   const commit = async () => {
     window.clearTimeout(timer.current);
