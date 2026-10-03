@@ -45,12 +45,16 @@ export async function buildExport(): Promise<{ name: string; data: Uint8Array }[
   const goalName = (id?: string | null) => (id ? goal.get(id)?.name ?? '' : '');
   const subName = (id?: string | null) => (id ? sub.get(id)?.name ?? '' : '');
 
-  // 할 일 → 목표·세부목표·이름·키워드 (직접 추가가 넘어온 일은 처음 행의 이름)
+  // 할 일 → 목표·세부목표·이름·키워드 (직접 추가가 넘어온 일은 처음 행의 이름·연결)
+  // 직접 추가를 목표의 세부목표에 연결했으면 그 목표로 (R-T5, 2026-10-03 UT 3차)
   const taskInfo = (t: Row) => {
     const origin = t.carried_task_id ? task.get(t.carried_task_id) ?? t : t;
     const pr = t.practice_id ? prac.get(t.practice_id) : null;
-    return { goal: goalName(pr?.goal_id), sub: subName(pr?.subgoal_id), name: pr ? pr.name : origin.name ?? '', kw: origin.daily_keyword_id ? kw.get(origin.daily_keyword_id)?.name ?? '' : '' };
+    const subId: string | null = pr?.subgoal_id ?? origin.subgoal_id ?? null;
+    const goalId: string | null = pr?.goal_id ?? (subId ? sub.get(subId)?.goal_id : null) ?? null;
+    return { goal: goalName(goalId), sub: subName(subId), name: pr ? pr.name : origin.name ?? '', kw: origin.daily_keyword_id ? kw.get(origin.daily_keyword_id)?.name ?? '' : '' };
   };
+  const hm = (t?: string | null) => (t ? t.slice(0, 5) : '');
 
   const files: [string, string[], Cell[][]][] = [];
 
@@ -73,23 +77,25 @@ export async function buildExport(): Promise<{ name: string; data: Uint8Array }[
 
   const planRows: Cell[][] = [];
   for (const c of [...yearCells].sort((a, b) => a.start_month.localeCompare(b.start_month)))
-    planRows.push(['연간', `${c.start_month.slice(0, 7)} ~ ${c.end_month.slice(0, 7)}`, goalName(c.goal_id), subName(c.subgoal_id), c.memo, '']);
+    planRows.push(['연간', `${c.start_month.slice(0, 7)} ~ ${c.end_month.slice(0, 7)}`, goalName(c.goal_id), subName(c.subgoal_id), c.memo, '', '']);
   for (const c of [...monthCells].sort((a, b) => a.year_month.localeCompare(b.year_month) || a.start_week - b.start_week))
-    planRows.push(['월간', `${c.year_month.slice(0, 7)} ${c.start_week + 1}~${c.end_week + 1}주차`, goalName(c.goal_id), subName(c.subgoal_id), c.comment, '']);
+    planRows.push(['월간', `${c.year_month.slice(0, 7)} ${c.start_week + 1}~${c.end_week + 1}주차`, goalName(c.goal_id), subName(c.subgoal_id), c.comment, '', '']);
   for (const x of [...practices].sort((a, b) => a.week_start_date.localeCompare(b.week_start_date)))
-    planRows.push(['주간 실천', `${x.week_start_date} 주`, goalName(x.goal_id), subName(x.subgoal_id), x.name, (x.weekdays as number[]).map(w => DOW[w]).join('·')]);
+    planRows.push(['주간 실천', `${x.week_start_date} 주`, goalName(x.goal_id), subName(x.subgoal_id), x.name, (x.weekdays as number[]).map(w => DOW[w]).join('·'), x.start_time ? `${hm(x.start_time)}~${hm(x.end_time)}` : '']);
   for (const n of [...notes].sort((a, b) => a.period_key.localeCompare(b.period_key) || a.start_index - b.start_index)) {
     const when = n.scope === 'month'
       ? `${n.period_key.slice(0, 7)} ${n.start_index + 1}~${n.end_index + 1}주차`
       : `${n.period_key} 주 ${[n.start_index, n.end_index].map((i: number) => (i < 0 ? '이번 주' : md(addDays(n.period_key, i)))).join('~')}`;
-    planRows.push([n.scope === 'month' ? '월간 참고사항' : '주간 참고사항', when, '', '', n.text, '']);
+    planRows.push([n.scope === 'month' ? '월간 참고사항' : '주간 참고사항', when, '', '', n.text, '', '']);
   }
-  files.push(['계획표.csv', ['표', '기간', '목표', '세부목표', '내용', '요일'], planRows]);
+  files.push(['계획표.csv', ['표', '기간', '목표', '세부목표', '내용', '요일', '시간'], planRows]);
 
   files.push(['할일.csv', ['날짜', '구분', '목표', '세부목표', '할 일', '키워드', '시작', '끝', '완료 시각', '처음 날짜(넘어온 일)'],
     [...tasks].sort((a, b) => a.date.localeCompare(b.date) || String(a.created_at).localeCompare(String(b.created_at))).map(t => {
       const i = taskInfo(t);
-      return [t.date, SOURCE[t.source], i.goal, i.sub, i.name, i.kw, t.start_time?.slice(0, 5), t.end_time?.slice(0, 5), at(t.done_at), t.carried_from_date];
+      // 시간을 정한 실천이면 그 시각
+      const pr = t.practice_id ? prac.get(t.practice_id) : null;
+      return [t.date, SOURCE[t.source], i.goal, i.sub, i.name, i.kw, hm(t.start_time ?? pr?.start_time), hm(t.end_time ?? pr?.end_time), at(t.done_at), t.carried_from_date];
     })]);
 
   files.push(['시간기록.csv', ['날짜', '구분', '시작', '끝', '분', '목표', '할 일', '키워드', '이름'],

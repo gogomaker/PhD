@@ -57,7 +57,7 @@ const once1 = (p: PracticeLite) => p.kind === 'once' && p.weekdays.length === 1;
 /**
  * closedOn: 마무리한 목표 → 마무리한 날. 그 목표의 실천은 다음 날부터 나오지 않는다 (넘어온 일 포함, 2026-10-01 기획 결정)
  */
-export function computeDay(day: DayKey, today: DayKey, allPractices: PracticeLite[], tasks: TaskRow[], closedOn?: Map<string, DayKey>, subgoalGoal?: Map<string, string>): { repeat: DayItem[]; day: DayItem[] } {
+export function computeDay(day: DayKey, today: DayKey, allPractices: PracticeLite[], tasks: TaskRow[], closedOn?: Map<string, DayKey>, subgoalGoal?: Map<string, string>, dayStart = 5): { repeat: DayItem[]; day: DayItem[] } {
   const rel = relOf(day, today);
   const practices = closedOn?.size ? allPractices.filter(p => { const f = closedOn.get(p.goal_id); return !f || day <= f; }) : allPractices;
   const dates = new Map(practices.map(p => [p.id, practiceDates(p.week_start_date, p.weekdays)]));
@@ -81,8 +81,8 @@ export function computeDay(day: DayKey, today: DayKey, allPractices: PracticeLit
     });
 
   // 시간을 정한 실천은 시간 순으로 앞에 (지류 다이어리처럼, 2026-10-03 UT 2차)
-  repeat.sort((a, b) => byTime(a.practice!, b.practice!));
-  auto.sort((a, b) => byTime(a.practice!, b.practice!));
+  repeat.sort((a, b) => byTime(a.practice!, b.practice!, dayStart));
+  auto.sort((a, b) => byTime(a.practice!, b.practice!, dayStart));
 
   // 모레 이후: 배정된 실천만
   if (rel > 1) return number({ repeat, day: auto });
@@ -123,9 +123,18 @@ export function computeDay(day: DayKey, today: DayKey, allPractices: PracticeLit
   return number({ repeat, day: [...auto, ...carried, ...direct] });
 }
 
-/** 시간을 정한 것이 먼저, 그 안에서는 이른 시각부터 (시간 없는 것끼리는 순서 그대로) */
-export function byTime(a: { start_time?: string | null }, b: { start_time?: string | null }) {
-  return (a.start_time ?? '99').localeCompare(b.start_time ?? '99');
+/** 시간을 정한 것이 먼저, 그 안에서는 이른 시각부터 (시간 없는 것끼리는 순서 그대로).
+ *  '이른'은 하루 시작 시각 기준 — 5시 시작이면 새벽 2시는 밤 11시보다 뒤 (2026-10-03 UT 3차) */
+export function byTime(a: { start_time?: string | null }, b: { start_time?: string | null }, dayStart = 5) {
+  const at = (x: { start_time?: string | null }) => (x.start_time ? slotOf(x.start_time.slice(0, 5), dayStart) : SLOTS);
+  return at(a) - at(b);
+}
+
+/** 시작~끝이 하루 안에서 앞뒤가 맞는지 (하루 시작 시각 기준, 자정을 넘어도 됨). 끝이 하루 시작 시각이면 하루의 끝 */
+export function timeOrderOk(start: string, end: string, dayStart = 5) {
+  const s = slotOf(start.slice(0, 5), dayStart);
+  const e = slotOf(end.slice(0, 5), dayStart) || SLOTS;
+  return e > s;
 }
 
 function number(x: { repeat: DayItem[]; day: DayItem[] }) {

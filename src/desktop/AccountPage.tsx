@@ -93,7 +93,7 @@ export default function AccountPage() {
       </Card>
 
       <Card title="플래너 설정">
-        <Row title="하루 시작 시간" sub="모바일 타임 테이블의 첫 줄이에요.">
+        <Row title="하루 시작 시간" sub="오늘 시간표의 첫 줄이에요. 이 시각 전은 아직 전날이에요. 바꿔도 칠한 기록은 실제 시각 그대로예요.">
           <div style={{ display: 'flex', gap: 6 }}>
             {[4, 5, 6].map(h => (
               <button key={h} className={pill(profile.day_start_hour === h)} aria-pressed={profile.day_start_hour === h} onClick={() => save({ day_start_hour: h })} style={PILL_STYLE}>{String(h).padStart(2, '0')}시</button>

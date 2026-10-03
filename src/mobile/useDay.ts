@@ -22,33 +22,55 @@ export function useDay(day: DayKey, today: DayKey) {
   const bump = useCallback(() => setPendingVer(v => v + 1), []);
   const warned = useRef(false);
 
-  const loadTasks = useCallback(async () => {
+  // quiet: 뒤에서 다시 읽을 때는 연결 오류를 알리지 않는다
+  const loadTasks = useCallback(async (quiet = false) => {
     const { data, error } = await supabase.from('tasks').select('*').order('created_at');
-    if (error) toast(errorText(error));
-    else setTasks(data as TaskRow[]);
+    if (error) { if (!quiet) toast(errorText(error)); }
+    // 다시 읽어도 같으면 그대로 (화면이 괜히 다시 그려지지 않게)
+    else setTasks(ts => (sameJson(ts, data) ? ts : (data as TaskRow[])));
   }, [toast]);
 
   // 시간표를 고친 횟수. 고치기 전에 시작한 다시 읽기가 늦게 와서 방금 칠한 것을 덮지 않게 한다
   const edits = useRef(0);
   const noteEdit = useCallback(() => { edits.current++; }, []);
+  // 이 기기가 마지막으로 본 서버의 시간표. 저장할 때 함께 보내 그 사이 다른 기기에서 바뀌었는지 서버가 견준다 (2026-10-03 UT 3차)
+  const base = useRef<Record<'plan' | 'actual', BlockInput[] | null>>({ plan: null, actual: null });
+  // 하루 시작 시각을 바꾸면 서버가 칸을 옮기므로 다시 읽는다
+  const dayStart = profile?.day_start_hour;
 
-  const loadDay = useCallback(async () => {
+  const loadDay = useCallback(async (quiet = false) => {
     const v = edits.current;
     const [b, j] = await Promise.all([
-      supabase.from('time_blocks').select('id, date, layer, start_slot, end_slot, task_id, daily_keyword_id, label, block_key').eq('date', day),
+      supabase.from('time_blocks').select('id, date, layer, start_slot, end_slot, task_id, daily_keyword_id, label, block_key').eq('date', day).order('start_slot'),
       supabase.from('day_journals').select('id, date, score, reason, thanks, memo').eq('date', day).maybeSingle(),
     ]);
-    if (b.error || j.error) return toast(errorText(b.error ?? j.error));
-    if (edits.current === v) setBlocks(withPending(b.data as BlockRow[], user ? pendingOf(user, day) : []));
-    setJournal(j.data as Journal | null);
-  }, [day, toast, user]);
+    if (b.error || j.error) return quiet ? undefined : toast(errorText(b.error ?? j.error));
+    if (edits.current === v) {
+      const rows = b.data as BlockRow[];
+      base.current = { plan: rows.filter(x => x.layer === 'plan').map(toInput), actual: rows.filter(x => x.layer === 'actual').map(toInput) };
+      const next = withPending(rows, user ? pendingOf(user, day) : []);
+      setBlocks(old => (sameJson(old, next) ? old : next));
+    }
+    setJournal(old => (sameJson(old, j.data) ? old : (j.data as Journal | null)));
+  }, [day, toast, user, dayStart]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setLoaded(false);
     setJournal(null);
     setBlocks([]);
+    base.current = { plan: null, actual: null };
     Promise.all([loadTasks(), loadDay()]).then(() => setLoaded(true));
   }, [loadTasks, loadDay]);
+
+  // 다른 기기에서 고친 것: 창으로 돌아오거나 화면이 다시 보이면, 그리고 보이는 동안 1분마다 다시 읽는다 (2026-10-03 UT 3차)
+  const reload = useCallback(() => Promise.all([loadTasks(true), loadDay(true)]).then(() => undefined, () => undefined), [loadTasks, loadDay]);
+  useEffect(() => {
+    const on = () => { if (document.visibilityState === 'visible') void reload(); };
+    window.addEventListener('focus', on);
+    document.addEventListener('visibilitychange', on);
+    const t = setInterval(on, 60_000);
+    return () => { window.removeEventListener('focus', on); document.removeEventListener('visibilitychange', on); clearInterval(t); };
+  }, [reload]);
 
   // 마무리한 목표 → 마무리한 날 (R-D1 기준)
   const closedOn = useMemo(
@@ -56,7 +78,7 @@ export function useDay(day: DayKey, today: DayKey) {
     [goals, profile?.timezone, profile?.day_start_hour],
   );
   const subgoalGoal = useMemo(() => new Map(subgoals.map(s => [s.id, s.goal_id])), [subgoals]);
-  const list = useMemo(() => computeDay(day, today, practices, tasks, closedOn, subgoalGoal), [day, today, practices, tasks, closedOn, subgoalGoal]);
+  const list = useMemo(() => computeDay(day, today, practices, tasks, closedOn, subgoalGoal, dayStart ?? 5), [day, today, practices, tasks, closedOn, subgoalGoal, dayStart]);
 
   /** 행이 없는 할 일(반복·자동·넘어온 일)은 지금 만든다. 행 id를 돌려준다 */
   const ensureRow = useCallback(
@@ -120,8 +142,12 @@ export function useDay(day: DayKey, today: DayKey) {
   const saveLayer = (layer: 'plan' | 'actual', rows: BlockInput[]) =>
     serial(async () => {
       // 화면의 칸 상태가 기준. 성공하면 다시 읽지 않는다(이어서 그린 것을 옛 상태로 덮어쓰지 않도록)
-      const { error } = await supabase.rpc('save_day_blocks', { p_date: day, p_layer: layer, p_blocks: rows });
+      const known = base.current[layer];
+      const { error } = await supabase.rpc('save_day_blocks', { p_date: day, p_layer: layer, p_blocks: rows, p_base: known });
+      // 저장 전에 시작한 다시 읽기가 늦게 와서 덮지 않게
+      edits.current++;
       if (!error) {
+        base.current[layer] = rows;
         if (user && pendingOf(user, day).some(p => p.layer === layer)) {
           dropPending(user, day, layer);
           bump();
@@ -130,14 +156,14 @@ export function useDay(day: DayKey, today: DayKey) {
       }
       if (user && isNetworkError(error)) {
         // 닿지 못했으면 화면은 그대로 두고 이 기기에 보관 → 연결되면 보낸다
-        putPending({ user, day, layer, rows, at: Date.now() });
+        putPending({ user, day, layer, rows, at: Date.now(), base: known });
         bump();
         if (!warned.current) toast('연결이 끊겼어요. 칠한 시간은 이 기기에 두었다가 연결되면 저장해요');
         warned.current = true;
         return false;
       }
       // 서버가 거절하면 서버 상태로 되돌린다 (이 다시 읽기는 반영)
-      toast(errorText(error));
+      toast(isStale(error) ? '다른 기기에서 이 날 시간표를 바꿔서 새로 불러왔어요. 방금 칠한 것은 다시 칠해 주세요' : errorText(error));
       edits.current++;
       await loadDay();
       return false;
@@ -150,11 +176,11 @@ export function useDay(day: DayKey, today: DayKey) {
         if (!user) return;
         let changed = false;
         for (const p of pendingOf(user)) {
-          const { error } = await supabase.rpc('save_day_blocks', { p_date: p.day, p_layer: p.layer, p_blocks: p.rows });
+          const { error } = await supabase.rpc('save_day_blocks', { p_date: p.day, p_layer: p.layer, p_blocks: p.rows, p_base: p.base ?? null });
           if (error && isNetworkError(error)) break;
           dropPending(user, p.day, p.layer, p.at);
           changed = true;
-          if (error) toast(`${p.day.slice(5).replace('-', '.')} 시간표를 저장하지 못했어요 · ${errorText(error)}`);
+          if (error) toast(`${p.day.slice(5).replace('-', '.')} 시간표를 저장하지 못했어요 · ${isStale(error) ? '그 사이 다른 기기에서 바뀌었어요' : errorText(error)}`);
           else if (!pendingOf(user).length) toast('연결됐어요. 기다리던 시간표를 저장했어요');
         }
         if (changed) {
@@ -182,9 +208,14 @@ export function useDay(day: DayKey, today: DayKey) {
 
   const saveJournal = async (j: Journal) => {
     const body = { score: j.score, reason: j.reason, thanks: j.thanks, memo: j.memo };
-    const { data, error } = await (journal?.id
-      ? supabase.from('day_journals').update({ ...body, updated_at: new Date().toISOString() }).eq('id', journal.id).select('id, date, score, reason, thanks, memo').single()
-      : supabase.from('day_journals').insert({ date: day, ...body }).select('id, date, score, reason, thanks, memo').single());
+    const cols = 'id, date, score, reason, thanks, memo';
+    const update = (id: string) => supabase.from('day_journals').update({ ...body, updated_at: new Date().toISOString() }).eq('id', id).select(cols).single();
+    let { data, error } = await (journal?.id ? update(journal.id) : supabase.from('day_journals').insert({ date: day, ...body }).select(cols).single());
+    // 그 사이 다른 기기에서 먼저 만들었으면 그 기록을 고친다
+    if (error && (error as { code?: string }).code === '23505') {
+      const got = await supabase.from('day_journals').select('id').eq('date', day).maybeSingle();
+      if (got.data) ({ data, error } = await update(got.data.id as string));
+    }
     if (error) {
       toast(errorText(error));
       return false;
@@ -193,10 +224,14 @@ export function useDay(day: DayKey, today: DayKey) {
     return true;
   };
 
-  return { loaded, tasks, blocks, journal, list, ensureRow, toggleDone, addDirect, removeTask, saveLayer, saveJournal, noteEdit, pending };
+  return { loaded, tasks, blocks, journal, list, ensureRow, toggleDone, addDirect, removeTask, saveLayer, saveJournal, noteEdit, pending, reload };
 }
 
 /** 서버에서 읽은 블록 위에, 보관 중인 층을 덮어 보여 준다 */
+const toInput = (b: BlockRow): BlockInput => ({ start: b.start_slot, end: b.end_slot, task_id: b.task_id, keyword_id: b.daily_keyword_id, label: b.label, key: b.block_key ?? undefined });
+const sameJson = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+const isStale = (e: unknown) => /stale_day/.test(String((e as { message?: string } | null)?.message ?? ''));
+
 function withPending(rows: BlockRow[], pend: Pending[]): BlockRow[] {
   if (!pend.length) return rows;
   const layers = new Set(pend.map(p => p.layer));

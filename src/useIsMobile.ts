@@ -21,3 +21,23 @@ function subscribe(onChange: () => void) {
 export function useIsMobile() {
   return useSyncExternalStore(subscribe, isMobileNow);
 }
+
+// 휴대폰을 가로로 돌렸는지 — 휴대폰은 세로로만 쓴다 (2026-10-03 UT 3차 기획 결정).
+// 기기 방향(screen.orientation)으로 보므로 세로에서 글쇠판이 올라와 화면이 낮아져도 가로로 치지 않는다
+export function isPhoneLandscapeNow() {
+  if (window.matchMedia(FINE).matches) return false;
+  const w = window.innerWidth, h = window.innerHeight;
+  if (Math.min(w, h) >= 768 || w <= h) return false;
+  const type = window.screen.orientation?.type;
+  return type ? type.startsWith('landscape') : true;
+}
+
+function subscribeOrientation(onChange: () => void) {
+  window.addEventListener('resize', onChange);
+  window.screen.orientation?.addEventListener('change', onChange);
+  return () => { window.removeEventListener('resize', onChange); window.screen.orientation?.removeEventListener('change', onChange); };
+}
+
+export function usePhoneLandscape() {
+  return useSyncExternalStore(subscribeOrientation, isPhoneLandscapeNow);
+}

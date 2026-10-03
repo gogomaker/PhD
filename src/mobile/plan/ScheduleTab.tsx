@@ -21,7 +21,8 @@ type Row = { key: string; label: string; sub?: string; now?: boolean; past?: boo
 type SheetState = null | { k: 'add'; start?: number } | { k: 'year'; cell: YearCell } | { k: 'month'; cell: MonthCell } | { k: 'note'; note: Note } | { k: 'practice'; practice: Practice };
 
 export default function ScheduleTab() {
-  const { yearCells, monthCells, notes, practices } = useAccount();
+  const { yearCells, monthCells, notes, practices, profile } = useAccount();
+  const dayStart = profile?.day_start_hour ?? 5;
   const today = useToday();
   const loc = useLocation();
   const navigate = useNavigate();
@@ -150,7 +151,7 @@ export default function ScheduleTab() {
     const acts = practices
       .filter(p => p.week_start_date === key && shown(p.goal_id))
       .map(p => ({ p, pos: practiceDates(p.week_start_date, p.weekdays).map(d => days.indexOf(d)).filter(i => i >= 0) }))
-      .sort((a, b) => Math.min(...a.pos) - Math.min(...b.pos) || byTime(a.p, b.p) || a.p.created_at.localeCompare(b.p.created_at));
+      .sort((a, b) => Math.min(...a.pos) - Math.min(...b.pos) || byTime(a.p, b.p, dayStart) || a.p.created_at.localeCompare(b.p.created_at));
     const actItem = (p: Practice, span: string): Item => ({ id: p.id, tone: toneById(p.goal_id), meta: goalName(p.goal_id) + ' · ' + subName(p.subgoal_id), name: p.name, span: [span, p.start_time ? `${p.start_time.slice(0, 5)}–${p.end_time?.slice(0, 5)}` : ''].filter(Boolean).join(' · '), onTap: () => setSheet({ k: 'practice', practice: p }), out: outside(ups, p.goal_id, p.subgoal_id) });
     const wNotes = notes.filter(n => n.scope === 'week' && n.period_key === key);
     rows = [

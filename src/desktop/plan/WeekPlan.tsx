@@ -17,7 +17,8 @@ type Pop = { goalId: string; row: number; anchor: DOMRect; sub: string | null; n
 
 // 주간 계획: "이번 주" 줄 + 요일 7줄. 목표 열에는 병합 없이 실천을 쌓는다 (R-P6). 참고사항 열만 병합
 export default function WeekPlan() {
-  const { monthCells, notes, practices, run, create, toast } = useAccount();
+  const { monthCells, notes, practices, run, create, toast, profile } = useAccount();
+  const dayStart = profile?.day_start_hour ?? 5;
   const today = useToday();
   const ws = WEEK_START;
   const [params, setParams] = useSearchParams();
@@ -56,7 +57,7 @@ export default function WeekPlan() {
   const cellItems = (goalId: string, row: number) =>
     inWeek
       .filter(x => x.p.goal_id === goalId && (row === -1 ? x.p.weekdays.length > 1 : x.p.weekdays.length === 1 && x.pos[0] === row))
-      .sort((a, b) => Math.min(...a.pos) - Math.min(...b.pos) || byTime(a.p, b.p) || a.p.created_at.localeCompare(b.p.created_at));
+      .sort((a, b) => Math.min(...a.pos) - Math.min(...b.pos) || byTime(a.p, b.p, dayStart) || a.p.created_at.localeCompare(b.p.created_at));
 
   const noteBlocks: MBlock[] = notes.filter(n => n.scope === 'week' && n.period_key === week).map(n => ({ id: n.id, start: n.start_index, end: n.end_index, text: n.text }));
   const addNote = async (row: number, end = row) => {
@@ -81,7 +82,7 @@ export default function WeekPlan() {
   });
 
   const submit = async () => {
-    if (!pop || !pop.sub || !pop.name.trim() || pop.days.length === 0 || badTime(pop.time)) return;
+    if (!pop || !pop.sub || !pop.name.trim() || pop.days.length === 0 || badTime(pop.time, dayStart)) return;
     const weekdays = [...new Set(pop.days.map(i => isoDow(days[i])))].sort((a, b) => a - b);
     const ok = await run(() => supabase.from('practices').insert({ goal_id: pop.goalId, subgoal_id: pop.sub, week_start_date: week, name: pop.name.trim(), weekdays, ...(pop.time.on ? { start_time: pop.time.start, end_time: pop.time.end } : {}) }));
     if (ok) setPop(null);
@@ -303,6 +304,7 @@ function PracticeForm({ goal, tone, subs, highlight, upperOn, upperName, when, l
   onSubmit: () => void;
 }) {
   const ds = pop.days;
+  const dayStart = useAccount().profile?.day_start_hour ?? 5;
   const dayHint = ds.length === 0 ? '요일을 하나 이상 골라 주세요.' : ds.length === 1 ? `${labels[ds[0]]}요일 칸에 들어가요. 못 하면 다음 날로 넘어가요.` : `'이번 주' 줄에 들어가요 · ${fmtDays(ds, labels)}마다 할 일이 돼요.`;
   return (
     <>
@@ -332,7 +334,7 @@ function PracticeForm({ goal, tone, subs, highlight, upperOn, upperName, when, l
           <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: 'var(--color-neutral-700)' }}>{dayHint}</span>
         </div>
         <TimeToggle value={pop.time} onChange={time => setPop({ ...pop, time })} label="4. 시간 (선택)" sub="고른 요일마다 휴대폰 시간표에 놓이고 알람이 울려요" />
-        <button className="btn btn-primary" disabled={!(pop.sub && pop.name.trim() && ds.length) || badTime(pop.time)} onClick={onSubmit}>실천 추가</button>
+        <button className="btn btn-primary" disabled={!(pop.sub && pop.name.trim() && ds.length) || badTime(pop.time, dayStart)} onClick={onSubmit}>실천 추가</button>
       </div>
     </>
   );

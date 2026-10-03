@@ -20,6 +20,10 @@ export function errorText(e: unknown): string {
   if (auth[code]) return auth[code];
   if (msg.includes('day_locked')) return '이 날은 시간표를 바꿀 수 없어요';
   if (msg.includes('future_time')) return '아직 오지 않은 시간은 칠할 수 없어요';
+  // 2026-10-03 UT 3차
+  if (msg.includes('stale_day')) return '다른 기기에서 이 날 시간표를 바꿨어요. 새로 불러올게요';
+  if (msg.includes('day_start_back')) return (err as { hint?: string })?.hint ?? '지금은 하루 시작 시간을 늦출 수 없어요';
+  if (msg.includes('time_order')) return '끝 시각이 시작보다 뒤여야 해요 (하루 시작 시간 기준)';
   if (msg.includes('goal_not_in_progress')) return '진행 중인 목표만 마무리할 수 있어요';
   if (msg.includes('finish_photo_invalid')) return '인증사진은 완성일 때만 올릴 수 있어요';
   if (msg.includes('mime type') || msg.includes('exceeded the maximum allowed size')) return '사진은 5MB 이하 JPG·PNG·WEBP만 올릴 수 있어요';

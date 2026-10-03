@@ -147,7 +147,8 @@ function SubChips({ subs, cur, onPick, tone }: { subs: { id: string; name: strin
 
 // ───────── + 계획 / + 실천 ─────────
 export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClose }: { zoom: Zoom; periodKey: string; initialGoal?: string | null; initialStart?: number; onClose: () => void }) {
-  const { run } = useAccount();
+  const { run, profile } = useAccount();
+  const dayStart = profile?.day_start_hour ?? 5;
   const today = useToday();
   const navigate = useNavigate();
   const { list, toneOf, subsOf, subName } = useOpenGoals();
@@ -216,7 +217,7 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
     if (ok) onClose();
   };
 
-  const off = busy || !goalId || (practice ? !subId || !text.trim() || days.length === 0 || badTime(time) : isNote ? !s0 || !text.trim() : !subId || !s0);
+  const off = busy || !goalId || (practice ? !subId || !text.trim() || days.length === 0 || badTime(time, dayStart) : isNote ? !s0 || !text.trim() : !subId || !s0);
   const labels = units.map(u => u.label);
   const dayHint = days.length === 0 ? '요일을 하나 이상 골라 주세요.' : days.length === 1 ? `${labels[days[0]]}요일 할 일이 돼요. 못 하면 다음 날로 넘어가요.` : `${fmtDays(days, labels)}마다 반복하는 할 일이 돼요.`;
 
