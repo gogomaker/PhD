@@ -2,22 +2,11 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAccount } from '../../account/AccountProvider';
-import { diffDays, type DayKey } from '../../lib/day';
+import { type DayKey } from '../../lib/day';
+import { ddayText, monthEnd } from '../../lib/dday';
 import { md } from '../../lib/plan';
 import { BODY, Dot, Field, ICON, Sheet, SheetHead, Svg } from '../ui';
 import { useOpenGoals } from './planSheets';
-
-/** 'D-23' / 'D-DAY' / 'D+3' */
-export function ddayText(target: DayKey, day: DayKey) {
-  const n = diffDays(day, target);
-  return n === 0 ? 'D-DAY' : n > 0 ? `D-${n}` : `D+${-n}`;
-}
-
-/** 목표 기한('YYYY-MM-01') → 그 달 마지막 날 */
-const monthEnd = (due: string) => {
-  const [y, m] = due.split('-').map(Number);
-  return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
-};
 
 /** 계획 › 목표의 D-day 줄 */
 export function DdayRow({ today }: { today: DayKey }) {

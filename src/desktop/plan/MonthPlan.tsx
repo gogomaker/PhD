@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAccount, useToday } from '../../account/AccountProvider';
 import { addDays } from '../../lib/day';
-import { addMonths, md, monthOfWeek, monthWeeks, weekLocked, weekStartOf, WEEK_START } from '../../lib/plan';
+import { addMonths, md, monthOfWeek, monthWeeks, outside, weekLocked, weekStartOf, WEEK_START } from '../../lib/plan';
 import { MergeColumn, type MBlock } from './MergeColumn';
 import { ColumnHeader, LockNote, NOTE, NoColumns, PlanHeader, PopHead, Popover, RefRow, RowLabel, SubgoalPicker, TableFrame, useSelection, useTableGoals, type RefCell } from './shared';
 
@@ -20,7 +20,11 @@ export default function MonthPlan() {
   const todayWeek = weeks.indexOf(weekStartOf(today, ws));
   // R-P12: 지난주는 잠금
   const lockedBefore = weeks.filter(w => weekLocked(w, today)).length;
-  const { cols, toneOf, catOf, subsOf } = useTableGoals();
+  // 이 달에 계획이 있는 목표는 숨겼어도 열로
+  const planned = new Set(monthCells.filter(c => c.year_month === ymKey).map(c => c.goal_id));
+  const { cols, toneOf, catOf, subsOf, pinned } = useTableGoals(planned);
+  // R-P14: 이 달의 연간 계획 (어느 목표든)
+  const ups = yearCells.filter(c => c.start_month <= ymKey && ymKey <= c.end_month).map(c => ({ goalId: c.goal_id, subId: c.subgoal_id }));
   const [sel, setSel] = useSelection();
   const [focusId, setFocusId] = useState<string | null>(null);
   const [pop, setPop] = useState<{ goalId: string; row: number; anchor: DOMRect } | null>(null);
@@ -32,7 +36,7 @@ export default function MonthPlan() {
   const upper = (goalId: string) => yearCells.find(c => c.goal_id === goalId && c.start_month <= ymKey && ymKey <= c.end_month);
 
   const goalBlocks = (goalId: string): MBlock[] =>
-    monthCells.filter(c => c.goal_id === goalId && c.year_month === ymKey).map(c => ({ id: c.id, start: c.start_week, end: c.end_week, chip: subName(goalId, c.subgoal_id), text: c.comment }));
+    monthCells.filter(c => c.goal_id === goalId && c.year_month === ymKey).map(c => ({ id: c.id, start: c.start_week, end: c.end_week, chip: subName(goalId, c.subgoal_id), text: c.comment, out: outside(ups, goalId, c.subgoal_id) }));
   const noteBlocks: MBlock[] = notes.filter(n => n.scope === 'month' && n.period_key === ymKey).map(n => ({ id: n.id, start: n.start_index, end: n.end_index, text: n.text }));
 
   const place = async (goalId: string, row: number, subgoalId: string) => {
@@ -71,7 +75,7 @@ export default function MonthPlan() {
         <TableFrame columns={'96px minmax(124px, 1fr) ' + cols.map(() => 'minmax(140px, 1fr)').join(' ')} minWidth={96 + 129 + cols.length * 145} rowHeight={56}>
           <div style={{ gridRow: 1, gridColumn: 1, display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: 12, fontWeight: 700, color: 'var(--color-neutral-700)' }}>기간</div>
           <ColumnHeader col={2} name="참고사항" sub="모바일로 가지 않는 메모" dot={NOTE.dot} />
-          {cols.map((g, i) => <ColumnHeader key={g.id} col={i + 3} name={g.name} sub={catOf(g)?.name ?? ''} dot={toneOf(g).dot} goalId={g.id} />)}
+          {cols.map((g, i) => <ColumnHeader key={g.id} col={i + 3} name={g.name} sub={catOf(g)?.name ?? ''} dot={toneOf(g).dot} goalId={g.id} pinned={pinned(g)} />)}
           <RefRow label={`연간 · ${m}월`} cells={refs} emptyText="연간 표의 이번 달 칸이 여기로 내려와요" lastCol={cols.length + 2} />
           {weeks.map((w, i) => <RowLabel key={w} row={i + 3} label={`${i + 1}주차`} sub={`${md(w)} – ${md(addDays(w, 6))}`} today={i === todayWeek} />)}
           <MergeColumn
@@ -116,12 +120,12 @@ export default function MonthPlan() {
         </TableFrame>
       )}
       <p style={{ margin: 0, fontSize: 13, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>
-        빈 칸을 누르면 그 목표의 세부목표를 골라 넣고 코멘트를 적어요. 연간 계획에서 이번 달에 배치한 세부목표가 맨 위에 보여요. 여기서 바꾼 내용은 연간 계획에 반영되지 않아요.
+        빈 칸을 누르면 그 목표의 세부목표를 골라 넣고 코멘트를 적어요. 연간 계획에서 이번 달에 배치한 세부목표를 먼저 골라요. 그 밖의 세부목표는 '계획 밖'으로 표시돼요. 여기서 바꾼 내용은 연간 계획에 반영되지 않아요.
       </p>
       {pop && popGoal && (
         <Popover anchor={pop.anchor} width={260} height={300} onClose={() => setPop(null)}>
           <PopHead dot={toneOf(popGoal).dot} title={`${popGoal.name} · ${pop.row + 1}주차`} hint="세부목표를 골라 넣고 코멘트를 적어요" />
-          <SubgoalPicker subs={subsOf(popGoal.id)} highlight={upper(popGoal.id)?.subgoal_id} badge="이번 달 계획" tone={toneOf(popGoal)} onPick={sid => place(popGoal.id, pop.row, sid)} />
+          <SubgoalPicker subs={subsOf(popGoal.id)} highlight={upper(popGoal.id)?.subgoal_id} badge="이번 달 계획" upperOn={ups.length > 0} upperName={`연간 계획의 ${m}월`} tone={toneOf(popGoal)} onPick={sid => place(popGoal.id, pop.row, sid)} />
         </Popover>
       )}
     </div>

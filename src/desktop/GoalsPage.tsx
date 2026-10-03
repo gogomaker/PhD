@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAccount, type Category, type Goal } from '../account/AccountProvider';
 import { PALETTE } from '../lib/palette';
@@ -7,6 +7,7 @@ import { MAX_GOAL_NAME, isClosed, sortGoals } from '../lib/goals';
 import { BlurInput } from '../ui/BlurInput';
 import { MonthPicker, isMonth } from '../ui/MonthPicker';
 import { useDeleteGoal } from './goalActions';
+import { DdayRow } from './Dday';
 
 const cross = 'M18 6 6 18M6 6l12 12';
 
@@ -15,6 +16,14 @@ export default function GoalsPage() {
   const { profile, goalCategories, goals } = useAccount();
   const { ask, dialog } = useDeleteGoal();
   const dream = profile?.dream?.trim();
+  const loc = useLocation();
+  const navigate = useNavigate();
+  // 체험을 마치고 오면 첫 목표 입력 칸에 바로 (모바일은 새 목표 시트)
+  useEffect(() => {
+    if (!(loc.state as { newGoal?: boolean } | null)?.newGoal) return;
+    navigate(loc.pathname, { replace: true, state: null });
+    document.querySelector<HTMLInputElement>('[data-goal-input]')?.focus();
+  }, [loc.state, loc.pathname, navigate]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 30, maxWidth: 1000 }}>
@@ -35,6 +44,9 @@ export default function GoalsPage() {
           <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 30, lineHeight: 1.2 }}>{dream}</span>
         </div>
       )}
+      <div style={{ display: 'flex', flexDirection: 'column', marginTop: dream ? -14 : 0 }}>
+        <DdayRow />
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: '200px minmax(0,1fr)', columnGap: 24 }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-neutral-600)', paddingLeft: 4 }}>카테고리</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-neutral-600)' }}>되고 싶은 모습 · 목표</span>

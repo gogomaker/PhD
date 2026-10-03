@@ -9,19 +9,25 @@ import { isClosed } from '../../lib/goals';
 export const NOTE = { bg: 'var(--color-neutral-200)', ink: 'var(--color-neutral-800)', dot: 'var(--color-neutral-500)' };
 export type Tone = { bg: string; ink: string; dot: string };
 
-/** 계획 표 열 = 목표. 마무리 전 + 표에 올림 + 세부목표 1개 이상 (R-G2, R-G8) */
-export function useTableGoals() {
+/**
+ * 계획 표 열 = 목표. 마무리 전 + 표에 올림 + 세부목표 1개 이상 (R-G2, R-G8)
+ * planned: 보고 있는 기간에 계획이 있는 목표 — 표에 안 올렸거나 숨겼어도 열로 보인다 (휴대폰엔 열 개념이 없어서, 2026-10-03 기획 결정)
+ */
+export function useTableGoals(planned?: ReadonlySet<string>) {
   const { goals, subgoals, goalCategories } = useAccount();
   const hasSubs = (id: string) => subgoals.some(s => s.goal_id === id);
   const open = goals.filter(g => !isClosed(g));
   const cols = open
-    .filter(g => !g.table_hidden && hasSubs(g.id))
+    .filter(g => (!g.table_hidden || !!planned?.has(g.id)) && hasSubs(g.id))
     .sort((a, b) => a.table_position - b.table_position || a.created_at.localeCompare(b.created_at));
-  const hidden = open.filter(g => !cols.includes(g));
+  // 숨긴 열 메뉴는 계획 때문에 잠깐 보이는 목표도 포함 (다시 올려 둘 수 있게)
+  const hidden = open.filter(g => g.table_hidden || !hasSubs(g.id));
+  /** 숨겼지만 이 기간에 계획이 있어 보이는 열 */
+  const pinned = (g: Goal) => g.table_hidden && cols.includes(g);
   const catOf = (g: Goal) => goalCategories.find(c => c.id === g.category_id);
   const toneOf = (g: Goal): Tone => PALETTE[catOf(g)?.color ?? 'red'];
   const subsOf = (goalId: string) => subgoals.filter(s => s.goal_id === goalId);
-  return { cols, hidden, hasSubs, catOf, toneOf, subsOf };
+  return { cols, hidden, pinned, hasSubs, catOf, toneOf, subsOf };
 }
 
 export function useColumnActions() {
@@ -36,7 +42,7 @@ export function useColumnActions() {
       const ids = cols.map(g => g.id);
       const i = ids.indexOf(id);
       const j = i + dir;
-      if (j < 0 || j >= ids.length) return;
+      if (i < 0 || j < 0 || j >= ids.length) return;
       [ids[i], ids[j]] = [ids[j], ids[i]];
       run(() => all(ids.map((gid, pos) => supabase.from('goals').update({ table_position: pos }).eq('id', gid))));
     },
@@ -194,7 +200,7 @@ export function TableFrame({ columns, minWidth, rowHeight, children }: { columns
 }
 
 // 열 머리: 목표명·카테고리, ‹ › 순서, × 숨기기
-export function ColumnHeader({ col, name, sub, dot, goalId }: { col: number; name: string; sub: string; dot: string; goalId?: string }) {
+export function ColumnHeader({ col, name, sub, dot, goalId, pinned }: { col: number; name: string; sub: string; dot: string; goalId?: string; pinned?: boolean }) {
   const { move, hide } = useColumnActions();
   return (
     <div data-testid="col-header" style={{ gridRow: 1, gridColumn: col, background: 'var(--color-neutral-100)', borderRadius: 16, padding: '9px 10px 8px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4, minWidth: 0 }}>
@@ -204,7 +210,10 @@ export function ColumnHeader({ col, name, sub, dot, goalId }: { col: number; nam
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11, color: 'var(--color-neutral-600)' }}>
         <span style={{ marginRight: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</span>
-        {goalId && (
+        {goalId && pinned && (
+          <span data-testid="col-pinned" title="표에 올리지 않은 목표지만 이 기간에 계획이 있어 보여요. '+ 목표 열'에서 표에 올릴 수 있어요." style={{ flex: 'none', fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'var(--color-neutral-200)', color: 'var(--color-neutral-800)' }}>표 밖</span>
+        )}
+        {goalId && !pinned && (
           <>
             <button title="왼쪽으로" aria-label={name + ' 왼쪽으로'} onClick={() => move(goalId, -1)} className="btn mini-btn"><Svg d={ICONS.left} size={12} /></button>
             <button title="오른쪽으로" aria-label={name + ' 오른쪽으로'} onClick={() => move(goalId, 1)} className="btn mini-btn"><Svg d={ICONS.right} size={12} /></button>
@@ -297,21 +306,43 @@ export function PopHead({ dot, title, hint }: { dot: string; title: string; hint
   );
 }
 
-/** 세부목표 목록 (팝오버). highlight는 상위 계획의 세부목표 → 맨 위 + 배지 (R-P5, R-P7) */
-export function SubgoalPicker({ subs, highlight, badge, selected, tone, onPick }: { subs: { id: string; name: string }[]; highlight?: string | null; badge: string; selected?: string | null; tone: Tone; onPick: (id: string) => void }) {
-  const ordered = [...subs].sort((a, b) => Number(b.id === highlight) - Number(a.id === highlight));
+/** '계획 밖' 표시 (R-P14): 위 계획에 없는 세부목표로 넣은 칸·실천 */
+export function OutTag() {
+  return <span data-testid="out-of-plan" title="위 계획에 없는 세부목표예요" style={{ flex: 'none', fontSize: 10, fontWeight: 700, lineHeight: 1.2, padding: '2px 6px', borderRadius: 999, border: '1.5px dashed var(--color-neutral-500)', color: 'var(--color-neutral-800)', whiteSpace: 'nowrap' }}>계획 밖</span>;
+}
+
+/**
+ * 세부목표 목록 (팝오버). highlight = 위 계획에 있는 이 목표의 세부목표 (R-P5, R-P7)
+ * R-P14: 위 계획이 있으면 그것부터 보여 주고, 나머지는 '계획 밖에서 고르기'를 한 번 더 눌러야 나온다.
+ * upperOn = 이 기간에 위 계획이 (어느 목표든) 있음. 이 목표가 위 계획에 없으면 모두 '계획 밖'
+ */
+export function SubgoalPicker({ subs, highlight, badge, selected, tone, onPick, upperOn, upperName }: { subs: { id: string; name: string }[]; highlight?: string | null; badge: string; selected?: string | null; tone: Tone; onPick: (id: string) => void; upperOn?: boolean; upperName?: string }) {
+  const hl = subs.find(s => s.id === highlight);
+  const rest = subs.filter(s => s !== hl);
+  const [more, setMore] = useState(() => !!selected && selected !== highlight);
+  const item = (s: { id: string; name: string }, tag: ReactNode) => {
+    const on = s.id === selected;
+    const isHl = s === hl;
+    return (
+      <button key={s.id} type="button" className="btn menu-item" aria-pressed={on} onClick={() => onPick(s.id)} style={{ justifyContent: 'flex-start', gap: 8, fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14, padding: '9px 12px', textAlign: 'left', background: on || isHl ? tone.bg : 'transparent', boxShadow: on ? 'inset 0 0 0 2px ' + tone.dot : 'none' }}>
+        {on ? '✓ ' : ''}{s.name}
+        {tag && <span style={{ marginLeft: 'auto', flex: 'none', display: 'flex' }}>{tag}</span>}
+      </button>
+    );
+  };
+  const badgeTag = <span style={{ fontSize: 10.5, fontWeight: 700, lineHeight: 1.2, padding: '3px 8px', borderRadius: 999, background: 'var(--color-neutral-100)', color: tone.ink }}>{badge}</span>;
+  // 위 계획이 비어 있으면 그냥 모두
+  if (!upperOn) return <>{subs.map(s => item(s, null))}</>;
   return (
     <>
-      {ordered.map(s => {
-        const hl = s.id === highlight;
-        const on = s.id === selected;
-        return (
-          <button key={s.id} type="button" className="btn menu-item" aria-pressed={on} onClick={() => onPick(s.id)} style={{ justifyContent: 'flex-start', gap: 8, fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14, padding: '9px 12px', textAlign: 'left', background: on || hl ? tone.bg : 'transparent', boxShadow: on ? 'inset 0 0 0 2px ' + tone.dot : 'none' }}>
-            {on ? '✓ ' : ''}{s.name}
-            {hl && <span style={{ marginLeft: 'auto', flex: 'none', fontSize: 10.5, fontWeight: 700, lineHeight: 1.2, padding: '3px 8px', borderRadius: 999, background: 'var(--color-neutral-100)', color: tone.ink }}>{badge}</span>}
-          </button>
-        );
-      })}
+      {hl && item(hl, badgeTag)}
+      {!hl && <span data-testid="picker-out-note" style={{ fontSize: 12, lineHeight: 1.45, color: 'var(--color-neutral-700)', padding: '2px 12px 6px', textWrap: 'pretty' }}>{upperName ?? '위 계획'}에 이 목표가 없어요. 넣으면 '계획 밖'으로 표시돼요.</span>}
+      {hl && rest.length > 0 && !more && (
+        <button type="button" data-testid="picker-more" className="btn menu-item" onClick={() => setMore(true)} style={{ justifyContent: 'flex-start', fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, padding: '8px 12px', color: 'var(--color-neutral-700)' }}>
+          + 계획 밖에서 고르기 ({rest.length})
+        </button>
+      )}
+      {(!hl || more) && rest.map(s => item(s, <OutTag />))}
     </>
   );
 }

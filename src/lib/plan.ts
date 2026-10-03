@@ -101,3 +101,8 @@ export function weekLocked(weekStart: DayKey, today: DayKey) {
 export function dayLocked(day: DayKey, today: DayKey) {
   return day < today;
 }
+
+// ───────── 위 계획 (R-P14) ─────────
+export type UpperPick = { goalId: string; subId: string };
+/** 위 단계에 계획이 있는데 이 (목표, 세부 목표)는 없으면 '계획 밖' */
+export const outside = (upper: UpperPick[], goalId: string, subId: string) => upper.length > 0 && !upper.some(u => u.goalId === goalId && u.subId === subId);
