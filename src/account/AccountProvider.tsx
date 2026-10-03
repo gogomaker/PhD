@@ -17,6 +17,9 @@ export type Profile = {
   review_notify_enabled: boolean;
   review_notify_time: string;
   timezone: string;
+  /** D-day 하나 (2026-10-03 기획 결정) */
+  dday_name: string | null;
+  dday_date: string | null;
   onboarded_at: string | null;
   created_at: string;
 };

@@ -296,7 +296,7 @@ function ScoreCard({ period, today, scores, isCurrent }: { period: Period; today
                 aria-label={`${l.md} ${s ? s + '점' : '점수 없음'}`}
                 data-testid="score-day"
                 onClick={() => setSel(d)}
-                style={{ minHeight: 44, border: 0, borderRadius: 14, cursor: future ? 'default' : 'pointer', font: 'inherit', fontSize: 12.5, fontWeight: 700, background: s ? SCORE_BG[s - 1] : future ? 'transparent' : 'var(--color-neutral-100)', color: s ? (s >= 4 ? 'var(--color-neutral-100)' : 'var(--color-accent-900)') : 'var(--color-neutral-500)', boxShadow: on ? '0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-text)' : 'none' }}
+                style={{ minHeight: 44, border: 0, borderRadius: 14, cursor: future ? 'default' : 'pointer', font: 'inherit', fontSize: 12.5, fontWeight: 700, background: s ? SCORE_BG[s - 1] : future ? 'transparent' : 'var(--color-neutral-100)', color: s ? (s >= 4 ? 'var(--score-fg-hi)' : 'var(--color-accent-900)') : 'var(--color-neutral-500)', boxShadow: on ? '0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-text)' : 'none' }}
               >
                 {period.range === 'week' ? l.md : Number(d.slice(8))}
               </button>

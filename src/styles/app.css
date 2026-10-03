@@ -64,3 +64,22 @@ h1, h2, h3 { word-break: keep-all; }
 
 /* 시작 체크리스트 */
 .checklist-step:hover:not(:disabled) { background: var(--color-neutral-200) !important; }
+
+/* ───────── 모바일 v2 (docs/MOBILE.md) ───────── */
+@keyframes m-sheet-in { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes m-fade-in { from { opacity: 0; } to { opacity: 1; } }
+.m-sheet { animation: m-sheet-in .4s cubic-bezier(.2,.8,.2,1); }
+.m-scrim { animation: m-fade-in .25s ease; }
+.m-pane, .m-page { transition: transform .55s cubic-bezier(.2,.8,.2,1), opacity .45s ease; }
+@media (hover: hover) {
+  .m-hover:hover:not(:disabled) { background: var(--color-neutral-200); }
+  .m-card:hover { background: var(--color-neutral-200) !important; }
+  .m-dream:hover { background: var(--color-accent-2-300) !important; }
+}
+.m-card:active { background: var(--color-neutral-200) !important; }
+@media (prefers-reduced-motion: reduce) {
+  .m-sheet, .m-scrim { animation: none; }
+  .m-pane, .m-page { transition: none; }
+}
+/* 밀려 들어오는 화면에 포커스가 가도 바깥 상자가 옆으로 스크롤되지 않게 (hidden은 스크롤될 수 있다) */
+.m-clip { overflow: hidden; overflow: clip; }

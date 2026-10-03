@@ -13,6 +13,7 @@
 | M5 기록과 회고 | **승인 완료 (2026-10-01)** | main에 합침 |
 | (추가) 다크 모드 | **승인 완료 (2026-10-01)** | main에 합침 |
 | M6 빈 상태와 마무리 손질 | **승인 완료 (2026-10-01)** | main에 합침 (gogomaker/PhD#1) |
+| MV 모바일 통합 | **검수 중 — 계획·기록 탭 피드백 반영 (2026-10-03)** | 브랜치 `claude/zealous-noether-nnc20w`. 계획·결정은 `docs/MOBILE.md` |
 
 ## 결정된 것 (기획자 승인)
 - 프레임워크: Vite + React + TypeScript (react-router-dom)
@@ -39,6 +40,10 @@
 - (M5) 회고 알림을 실제로 보냄 (그날 하루 기록을 안 썼을 때만, SPEC 4.9)
 - (추가) 화면 테마 시스템 설정/라이트/다크, 기기마다 따로(localStorage `phd-theme`). 데스크톱 = 계정 관리, 휴대폰 = 앱바 톱니 → 설정 시트(테마 + 로그아웃). `index.html`이 첫 그림 전에 `<html data-theme>`을 정함, 카테고리 색은 CSS 변수(`--cat-<색>-bg/ink/dot`)
 - (M6) 데이터 내보내기 = zip 하나에 CSV 7개(꿈·목표·계획표·할일·시간기록·하루기록·회고). 체크리스트 "모바일 첫 기록" = 할 일 체크 또는 실제 칠하기
+- (MV) 모바일 통합: 폭 768px 미만은 새 모바일 앱(계획 + 기록), 넓은 화면은 데스크톱 그대로. 생김새는 목업 `PhD only for Mobile v2`, 기능은 기존. 시작하기는 목업의 5단계. 중간 보고 없이 끝까지 만든 뒤 한 번에 검수 (2026-10-02)
+- (MV 추가) 앱 색을 차분한 뉴트럴 팔레트로: 아이보리(바탕)·차콜(글자)·어스 브라운(주 버튼, 기록)·슬레이트(보조, 계획)·포그 그레이(선). 다크도 같은 팔레트로 다시 맞춤, 로고·앱 아이콘 색도 바꿈 (2026-10-02)
+- (MV 피드백 2026-10-03) 위에서 고르기 기본(R-P14), 한 칸 하나 유지 + 체험 모드에서 강조, 달·해를 넘는 계획은 자동으로 나눠 저장(R-P15), 체험 모드(저장 안 됨), 가입 템플릿(R-C5), 목표 편집 '작성 완료', 빈 칸 눌러 추가 없앰, 여러 기간 칸은 걸친 줄마다
+- (MV 기록 탭 피드백 2026-10-03) 계획/실제 전환 때 시간표 높이 고정(키워드 줄 자리 늘 확보), '다음 날로 넘어가지 않아요' 삭제, D-day는 계획 › 목표에서 하나(profiles.dday_name·dday_date)
 - (M3 수정) 지난 기간 계획은 무조건 잠금 (R-P12, DB 정책 + 화면). 한 주 시작은 일요일 고정 (R-P13, 계정 설정에서 뺌)
 
 ## 접속 정보
@@ -50,7 +55,7 @@
 
 ## DB 작업 방법
 - 마이그레이션: `supabase/migrations/*.sql` 에 파일을 추가하고 `scripts/db.sh <파일>` 로 적용 (관리 API 사용, CLI 없음)
-  - 적용 완료: `20261001000001_m1_accounts.sql`, `20261001000002_m1_color_by_order.sql`, `20261001000003_m2_goals.sql`, `20261001000004_m3_plans.sql`, `20261001000005_m3_lock_past.sql`, `20261001000006_m4_day.sql`, `20261001000007_m4_alarms.sql`, `20261001000008_practice_kind_auto.sql`, `20261001000009_m5_records.sql`
+  - 적용 완료: `20261001000001_m1_accounts.sql`, `20261001000002_m1_color_by_order.sql`, `20261001000003_m2_goals.sql`, `20261001000004_m3_plans.sql`, `20261001000005_m3_lock_past.sql`, `20261001000006_m4_day.sql`, `20261001000007_m4_alarms.sql`, `20261001000008_practice_kind_auto.sql`, `20261001000009_m5_records.sql`, `20261003000010_mv_dday.sql`
 - DB 테스트: `supabase/tests/m1_accounts.sql`, `m2_goals.sql`, `m3_plans.sql`, `m4_day.sql`, `m5_records.sql`
 - DB 규칙 테스트: `scripts/db.sh supabase/tests/m1_accounts.sql` → `M1 DB 테스트 통과`. 한 트랜잭션 안에서 가짜 사용자 2명으로 돌리고 되돌림(흔적 없음)
 - Auth 설정(관리 API `config/auth`로 바꿈): site_url = https://phd-ashy.vercel.app, 비밀번호 8자 이상, 이메일 인증 끔,
@@ -110,6 +115,21 @@
 - 계획 표 빈 상태(`NoColumns`): 목표 없음 / 모두 마무리 / 세부목표 없음 / 올릴 목표 있음 — 상황마다 버튼 하나 ("+ 목표 열 추가"는 메뉴를 연다)
 - 내보내기(`src/lib/exportData.ts`, `src/lib/zip.ts`): 표마다 1000줄씩 나눠 읽음, 압축은 STORE(외부 라이브러리 없음), 엑셀 수식처럼 보이는 글은 앞에 작은따옴표
 - E2E: 새 계정으로 가입부터 트래킹·내보내기까지 UI만으로 (scratchpad `e2e-m6.mjs`)
+
+## MV(모바일 통합)에서 만든 것
+- `src/mobile/MobileApp.tsx`: 앱바(계획/기록 전환) + 두 쪽(계획·기록, 처음 볼 때 그린다) + 오른쪽에서 밀려 들어오는 화면 층 + 시트 층(`#m-sheet-root`). 주소가 화면을 정한다(`src/mobile/routes.ts`): `/plan`, `/plan/schedule?z=&k=&f=`, `/record?d=`, `/record/review?r=&k=`, `/goal/:id`, `/categories`, `/dream`, `/settings`. 데스크톱 주소로 들어오면 맞는 모바일 주소로
+- 시트(`src/mobile/ui.tsx` `Sheet`): 열 때 기록(history) 한 칸, 뒤로 가기로 닫힘. 기록 칸 번호(`history.state.idx`)로 쌓인 시트도 구분. 시트에서 다른 화면으로 갈 때는 `replace`
+- 계획 › 목표(`plan/GoalsTab`), 일정(`plan/ScheduleTab`, 시트 `plan/planSheets`), 기록 › 오늘(`record/TodayTab` = 예전 `DayPlanner`), 돌아보기(`record/ReviewTab`), 화면(`pages/*`), 계정 시트(`AccountSheet`). 진척도·첫 기록 여부는 `store.tsx`
+- 일정 시트는 DB 규칙 그대로: 칸은 기간·메모만 고침(목표·세부 목표 고정), 실천은 보기 + 지우기(지난 날 없을 때), 같은 목표 칸 겹침·지난 기간은 고르기에서 막음
+- 로그인 전 휴대폰: 첫 화면(`Landing`) → 로그인·가입(맨 위 ‹ + 단계 막대). 데스크톱 로그인 화면은 그대로
+- 휴대폰은 모바일 코드만, PC는 데스크톱 코드만 내려받는다(`lazy`)
+- 밀려 들어오는 화면에 포커스가 가도 바깥이 옆으로 스크롤되지 않게 `.m-clip`(overflow: clip)
+- 오늘 탭: 늦게 도착한 다시 읽기가 방금 칠한 시간표를 덮지 않게(`useDay`의 `noteEdit`) — 예전 하루 플래너에도 있던 드문 경합
+- 색: `organic.css`(라이트)·`theme.css`(다크, 카테고리 색, `--score-fg-hi`), 로고(`Logo.tsx`)·아이콘(`public/icon-*.png`, scratchpad `mkicon.mjs`)·`theme-color`
+- 일정 칸 계산 `src/mobile/plan/units.ts`(+ 단위 테스트): 칸 = 달/주/날, 시작·끝 → 묶음(해/달/주)마다 나누기, 같은 목표 칸 겹침. DB 구조는 그대로(나눠 저장이라)
+- 체험 모드 `src/mobile/pages/TutorialPage.tsx`: 화면 안 상태만, 계정 저장 없음
+- 기존 날짜 박힌 E2E(M3~M6)는 `run-reg.sh`의 시간대 바꾸기가 10.2 17시(UTC) 이후로는 '오늘=10.1'을 못 맞춰 더 못 돈다. 날짜를 상대로 바꾸기 전까지는 M1·M2·테마 + 모바일 E2E로 확인
+- E2E: scratchpad `e2e-mv.mjs`(모바일 124개, 실행하는 날 기준 날짜), 기존 `e2e*.mjs`는 날짜가 박혀 있어 `run-reg.sh`가 사용자 시간대를 바꿔 '오늘'=10.1로 맞춰 돌림
 
 ## 남은 일 / 알려진 제약
 - 이메일 변경: Supabase 기본 메일은 기획자 계정 이메일에만 보내져서 지금은 이메일을 읽기 전용으로 둠. 메일 서비스(SMTP) 붙일 때 같이 연다

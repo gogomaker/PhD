@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { errorText } from '../lib/errors';
 import { useAccount } from '../account/AccountProvider';
@@ -22,13 +22,18 @@ export function useDay(day: DayKey, today: DayKey) {
     else setTasks(data as TaskRow[]);
   }, [toast]);
 
+  // 시간표를 고친 횟수. 고치기 전에 시작한 다시 읽기가 늦게 와서 방금 칠한 것을 덮지 않게 한다
+  const edits = useRef(0);
+  const noteEdit = useCallback(() => { edits.current++; }, []);
+
   const loadDay = useCallback(async () => {
+    const v = edits.current;
     const [b, j] = await Promise.all([
       supabase.from('time_blocks').select('id, date, layer, start_slot, end_slot, task_id, daily_keyword_id, label, block_key').eq('date', day),
       supabase.from('day_journals').select('id, date, score, reason, thanks, memo').eq('date', day).maybeSingle(),
     ]);
     if (b.error || j.error) return toast(errorText(b.error ?? j.error));
-    setBlocks(b.data as BlockRow[]);
+    if (edits.current === v) setBlocks(b.data as BlockRow[]);
     setJournal(j.data as Journal | null);
   }, [day, toast]);
 
@@ -101,6 +106,7 @@ export function useDay(day: DayKey, today: DayKey) {
     const { error } = await supabase.rpc('save_day_blocks', { p_date: day, p_layer: layer, p_blocks: rows });
     if (error) {
       toast(errorText(error));
+      edits.current++; // 실패하면 서버 상태로 되돌린다 (이 다시 읽기는 반영)
       await loadDay();
     }
     return !error;
@@ -119,5 +125,5 @@ export function useDay(day: DayKey, today: DayKey) {
     return true;
   };
 
-  return { loaded, tasks, blocks, journal, list, ensureRow, toggleDone, addDirect, removeTask, saveLayer, saveJournal };
+  return { loaded, tasks, blocks, journal, list, ensureRow, toggleDone, addDirect, removeTask, saveLayer, saveJournal, noteEdit };
 }

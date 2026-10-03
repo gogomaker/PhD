@@ -5,7 +5,7 @@ export type ThemePref = 'system' | 'light' | 'dark';
 export const THEME_OPTIONS: [ThemePref, string][] = [['system', '시스템 설정'], ['light', '라이트'], ['dark', '다크']];
 
 const KEY = 'phd-theme';
-const BG = { light: '#f5ead8', dark: '#1b1916' };
+const BG = { light: '#e6e4da', dark: '#1f2020' };
 const media = () => window.matchMedia('(prefers-color-scheme: dark)');
 
 export function getThemePref(): ThemePref {

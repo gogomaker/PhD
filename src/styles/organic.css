@@ -1,44 +1,45 @@
 /* Organic — design-system tokens and component classes. This file is the source of truth for the system's look; retune it here and see readme.md. */
 
 :root {
-  --color-bg: #f5ead8;
-  --color-surface: #ebddc5;
-  --color-text: #201e1d;
-  --color-accent: #c67139;
-  --color-accent-2: #7a8a5e;
-  --color-divider: color-mix(in srgb, #201e1d 16%, transparent);
+  /* 차분한 뉴트럴 팔레트 (2026-10-02 기획 요청): Ivory Mist #E6E4DA · Charcoal #2E2E2E ·
+     Earth Brown #5E4B3B · Slate Blue-Grey #6B7B84 · Fog Grey #A9ACA9 */
+  --color-bg: #e6e4da;
+  --color-surface: #d9d7cc;
+  --color-text: #2e2e2e;
+  --color-accent: #5e4b3b;
+  --color-accent-2: #6b7b84;
+  --color-divider: color-mix(in srgb, #2e2e2e 16%, transparent);
 
-  /* Tonal ramps — generated in OKLCH on one shared lightness scale, so the
-     same step of any role matches the others in visual value. */
-  --color-neutral-100: #f9f4ed;
-  --color-neutral-200: #eee7db;
-  --color-neutral-300: #dcd3c4;
-  --color-neutral-400: #c0b6a5;
-  --color-neutral-500: #a19786;
-  --color-neutral-600: #82796a;
-  --color-neutral-700: #645c50;
-  --color-neutral-800: #474238;
-  --color-neutral-900: #2e2b25;
+  /* 단계: 100 = 가장 밝은 면, 900 = 가장 진한 글자 */
+  --color-neutral-100: #f3f2ec;
+  --color-neutral-200: #dfddd3;
+  --color-neutral-300: #c8c8c1;
+  --color-neutral-400: #a9aca9;
+  --color-neutral-500: #8d908d;
+  --color-neutral-600: #737673;
+  --color-neutral-700: #5a5c5a;
+  --color-neutral-800: #424342;
+  --color-neutral-900: #2e2e2e;
 
-  --color-accent-100: #fff2eb;
-  --color-accent-200: #ffe1d0;
-  --color-accent-300: #ffc6a5;
-  --color-accent-400: #f6a06b;
-  --color-accent-500: #d67f48;
-  --color-accent-600: #b2622d;
-  --color-accent-700: #8c491a;
-  --color-accent-800: #643312;
-  --color-accent-900: #402310;
+  --color-accent-100: #f3eee8;
+  --color-accent-200: #e8dfd5;
+  --color-accent-300: #d6c8b9;
+  --color-accent-400: #bba691;
+  --color-accent-500: #957d67;
+  --color-accent-600: #6e5848;
+  --color-accent-700: #4e3d2f;
+  --color-accent-800: #3d2f24;
+  --color-accent-900: #2b211a;
 
-  --color-accent-2-100: #f0fae1;
-  --color-accent-2-200: #e1eecc;
-  --color-accent-2-300: #ccdbb2;
-  --color-accent-2-400: #aebf92;
-  --color-accent-2-500: #8fa073;
-  --color-accent-2-600: #728157;
-  --color-accent-2-700: #56633f;
-  --color-accent-2-800: #3d472b;
-  --color-accent-2-900: #272e1b;
+  --color-accent-2-100: #edf0f1;
+  --color-accent-2-200: #dce2e5;
+  --color-accent-2-300: #c3ccd1;
+  --color-accent-2-400: #a0aeb5;
+  --color-accent-2-500: #82919a;
+  --color-accent-2-600: #6b7b84;
+  --color-accent-2-700: #56646c;
+  --color-accent-2-800: #414c52;
+  --color-accent-2-900: #2d353a;
 
   --font-heading: "Pretendard Variable", Pretendard, system-ui, sans-serif;
   --font-heading-weight: 800;
@@ -57,9 +58,9 @@
 
   /* Elevation — derived from the ground: soft ink-tinted shadows on a
      light theme, a hairline edge + ambient darkness on a dark one. */
-  --shadow-sm: 0 1px 2px color-mix(in srgb, #2e2b25 14%, transparent);
-  --shadow-md: 0 3px 10px color-mix(in srgb, #2e2b25 16%, transparent);
-  --shadow-lg: 0 12px 32px color-mix(in srgb, #2e2b25 22%, transparent);
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2e2e2e 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #2e2e2e 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #2e2e2e 22%, transparent);
 }
 
 body {

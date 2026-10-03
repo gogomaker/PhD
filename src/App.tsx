@@ -1,10 +1,13 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useIsMobile } from './useIsMobile';
 import { useAccount } from './account/AccountProvider';
-import { ForgotPassword, Login, Onboarding, ResetPassword, SignupAccount } from './auth/AuthScreen';
-import DesktopShell from './desktop/DesktopShell';
-import DayPlanner from './mobile/DayPlanner';
+import { ForgotPassword, Landing, Login, Onboarding, ResetPassword, SignupAccount } from './auth/AuthScreen';
 import { Logo } from './ui/Logo';
+
+// 휴대폰은 모바일 앱만, 넓은 화면은 데스크톱만 내려받는다
+const DesktopShell = lazy(() => import('./desktop/DesktopShell'));
+const MobileApp = lazy(() => import('./mobile/MobileApp'));
 
 export default function App() {
   const { status } = useAccount();
@@ -21,7 +24,9 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignupAccount />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* 휴대폰은 첫 화면(시작하기 / 이미 계정이 있어요)부터, 넓은 화면은 바로 로그인 */}
+        <Route path="/" element={mobile ? <Landing /> : <Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to={mobile ? '/' : '/login'} replace />} />
       </Routes>
     );
   }
@@ -31,10 +36,10 @@ export default function App() {
     return pathname === '/signup' ? <Onboarding /> : <Navigate to="/signup" replace />;
   }
 
-  // 가입을 마치면 목표 설정으로, 로그인하면 꿈 보드로 (목업 흐름)
-  if (pathname === '/signup') return <Navigate to="/goals" replace />;
-  if (pathname === '/login' || pathname === '/forgot-password') return <Navigate to="/board" replace />;
-  return mobile ? <DayPlanner /> : <DesktopShell />;
+  // 가입을 마치면 목표 설정으로, 로그인하면 꿈 보드로 (목업 흐름). 휴대폰은 계획 › 목표 / 첫 화면으로 (docs/MOBILE.md)
+  if (pathname === '/signup') return <Navigate to={mobile ? '/plan' : '/goals'} replace />;
+  if (pathname === '/login' || pathname === '/forgot-password') return <Navigate to={mobile ? '/' : '/board'} replace />;
+  return <Suspense fallback={<Splash />}>{mobile ? <MobileApp /> : <DesktopShell />}</Suspense>;
 }
 
 function Splash() {
