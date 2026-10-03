@@ -162,6 +162,15 @@
 - 작은 것: `MonthPicker` 지난 달 막기, D-day 2000~2100(화면 + DB `20261003000014`), `ui/Count.tsx`(BlurInput에도), `body { overflow-wrap: break-word }`, PC 시작하기 6단계, 하루 기록 바로 닫고 뒤에서 저장
 - E2E: scratchpad `e2e-ut3.mjs`(26개)
 
+## UT 2차(2026-10-03)에서 고친 것
+- 할 일에 쓰인 세부목표: `lib/useTaskSubgoals.ts`로 찾아 삭제 버튼 끄기(휴대폰 목표 화면·PC 꿈 보드). 못 지울 때 문구는 `lib/errors.ts`가 **참조하는 표** 이름으로 고름(전에는 'subgoals'가 'goals'에 걸려 카테고리 문구가 나왔음)
+- 마무리한 목표에 연결한 직접 추가는 넘어오지 않음: `computeDay(..., subgoalGoal)`
+- 시각 순: `lib/today.ts`의 `byTime` — 오늘 목록, 휴대폰 일정 주간(`ScheduleTab`), PC 주간 표(`WeekPlan`)
+- 가로 휴대폰 오늘: `app.css` `@media (max-height: 560px)`에서 `.today-body` 높이를 지키고 화면을 위아래로 넘김
+- 하루 기록 저장 실패: 시트를 다시 띄우지 않고 안내 + '다시 열기'. 쓰던 내용은 `TodayTab` 바깥 변수에 두어 다른 화면을 다녀와도 남음
+- PC: 화면을 옮기면 되돌리기 비움(`clearUndo`), PC 오늘 ←·→ 키
+- E2E: scratchpad `e2e-ut4.mjs`(14개), 단위 테스트 `errors.test.ts`·`today.test.ts` 추가
+
 ## 남은 일 / 알려진 제약
 - 이메일 변경: Supabase 기본 메일은 기획자 계정 이메일에만 보내져서 지금은 이메일을 읽기 전용으로 둠. 메일 서비스(SMTP) 붙일 때 같이 연다
 - 비밀번호 찾기 메일도 같은 제약(기획자 본인 이메일로는 옴)

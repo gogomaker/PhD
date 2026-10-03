@@ -25,6 +25,9 @@ const ICON = {
   lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
   alarm: 'M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 9v4l2 2M5 3 2 6M22 6l-3-3',
 };
+// 저장하지 못한 하루 기록 — 다른 화면으로 옮겨 이 화면이 사라져도 남게 바깥에 둔다 (2026-10-03 UT 2차)
+let unsavedJournal: { day: DayKey; j: Journal } | null = null;
+
 const SRC: Record<DayItem['source'], string> = { repeat: '반복', auto: '자동 배정', picked: '담은 일', direct: '직접 추가' };
 
 /** base = 이 화면 주소 (휴대폰 /record, PC /today), weekPath = 주간 실천 적는 곳, wide = PC 폭 (시간표를 넓게) */
@@ -40,7 +43,7 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
   const rel = relOf(day, today);
   const D = useDay(day, today);
   const [sheet, setSheet] = useState<SheetState>(null);
-  const [journalDraft, setJournalDraft] = useState<Journal | null>(null);
+  const journalDraft = unsavedJournal?.day === day ? unsavedJournal.j : null;
   const [mode, setMode] = useState<'plan' | 'actual'>(rel === 0 ? 'actual' : 'plan');
   const [brush, setBrush] = useState<string | null>(null);
   const [plan, setPlan] = useState<{ cells: Cells; info: Record<string, PlanInfo> }>({ cells: Array(SLOTS).fill(null), info: {} });
@@ -73,8 +76,14 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
   useEffect(() => {
     setBrush(null);
     setMode(day === today ? 'actual' : 'plan');
-    setJournalDraft(null);
   }, [day, today]);
+  // 안내의 '다시 열기'로 들어오면 쓰던 하루 기록을 바로 연다
+  const reopen = (loc.state as { journal?: boolean } | null)?.journal === true;
+  useEffect(() => {
+    if (!reopen) return;
+    if (journalDraft) setSheet({ k: 'journal' });
+    navigate(loc.pathname + loc.search, { replace: true, state: null });
+  }, [reopen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // DB 블록 → 칸 배열
   useEffect(() => {
@@ -334,7 +343,7 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
       </div>
 
       {/* 할 일 | 시간표 — 폭 비율 고정 (SPEC 5장 알려진 문제) */}
-      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: wide ? 'minmax(260px, 1fr) minmax(0, 1.5fr)' : 'minmax(0,1fr) 166px', gap: wide ? 14 : 8 }}>
+      <div className="today-body" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: wide ? 'minmax(260px, 1fr) minmax(0, 1.5fr)' : 'minmax(0,1fr) 166px', gap: wide ? 14 : 8 }}>
         <div style={{ position: 'relative', minHeight: 0, background: 'var(--color-surface)', borderRadius: 24, overflow: 'hidden' }}>
           <div ref={listRef} onScroll={measure} style={{ position: 'absolute', inset: 0, padding: '8px 6px', display: 'flex', flexDirection: 'column', gap: 3, overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', padding: '2px 8px 4px', gap: 6 }}>
@@ -478,10 +487,14 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
       {sheet?.k === 'journal' && <JournalSheet key={day + (D.journal?.id ?? '')} day={day} journal={journalDraft ?? D.journal} readOnly={rel !== 0} onSave={async j => {
             // 회고 알림(4.6)을 켰으면 이 휴대폰도 알림 받을 곳으로 — 처음 한 번 허락을 받는다
             if (profile?.review_notify_enabled) ensurePush();
-            // 시트는 바로 닫고 뒤에서 저장한다. 못 하면 쓰던 내용 그대로 다시 연다 (2026-10-03 UT)
-            setJournalDraft(null);
+            // 시트는 바로 닫고 뒤에서 저장한다 (2026-10-03 UT)
+            unsavedJournal = null;
             const ok = await D.saveJournal(j);
-            if (!ok) { setJournalDraft(j); setSheet({ k: 'journal' }); }
+            // 못 했으면 쓰던 내용을 남겨 두고 안내만 (다른 화면으로 옮긴 뒤 시트가 갑자기 뜨지 않게, 2026-10-03 UT 2차)
+            if (!ok) {
+              unsavedJournal = { day, j };
+              toast('하루 기록을 저장하지 못했어요. 쓰던 내용은 남아 있어요', { label: '다시 열기', run: () => navigate(day === today ? base : base + '?d=' + day, { state: { journal: true } }) });
+            }
             return ok;
           }} onClose={() => setSheet(null)} />}
       {sheet?.k === 'del' && (

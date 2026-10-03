@@ -6,6 +6,7 @@ import { addDays, dayLabel, isDayKey, type DayKey } from '../../lib/day';
 import { dayLocked, fmtDays, isoDow, md, monthOfWeek, monthWeeks, outside, practiceDates, weekDays, weekStartOf, WEEK_START } from '../../lib/plan';
 import { MergeColumn, type MBlock } from './MergeColumn';
 import { offerUndo, typing } from './undo';
+import { byTime } from '../../lib/today';
 import { TimeToggle, badTime, type TimeValue } from '../../mobile/Sheets';
 import { Chip, ColumnHeader, ICONS, LockNote, NOTE, NoColumns, OutTag, PlanHeader, PopHead, Popover, RefRow, RowLabel, SubgoalPicker, Svg, TableFrame, useSelection, useTableGoals, type RefCell, type Tone } from './shared';
 
@@ -55,7 +56,7 @@ export default function WeekPlan() {
   const cellItems = (goalId: string, row: number) =>
     inWeek
       .filter(x => x.p.goal_id === goalId && (row === -1 ? x.p.weekdays.length > 1 : x.p.weekdays.length === 1 && x.pos[0] === row))
-      .sort((a, b) => Math.min(...a.pos) - Math.min(...b.pos) || a.p.created_at.localeCompare(b.p.created_at));
+      .sort((a, b) => Math.min(...a.pos) - Math.min(...b.pos) || byTime(a.p, b.p) || a.p.created_at.localeCompare(b.p.created_at));
 
   const noteBlocks: MBlock[] = notes.filter(n => n.scope === 'week' && n.period_key === week).map(n => ({ id: n.id, start: n.start_index, end: n.end_index, text: n.text }));
   const addNote = async (row: number, end = row) => {

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
-import { runUndo, typing } from './plan/undo';
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { clearUndo, runUndo, typing } from './plan/undo';
 import { Icon, ICON } from '../Icon';
 import { Logo } from '../ui/Logo';
 import { ScrollArea } from '../ui/ScrollArea';
@@ -33,6 +33,8 @@ const NAV: [string, [ScreenKey, string, string][]][] = [
 
 
 export default function DesktopShell() {
+  const { pathname } = useLocation();
+  useEffect(() => clearUndo(), [pathname]);
   // Ctrl+Z(⌘Z): 계획 표에서 방금 지운 것 되돌리기 (2026-10-03 UT 11)
   useEffect(() => {
     const key = (e: KeyboardEvent) => {

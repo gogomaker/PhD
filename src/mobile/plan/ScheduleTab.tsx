@@ -1,6 +1,7 @@
 // 계획 › 일정: 연간(줄 = 달) · 월간(줄 = 주) · 주간(줄 = 여러 요일 + 요일). 목표 필터, 상위 계획 참고(R-P3), 지난 기간 잠금(R-P12)
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { useSwipe } from '../useSwipe';
+import { byTime } from '../../lib/today';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useToday, type MonthCell, type Note, type Practice, type YearCell } from '../../account/AccountProvider';
 import { addDays, dayLabel, isDayKey, isYearKey, isYearMonth, type DayKey } from '../../lib/day';
@@ -149,7 +150,7 @@ export default function ScheduleTab() {
     const acts = practices
       .filter(p => p.week_start_date === key && shown(p.goal_id))
       .map(p => ({ p, pos: practiceDates(p.week_start_date, p.weekdays).map(d => days.indexOf(d)).filter(i => i >= 0) }))
-      .sort((a, b) => Math.min(...a.pos) - Math.min(...b.pos) || a.p.created_at.localeCompare(b.p.created_at));
+      .sort((a, b) => Math.min(...a.pos) - Math.min(...b.pos) || byTime(a.p, b.p) || a.p.created_at.localeCompare(b.p.created_at));
     const actItem = (p: Practice, span: string): Item => ({ id: p.id, tone: toneById(p.goal_id), meta: goalName(p.goal_id) + ' · ' + subName(p.subgoal_id), name: p.name, span: [span, p.start_time ? `${p.start_time.slice(0, 5)}–${p.end_time?.slice(0, 5)}` : ''].filter(Boolean).join(' · '), onTap: () => setSheet({ k: 'practice', practice: p }), out: outside(ups, p.goal_id, p.subgoal_id) });
     const wNotes = notes.filter(n => n.scope === 'week' && n.period_key === key);
     rows = [

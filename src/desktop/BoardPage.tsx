@@ -7,6 +7,7 @@ import { IMPORTANCE, MAX_GOAL_NAME, MAX_SUBGOAL_NAME, STATUS_LABEL, dueShort, du
 import { BlurInput } from '../ui/BlurInput';
 import { MonthPicker, isMonth } from '../ui/MonthPicker';
 import { useDeleteGoal } from './goalActions';
+import { useTaskSubgoals } from '../lib/useTaskSubgoals';
 import { WrapDialog } from './WrapDialog';
 import { ScrollArea } from '../ui/ScrollArea';
 
@@ -95,7 +96,10 @@ function EditPanel({ goal: g, subs, onClose }: { goal: Goal; subs: Subgoal[]; on
   const { goalCategories, goals, yearCells, monthCells, practices, run } = useAccount();
   const [wrapOpen, setWrapOpen] = useState(false);
   // R-G9: 계획 표에 배치된 세부목표는 삭제 불가
-  const placed = new Set([...yearCells, ...monthCells, ...practices].map(c => c.subgoal_id));
+  const planned = new Set([...yearCells, ...monthCells, ...practices].map(c => c.subgoal_id));
+  // 직접 추가 할 일에 연결된 세부목표도 지울 수 없다 (R-T5)
+  const usedByTasks = useTaskSubgoals(subs.map(s => s.id));
+  const placed = new Set([...planned, ...usedByTasks]);
   const [traitsOpen, setTraitsOpen] = useState(false);
   const [drag, setDrag] = useState<number | null>(null);
   const [due, setDue] = useState(dueValue(g.due_month));
@@ -161,9 +165,9 @@ function EditPanel({ goal: g, subs, onClose }: { goal: Goal; subs: Subgoal[]; on
               </span>
               <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                 <BlurInput label="세부목표 이름" maxLength={MAX_SUBGOAL_NAME} value={s.name} onSave={name => run(() => supabase.from('subgoals').update({ name }).eq('id', s.id))} style={{ width: '100%', background: 'transparent', border: 0, outline: 'none', font: 'inherit', fontSize: 14, fontWeight: 600, color: 'var(--color-text)', padding: '2px 0' }} />
-                {placed.has(s.id) && <span style={{ fontSize: 11, fontWeight: 700, color: p.ink }}>계획 표에 배치됨</span>}
+                {placed.has(s.id) && <span style={{ fontSize: 11, fontWeight: 700, color: p.ink }}>{planned.has(s.id) ? '계획 표에 배치됨' : '할 일 기록에 쓰임'}</span>}
               </div>
-              <button title={placed.has(s.id) ? '계획 표에 배치된 세부목표는 삭제할 수 없어요' : '삭제'} aria-label={s.name + ' 삭제'} disabled={placed.has(s.id)} onClick={() => run(() => supabase.from('subgoals').delete().eq('id', s.id))} className="btn" style={{ flex: 'none', width: 30, height: 30, padding: 0, color: 'var(--color-accent-700)' }}>
+              <button title={placed.has(s.id) ? (planned.has(s.id) ? '계획 표에 배치된 세부목표는 삭제할 수 없어요' : '할 일 기록에 쓰인 세부목표는 삭제할 수 없어요') : '삭제'} aria-label={s.name + ' 삭제'} disabled={placed.has(s.id)} onClick={() => run(() => supabase.from('subgoals').delete().eq('id', s.id))} className="btn" style={{ flex: 'none', width: 30, height: 30, padding: 0, color: 'var(--color-accent-700)' }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
               </button>
             </div>
