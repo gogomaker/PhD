@@ -1,5 +1,7 @@
 // D-day 하나 (2026-10-03 기획 결정): 목표 설정에서 이름 + 날짜를 정하고, 사이드바 꿈 카드 위에 보인다 (모바일은 계획 › 목표 / 기록 › 오늘)
 import { useState } from 'react';
+import { Count } from '../ui/Count';
+import { isDayKey } from '../lib/day';
 import { NavLink } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAccount, useToday } from '../account/AccountProvider';
@@ -49,7 +51,7 @@ function DdayDialog({ onClose }: { onClose: () => void }) {
     setBusy(false);
     if (ok) onClose();
   };
-  const ok = name.trim() && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const ok = name.trim() && isDayKey(date);
   return (
     <Dialog title="D-day" onClose={onClose}>
       <p className="dialog-body" style={{ margin: 0, lineHeight: 1.6 }}>하나만 정해요. 사이드바와 휴대폰의 오늘 화면에 보여요.</p>
@@ -69,10 +71,11 @@ function DdayDialog({ onClose }: { onClose: () => void }) {
         <div className="field">
           <label htmlFor="dday-name">이름</label>
           <input id="dday-name" className="input" aria-label="D-day 이름" maxLength={30} value={name} onChange={e => setName(e.target.value)} placeholder="예: 토익 시험" />
+          <Count value={name} max={30} />
         </div>
         <div className="field">
           <label htmlFor="dday-date">날짜</label>
-          <input id="dday-date" className="input" type="date" aria-label="D-day 날짜" value={date} onChange={e => setDate(e.target.value)} style={{ fontWeight: 700 }} />
+          <input id="dday-date" className="input" type="date" aria-label="D-day 날짜" min="2000-01-01" max="2100-12-31" value={date} onChange={e => setDate(e.target.value)} style={{ fontWeight: 700 }} />
         </div>
       </div>
       <div className="dialog-actions">

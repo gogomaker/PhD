@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useAccount, useToday } from '../../account/AccountProvider';
 import { isYearKey } from '../../lib/day';
 import { MergeColumn, type MBlock } from './MergeColumn';
+import { offerUndo } from './undo';
 import { ColumnHeader, LockNote, NoColumns, PlanHeader, PopHead, Popover, RowLabel, SubgoalPicker, TableFrame, useSelection, useTableGoals } from './shared';
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -11,7 +12,7 @@ const monthKey = (y: number, m0: number) => `${y}-${pad(m0 + 1)}-01`;
 
 // 연간 계획: 1~12월 달력 연도 (기획 결정). 칸 = 세부목표 + 짧은 메모, 병합으로 기간 (R-P2)
 export default function YearPlan() {
-  const { yearCells, run, create } = useAccount();
+  const { yearCells, run, create, toast } = useAccount();
   const today = useToday();
   const [params, setParams] = useSearchParams();
   const thisYear = Number(today.slice(0, 4));
@@ -22,7 +23,7 @@ export default function YearPlan() {
   const { cols, toneOf, catOf, subsOf, pinned } = useTableGoals(planned);
   const [sel, setSel] = useSelection();
   const [focusId, setFocusId] = useState<string | null>(null);
-  const [pop, setPop] = useState<{ goalId: string; row: number; anchor: DOMRect } | null>(null);
+  const [pop, setPop] = useState<{ goalId: string; row: number; end: number; anchor: DOMRect } | null>(null);
 
   const go = (y: number) => { setSel(null); setParams(y === thisYear ? {} : { y: String(y) }); };
   const blocksOf = (goalId: string): MBlock[] =>
@@ -30,9 +31,9 @@ export default function YearPlan() {
       .filter(c => c.goal_id === goalId && c.start_month.startsWith(String(year)))
       .map(c => ({ id: c.id, start: Number(c.start_month.slice(5, 7)) - 1, end: Number(c.end_month.slice(5, 7)) - 1, chip: subsOf(goalId).find(s => s.id === c.subgoal_id)?.name ?? '', text: c.memo }));
 
-  const place = async (goalId: string, row: number, subgoalId: string) => {
+  const place = async (goalId: string, row: number, end: number, subgoalId: string) => {
     setPop(null);
-    const id = await create(() => supabase.from('year_cells').insert({ goal_id: goalId, subgoal_id: subgoalId, start_month: monthKey(year, row), end_month: monthKey(year, row) }).select('id').single());
+    const id = await create(() => supabase.from('year_cells').insert({ goal_id: goalId, subgoal_id: subgoalId, start_month: monthKey(year, row), end_month: monthKey(year, end) }).select('id').single());
     if (id) { setSel(id); setFocusId(id); }
   };
 
@@ -77,21 +78,26 @@ export default function YearPlan() {
               setSel={setSel}
               focusId={focusId}
               popRow={pop?.goalId === g.id ? pop.row : null}
-              onEmpty={(row, anchor) => { setSel(null); setPop({ goalId: g.id, row, anchor }); }}
+              popEnd={pop?.goalId === g.id ? pop.end : null}
+              onEmpty={(row, anchor, end) => { setSel(null); setPop({ goalId: g.id, row, end, anchor }); }}
               onRange={(b, start, end) => run(() => supabase.from('year_cells').update({ start_month: monthKey(year, start), end_month: monthKey(year, end) }).eq('id', b.id))}
               onText={(b, memo) => run(() => supabase.from('year_cells').update({ memo }).eq('id', b.id))}
-              onDelete={b => run(() => supabase.from('year_cells').delete().eq('id', b.id))}
+              onDelete={async b => {
+                const c = yearCells.find(x => x.id === b.id);
+                if (!c || !(await run(() => supabase.from('year_cells').delete().eq('id', b.id)))) return;
+                offerUndo(toast, '칸을 지웠어요', () => run(() => supabase.from('year_cells').insert({ goal_id: c.goal_id, subgoal_id: c.subgoal_id, start_month: c.start_month, end_month: c.end_month, memo: c.memo })));
+              }}
             />
           ))}
         </TableFrame>
       )}
       <p style={{ margin: 0, fontSize: 13, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>
-        빈 칸을 누르면 그 목표의 세부목표를 골라 넣고 메모를 적어요. 여러 달에 걸치면 칸을 선택한 뒤 ↓로 늘리고, ⠿를 끌어 같은 열의 다른 달로 옮길 수 있어요.
+        빈 칸을 누르거나 여러 칸을 끌어 고르면 그 목표의 세부목표를 넣고 메모를 적어요. 칸을 고른 뒤 ↓로 늘리고, ⠿를 끌어 옮기고, Delete로 지울 수 있어요(Ctrl+Z로 되돌리기).
       </p>
       {pop && popGoal && (
         <Popover anchor={pop.anchor} width={260} height={300} onClose={() => setPop(null)}>
-          <PopHead dot={toneOf(popGoal).dot} title={`${popGoal.name} · ${pop.row + 1}월`} hint="세부목표를 골라 넣고 메모를 적어요" />
-          <SubgoalPicker subs={subsOf(popGoal.id)} badge="" tone={toneOf(popGoal)} onPick={sid => place(popGoal.id, pop.row, sid)} />
+          <PopHead dot={toneOf(popGoal).dot} title={`${popGoal.name} · ${pop.row + 1}월${pop.end > pop.row ? `–${pop.end + 1}월` : ''}`} hint="세부목표를 골라 넣고 메모를 적어요" />
+          <SubgoalPicker subs={subsOf(popGoal.id)} badge="" tone={toneOf(popGoal)} onPick={sid => place(popGoal.id, pop.row, pop.end, sid)} />
         </Popover>
       )}
     </div>

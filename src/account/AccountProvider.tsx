@@ -91,7 +91,8 @@ type AccountValue = {
   run: (fn: () => PromiseLike<{ error: unknown }>) => Promise<boolean>;
   /** 새 행을 만들고 그 id를 돌려준다. 실패하면 알림 후 null */
   create: (fn: () => PromiseLike<{ data: { id: string } | null; error: unknown }>) => Promise<string | null>;
-  toast: (message: string) => void;
+  /** action: 안내 옆 버튼 (예: 되돌리기) */
+  toast: (message: string, action?: ToastAction) => void;
 };
 
 const AccountContext = createContext<AccountValue | null>(null);
@@ -105,10 +106,29 @@ export function useAccount() {
 type Data = { profile: Profile | null; categories: Category[]; keywords: Keyword[]; goals: Goal[]; subgoals: Subgoal[]; yearCells: YearCell[]; monthCells: MonthCell[]; notes: Note[]; practices: Practice[] };
 const EMPTY: Data = { profile: null, categories: [], keywords: [], goals: [], subgoals: [], yearCells: [], monthCells: [], notes: [], practices: [] };
 
+export type ToastAction = { label: string; run: () => void };
+
+// 이 기기에 둔 마지막 계정 데이터 (빠른 시작). 로그아웃하면 지운다
+const CACHE = 'phd-data:';
+function readCache(userId: string): Data | undefined {
+  try {
+    const v = JSON.parse(localStorage.getItem(CACHE + userId) ?? 'null');
+    return v && v.profile ? { ...EMPTY, ...v } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+function writeCache(userId: string, d: Data) {
+  try { localStorage.setItem(CACHE + userId, JSON.stringify(d)); } catch { /* 저장 공간이 없으면 다음엔 그냥 읽는다 */ }
+}
+function clearCache() {
+  try { for (const k of Object.keys(localStorage)) if (k.startsWith(CACHE)) localStorage.removeItem(k); } catch { /* 없음 */ }
+}
+
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [data, setData] = useState<Data | undefined>(undefined);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<{ text: string; action?: ToastAction } | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   const userId = session?.user.id;
 
@@ -118,10 +138,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const toast = useCallback((message: string) => {
-    setToastMsg(message);
+  const toast = useCallback((message: string, action?: ToastAction) => {
+    setToastMsg({ text: message, action });
     window.clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setToastMsg(null), 3200);
+    toastTimer.current = window.setTimeout(() => setToastMsg(null), action ? 6000 : 3200);
   }, []);
 
   const reload = useCallback(async () => {
@@ -143,7 +163,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       setData(d => d ?? EMPTY);
       return;
     }
-    setData({
+    const next: Data = {
       profile: p.data as Profile | null,
       categories: (c.data ?? []) as Category[],
       keywords: (k.data ?? []) as Keyword[],
@@ -153,12 +173,34 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       monthCells: (mc.data ?? []) as MonthCell[],
       notes: (nt.data ?? []) as Note[],
       practices: (pr.data ?? []) as Practice[],
-    });
+    };
+    setData(next);
+    writeCache(userId, next);
   }, [userId, toast]);
 
+  // 빠른 시작 (2026-10-03 UT 13): 지난번에 본 내용을 이 기기에서 바로 보여 주고, 뒤에서 새로 읽는다
   useEffect(() => {
-    setData(undefined);
+    setData(userId ? readCache(userId) : undefined);
     if (userId) reload();
+  }, [userId, reload]);
+  // 로그아웃했으면 이 기기에 둔 데이터도 지운다 (로그인 확인 전에는 지우지 않는다)
+  useEffect(() => {
+    if (session === null) clearCache();
+  }, [session]);
+
+  // 다른 기기·탭에서 고친 것 반영 (2026-10-03 UT 15): 창으로 돌아오거나 보일 때, 보이는 동안 1분마다
+  useEffect(() => {
+    if (!userId) return;
+    let last = Date.now();
+    const again = () => {
+      if (document.visibilityState !== 'visible' || Date.now() - last < 5000) return;
+      last = Date.now();
+      reload();
+    };
+    window.addEventListener('focus', again);
+    document.addEventListener('visibilitychange', again);
+    const t = window.setInterval(again, 60_000);
+    return () => { window.removeEventListener('focus', again); document.removeEventListener('visibilitychange', again); window.clearInterval(t); };
   }, [userId, reload]);
 
   const run = useCallback(
@@ -230,8 +272,13 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     <AccountContext.Provider value={value}>
       {children}
       {toastMsg && (
-        <div role="status" style={{ position: 'fixed', left: '50%', bottom: 24, transform: 'translateX(-50%)', zIndex: 100, maxWidth: 'calc(100vw - 32px)', boxSizing: 'border-box', padding: '12px 20px', borderRadius: 999, background: 'var(--color-neutral-900)', color: 'var(--color-neutral-100)', fontSize: 14, fontWeight: 600, boxShadow: 'var(--shadow-md)' }}>
-          {toastMsg}
+        <div role="status" style={{ position: 'fixed', left: '50%', bottom: 24, transform: 'translateX(-50%)', zIndex: 100, maxWidth: 'calc(100vw - 32px)', boxSizing: 'border-box', padding: toastMsg.action ? '6px 6px 6px 20px' : '12px 20px', borderRadius: 999, background: 'var(--color-neutral-900)', color: 'var(--color-neutral-100)', fontSize: 14, fontWeight: 600, boxShadow: 'var(--shadow-md)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          {toastMsg.text}
+          {toastMsg.action && (
+            <button onClick={() => { const a = toastMsg.action!; setToastMsg(null); a.run(); }} style={{ flex: 'none', height: 34, padding: '0 14px', borderRadius: 999, border: 0, cursor: 'pointer', font: 'inherit', fontSize: 13, fontWeight: 700, background: 'var(--color-neutral-100)', color: 'var(--color-neutral-900)' }}>
+              {toastMsg.action.label}
+            </button>
+          )}
         </div>
       )}
     </AccountContext.Provider>

@@ -86,3 +86,18 @@ h1, h2, h3 { word-break: keep-all; }
 
 /* 옆으로 밀어 넘기기(2026-10-03 UT 6)가 브라우저의 '밀어서 뒤로 가기'와 겹치지 않게 */
 html, body { overscroll-behavior-x: none; }
+
+/* 좁은 PC 창(1000px 미만): 사이드바는 아이콘만 (2026-10-03 UT 12) */
+@media (max-width: 999px) {
+  .side { width: 92px !important; padding: 12px !important; }
+  .side .side-hide { display: none !important; }
+  .side [data-scroll] { padding: 18px 8px 10px !important; align-items: center; }
+  .side .side-logo { padding: 0 !important; align-items: center; }
+  .side .side-logo svg { height: 30px !important; width: auto !important; }
+  .side .nav-item { justify-content: center; width: 52px; height: 44px; padding: 0; }
+  .side .account-card { justify-content: center; padding: 6px !important; }
+  .desk-main { padding: 24px 22px 44px !important; }
+}
+
+/* 띄어쓰기 없는 아주 긴 글도 칸 밖으로 나가지 않게 (2026-10-03 UT) */
+body { overflow-wrap: break-word; }

@@ -14,6 +14,7 @@ import { BODY, Dot, Field, Notice, Sheet, SheetHead, chip } from '../ui';
 import { endsFrom, keysOf, splitRange, unitOf, unitsOf, type Unit, type Zoom } from './units';
 import { TimeToggle, badTime, type TimeValue } from '../Sheets';
 import { ensurePush } from '../push';
+import { Count } from '../../ui/Count';
 
 export type { Zoom } from './units';
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -269,6 +270,7 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
             <>
               <Field label="실천">
                 <input className="input" aria-label="실천 이름" maxLength={40} value={text} onChange={e => setText(e.target.value)} placeholder="예: Part 3 대화 듣기" />
+                <Count value={text} max={40} />
               </Field>
               <Field label="요일" hint={dayHint}>
                 <div role="group" aria-label="요일" style={{ display: 'flex', gap: 4 }}>

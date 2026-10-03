@@ -1,13 +1,17 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { useIsMobile } from './useIsMobile';
+import { isMobileNow, useIsMobile } from './useIsMobile';
 import { useAccount } from './account/AccountProvider';
 import { ForgotPassword, Landing, Login, Onboarding, ResetPassword, SignupAccount } from './auth/AuthScreen';
 import { Logo } from './ui/Logo';
 
 // 휴대폰은 모바일 앱만, 넓은 화면은 데스크톱만 내려받는다
-const DesktopShell = lazy(() => import('./desktop/DesktopShell'));
-const MobileApp = lazy(() => import('./mobile/MobileApp'));
+const loadDesktop = () => import('./desktop/DesktopShell');
+const loadMobile = () => import('./mobile/MobileApp');
+const DesktopShell = lazy(loadDesktop);
+const MobileApp = lazy(loadMobile);
+// 로그인 확인과 동시에 이 기기의 화면 코드를 받아 둔다 (2026-10-03 UT 13)
+(isMobileNow() ? loadMobile : loadDesktop)().catch(() => {});
 
 export default function App() {
   const { status } = useAccount();
