@@ -4,15 +4,18 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useToday, type MonthCell, type Note, type Practice, type YearCell } from '../../account/AccountProvider';
 import { addDays, dayLabel, type DayKey } from '../../lib/day';
 import { addMonths, fmtDays, md, monthOfWeek, monthWeeks, practiceDates, weekDays, weekStartOf, ymOf } from '../../lib/plan';
+
+const slotsOf = (zoom: Zoom, key: string, today: string) => unitsOf(zoom, key, today);
 import { NOTE, type Tone } from '../../desktop/plan/shared';
 import { ScrollArea } from '../../ui/ScrollArea';
 import { BODY, Dot, ICON, Notice, Seg, Svg, chip } from '../ui';
-import { AddPlanSheet, EditCellSheet, EditNoteSheet, PracticeSheet, slotsOf, useOpenGoals, type Zoom } from './planSheets';
+import { AddPlanSheet, EditCellSheet, EditNoteSheet, PracticeSheet, outside, useOpenGoals, useUpper, type Zoom } from './planSheets';
+import { unitsOf } from './units';
 
 const ZOOMS: [Zoom, string][] = [['year', '연간'], ['month', '월간'], ['week', '주간']];
 
-type Item = { id: string; tone: Tone; meta: string; name: string; span?: string; onTap: () => void };
-type Row = { key: string; label: string; sub?: string; now?: boolean; past?: boolean; notes: { id: string; text: string; onTap: () => void }[]; items: Item[]; onDrill?: () => void; go?: { label: string; primary?: boolean; onTap: () => void }; onEmpty?: () => void };
+type Item = { id: string; tone: Tone; meta: string; name: string; span?: string; onTap: () => void; cont?: boolean; out?: boolean };
+type Row = { key: string; label: string; sub?: string; now?: boolean; past?: boolean; notes: { id: string; text: string; onTap: () => void }[]; items: Item[]; onDrill?: () => void; go?: { label: string; primary?: boolean; onTap: () => void } };
 type SheetState = null | { k: 'add'; start?: number } | { k: 'year'; cell: YearCell } | { k: 'month'; cell: MonthCell } | { k: 'note'; note: Note } | { k: 'practice'; practice: Practice };
 
 export default function ScheduleTab() {
@@ -58,11 +61,14 @@ export default function ScheduleTab() {
   });
 
   // ── 줄 만들기 ──
+  // 여러 기간에 걸친 칸은 걸친 줄마다 보인다 (첫 줄 = 기간 표시, 다음 줄 = '이어짐', 2026-10-03 기획 결정)
   const slots = slotsOf(zoom, key, today);
+  const upperOf = useUpper();
   let rows: Row[] = [];
   let title = '';
   let sub = '';
   let upper: { label: string; sub: string; items: Item[] } | null = null;
+  let headNote: ReactNode = null;
 
   if (zoom === 'year') {
     title = `${key}년`;
@@ -70,21 +76,25 @@ export default function ScheduleTab() {
     const cells = yearCells.filter(c => shown(c.goal_id) && c.start_month.startsWith(key));
     rows = slots.map((s, i) => {
       const ym = `${key}-${String(i + 1).padStart(2, '0')}`;
+      const mk = ym + '-01';
+      // 달 초에 이번 주가 지난달에 속하면, 그 달에서 이번 주 계획을 세울 수 있게 길을 열어 둔다
+      const weekHere = ym === thisYm && thisYm !== ymOf(today);
       return {
         key: ym,
         label: s.label,
         now: ym === ymOf(today),
-        past: s.locked,
+        past: s.locked && !weekHere,
         notes: [],
         items: cells
-          .filter(c => c.start_month.slice(0, 7) === ym)
+          .filter(c => c.start_month <= mk && mk <= c.end_month)
           .map(c => {
+            const st = Number(c.start_month.slice(5, 7));
             const e = Number(c.end_month.slice(5, 7));
-            return { ...cellItem(c.goal_id, c.subgoal_id, c.memo, e > i + 1 ? `${i + 1}월–${e}월` : '', () => setSheet({ k: 'year', cell: c })), id: c.id };
+            const cont = st !== i + 1;
+            return { ...cellItem(c.goal_id, c.subgoal_id, c.memo, cont ? '이어짐' : e > st ? `${st}월–${e}월` : '', () => setSheet({ k: 'year', cell: c })), id: c.id + ':' + i, cont };
           }),
         onDrill: () => set('month', ym),
-        go: ym === ymOf(today) ? { label: '이번 달 펼쳐 보기', onTap: () => set('month', ymOf(today)) } : undefined,
-        onEmpty: s.locked ? undefined : () => setSheet({ k: 'add', start: i }),
+        go: ym === ymOf(today) ? { label: '이번 달 펼쳐 보기', onTap: () => set('month', ymOf(today)) } : weekHere ? { label: `이번 주(${Number(thisYm.slice(5))}월 ${monthOfWeek(thisWeek).index + 1}주차) 펼쳐 보기`, onTap: () => set('month', thisYm) } : undefined,
       };
     });
   } else if (zoom === 'month') {
@@ -95,32 +105,46 @@ export default function ScheduleTab() {
     const mk = key + '-01';
     const cells = monthCells.filter(c => shown(c.goal_id) && c.year_month === mk);
     const mNotes = notes.filter(n => n.scope === 'month' && n.period_key === mk);
+    const ups = upperOf('month', key);
     rows = weeks.map((w, i) => ({
       key: w,
       label: `${i + 1}주`,
       sub: `${md(w)}–${md(addDays(w, 6))}`,
       now: w === thisWeek,
       past: slots[i].locked,
-      notes: mNotes.filter(n => n.start_index === i).map(n => ({ id: n.id, text: n.text + (n.end_index > i ? ` ~${n.end_index + 1}주` : ''), onTap: () => setSheet({ k: 'note', note: n }) })),
-      items: cells.filter(c => c.start_week === i).map(c => ({ ...cellItem(c.goal_id, c.subgoal_id, c.comment, c.end_week > i ? `~${c.end_week + 1}주` : '', () => setSheet({ k: 'month', cell: c })), id: c.id })),
+      notes: mNotes.filter(n => n.start_index <= i && i <= n.end_index).map(n => ({ id: n.id + ':' + i, text: n.start_index === i ? n.text + (n.end_index > i ? ` ~${n.end_index + 1}주` : '') : n.text + ' · 이어짐', onTap: () => setSheet({ k: 'note', note: n }) })),
+      items: cells
+        .filter(c => c.start_week <= i && i <= c.end_week)
+        .map(c => {
+          const cont = c.start_week !== i;
+          return { ...cellItem(c.goal_id, c.subgoal_id, c.comment, cont ? '이어짐' : c.end_week > i ? `~${c.end_week + 1}주` : '', () => setSheet({ k: 'month', cell: c })), id: c.id + ':' + i, cont, out: outside(ups, c.goal_id, c.subgoal_id) };
+        }),
       onDrill: () => set('week', w),
       go: w === thisWeek ? { label: '이번 주 펼쳐 보기', onTap: () => set('week', thisWeek) } : undefined,
-      onEmpty: slots[i].locked ? undefined : () => setSheet({ k: 'add', start: i }),
     }));
     // R-P3: 연간 계획에서 이 달에 걸친 칸
-    const ups = yearCells.filter(c => shown(c.goal_id) && c.start_month <= mk && mk <= c.end_month);
-    if (ups.length) upper = { label: '연간', sub: `${m}월`, items: ups.map(c => ({ ...cellItem(c.goal_id, c.subgoal_id, c.memo, '', () => {}), id: c.id })) };
+    const yc = yearCells.filter(c => shown(c.goal_id) && c.start_month <= mk && mk <= c.end_month);
+    if (yc.length) upper = { label: '연간', sub: `${m}월`, items: yc.map(c => ({ ...cellItem(c.goal_id, c.subgoal_id, c.memo, '', () => {}), id: c.id })) };
+    // 달 초: 이번 주가 지난달 마지막 주이면 그 달로 가는 길
+    if (key === ymOf(today) && thisYm !== key) {
+      headNote = (
+        <Notice action={<button className="btn btn-secondary" onClick={() => set('month', thisYm)} style={{ height: 36, ...BODY, fontSize: 13 }}>{Number(thisYm.slice(5))}월 보기</button>}>
+          이번 주({md(thisWeek)}–{md(addDays(thisWeek, 6))})는 {Number(thisYm.slice(5))}월 {monthOfWeek(thisWeek).index + 1}주차예요. 이번 주 계획은 {Number(thisYm.slice(5))}월에서 세워요.
+        </Notice>
+      );
+    }
   } else {
     const days = weekDays(key);
     const labels = days.map(d => dayLabel(d).dow);
     const { ym, index } = monthOfWeek(key);
     title = `${Number(ym.slice(5))}월 ${index + 1}주차`;
     sub = `${md(key)} – ${md(addDays(key, 6))}`;
+    const ups = upperOf('week', key);
     const acts = practices
       .filter(p => p.week_start_date === key && shown(p.goal_id))
       .map(p => ({ p, pos: practiceDates(p.week_start_date, p.weekdays).map(d => days.indexOf(d)).filter(i => i >= 0) }))
       .sort((a, b) => Math.min(...a.pos) - Math.min(...b.pos) || a.p.created_at.localeCompare(b.p.created_at));
-    const actItem = (p: Practice, span: string): Item => ({ id: p.id, tone: toneById(p.goal_id), meta: goalName(p.goal_id) + ' · ' + subName(p.subgoal_id), name: p.name, span, onTap: () => setSheet({ k: 'practice', practice: p }) });
+    const actItem = (p: Practice, span: string): Item => ({ id: p.id, tone: toneById(p.goal_id), meta: goalName(p.goal_id) + ' · ' + subName(p.subgoal_id), name: p.name, span, onTap: () => setSheet({ k: 'practice', practice: p }), out: outside(ups, p.goal_id, p.subgoal_id) });
     const wNotes = notes.filter(n => n.scope === 'week' && n.period_key === key);
     rows = [
       {
@@ -137,17 +161,16 @@ export default function ScheduleTab() {
         sub: md(d),
         now: d === today,
         past: slots[i].locked,
-        notes: wNotes.filter(n => n.start_index === i).map(n => ({ id: n.id, text: n.text + (n.end_index > i ? ` ~${labels[n.end_index]}` : ''), onTap: () => setSheet({ k: 'note', note: n }) })),
+        notes: wNotes.filter(n => n.start_index <= i && i <= n.end_index).map(n => ({ id: n.id + ':' + i, text: n.start_index === i ? n.text + (n.end_index > i ? ` ~${labels[n.end_index]}` : '') : n.text + ' · 이어짐', onTap: () => setSheet({ k: 'note', note: n }) })),
         items: acts.filter(a => a.p.weekdays.length === 1 && a.pos[0] === i).map(a => actItem(a.p, '')),
         go: d === today ? { label: '오늘 기록하기', primary: true, onTap: () => navigate('/record') } : undefined,
-        onEmpty: slots[i].locked ? undefined : () => setSheet({ k: 'add', start: i }),
       })),
     ];
     // R-P3: 월간 계획에서 이 주에 걸친 칸 (+ 참고사항)
     const mk = ym + '-01';
-    const ups = monthCells.filter(c => shown(c.goal_id) && c.year_month === mk && c.start_week <= index && index <= c.end_week);
+    const mc = monthCells.filter(c => shown(c.goal_id) && c.year_month === mk && c.start_week <= index && index <= c.end_week);
     const upNote = notes.find(n => n.scope === 'month' && n.period_key === mk && n.start_index <= index && index <= n.end_index);
-    const items = ups.map(c => ({ ...cellItem(c.goal_id, c.subgoal_id, c.comment, '', () => {}), id: c.id }));
+    const items = mc.map(c => ({ ...cellItem(c.goal_id, c.subgoal_id, c.comment, '', () => {}), id: c.id }));
     if (upNote?.text) items.unshift({ id: upNote.id, tone: NOTE, meta: '참고사항', name: upNote.text, onTap: () => {} });
     if (items.length) upper = { label: '월간', sub: `${index + 1}주차`, items };
   }
@@ -198,6 +221,7 @@ export default function ScheduleTab() {
 
       <ScrollArea fade="var(--color-bg)" style={{ flex: 1, minHeight: 0 }} innerStyle={{ padding: '2px 12px 40px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         {msg && <div style={{ flex: 'none', margin: '0 4px 6px' }}>{msg}</div>}
+        {headNote && <div data-testid="week-elsewhere" style={{ flex: 'none', margin: '0 4px 6px' }}>{headNote}</div>}
         {upper && (
           <div data-testid="sched-upper" style={{ flex: 'none', display: 'grid', gridTemplateColumns: '46px minmax(0,1fr)', gap: 10, padding: '6px 10px 10px', alignItems: 'start' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 1, paddingTop: 2 }}>
@@ -225,21 +249,20 @@ export default function ScheduleTab() {
                 <button key={n.id} data-testid="sched-note" onClick={n.onTap} style={{ alignSelf: 'flex-start', maxWidth: '100%', border: 0, cursor: 'pointer', ...BODY, fontSize: 11.5, padding: '4px 10px', borderRadius: 999, background: 'var(--color-neutral-200)', color: 'var(--color-neutral-800)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.text || '참고사항'}</button>
               ))}
               {r.items.map(it => (
-                <button key={it.id} data-testid="sched-item" onClick={it.onTap} style={{ border: 0, cursor: 'pointer', textAlign: 'left', ...BODY, fontWeight: 400, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 16, background: it.tone.bg }}>
+                <button key={it.id} data-testid="sched-item" data-cont={it.cont || undefined} onClick={it.onTap} style={{ border: 0, cursor: 'pointer', textAlign: 'left', ...BODY, fontWeight: 400, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8, padding: it.cont ? '6px 12px' : '8px 12px', borderRadius: 16, background: it.tone.bg, opacity: it.cont ? 0.6 : 1 }}>
                   <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: it.tone.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.meta}</span>
                     <span style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.3, textWrap: 'pretty' }}>{it.name}</span>
                   </span>
-                  {it.span && <span style={{ flex: 'none', fontSize: 11, fontWeight: 700, color: it.tone.ink, whiteSpace: 'nowrap' }}>{it.span}</span>}
+                  {(it.span || it.out) && (
+                    <span style={{ flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
+                      {it.span && <span style={{ fontSize: 11, fontWeight: 700, color: it.tone.ink, whiteSpace: 'nowrap' }}>{it.span}</span>}
+                      {it.out && <span data-testid="out-of-plan" title="위 단계 계획에 없는 세부 목표" style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 999, border: '1.5px dashed ' + it.tone.dot, color: it.tone.ink, whiteSpace: 'nowrap' }}>계획 밖</span>}
+                    </span>
+                  )}
                 </button>
               ))}
-              {!r.items.length && !r.notes.length && !r.go && (
-                r.onEmpty && list.length > 0 && !noSubs ? (
-                  <button onClick={r.onEmpty} aria-label={r.label + '에 넣기'} className="m-hover" style={{ alignSelf: 'stretch', textAlign: 'left', border: 0, background: 'transparent', cursor: 'pointer', fontSize: 13, color: 'var(--color-neutral-500)', padding: '4px 2px', borderRadius: 10 }}>—</button>
-                ) : (
-                  <span style={{ fontSize: 13, color: 'var(--color-neutral-500)', padding: '4px 2px' }}>—</span>
-                )
-              )}
+              {!r.items.length && !r.notes.length && !r.go && <span style={{ fontSize: 13, color: 'var(--color-neutral-500)', padding: '4px 2px' }}>—</span>}
               {r.go && (
                 <button onClick={r.go.onTap} className={r.go.primary ? 'btn btn-primary' : 'btn btn-secondary'} style={{ alignSelf: 'flex-start', height: 36, padding: '0 14px', gap: 6, ...BODY, fontSize: 13 }}>
                   {r.go.label}<Svg d={ICON.arrow} size={13} width={3} />

@@ -230,13 +230,26 @@ export function Onboarding() {
             );
           })}
         </div>
-        <button className="btn btn-primary" disabled={!stage} onClick={() => setStep(2)} style={BIG}>카테고리 정하기</button>
+        <button
+          className="btn btn-primary"
+          disabled={!stage}
+          onClick={() => {
+            // 고른 시기의 템플릿을 미리 골라 둔다. 직접 바꾼 적이 있으면 그대로 (2026-10-03 기획 결정)
+            const isTemplate = cats.length === 0 || LIFE_STAGES.some(t => t.template.join() === cats.join());
+            if (isTemplate) setCats([...lifeStageOf(stage).template]);
+            setStep(2);
+          }}
+          style={BIG}
+        >
+          카테고리 정하기
+        </button>
       </AuthLayout>
     );
   }
 
   if (step === 2) {
-    const rec: readonly string[] = lifeStageOf(stage).cats;
+    const st = lifeStageOf(stage);
+    const rec: readonly string[] = [...new Set<string>([...st.template, ...st.cats])];
     const pool = [...CATEGORY_POOL, ...cats.filter(n => !CATEGORY_POOL.includes(n))];
     const full = cats.length >= MAX_GOAL_CATEGORIES;
     const chip = (name: string) => {
@@ -253,6 +266,9 @@ export function Onboarding() {
     return (
       <AuthLayout step={2} onBack={() => setStep(1)}>
         <Heading title="삶을 어떤 영역으로 나눌까요?" sub="목표 카테고리는 최대 6개까지 고를 수 있어요. 고른 카테고리마다 목표를 세우게 돼요." />
+        <div data-testid="cat-template-note" style={{ padding: '12px 14px', borderRadius: 18, background: 'var(--color-accent-2-100)', color: 'var(--color-accent-2-900)', fontSize: 13, lineHeight: 1.5, textWrap: 'pretty' }}>
+          {lifeStageOf(stage).label}에게 맞춰 <b>삶의 수레바퀴</b>(건강·일·재정·관계·성장·여가를 고루 보는 방법)로 미리 골라 뒀어요. 눌러서 빼거나 더할 수 있어요.
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-accent-700)' }}>{lifeStageOf(stage).label}에게 추천</span>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{rec.map(chip)}</div>

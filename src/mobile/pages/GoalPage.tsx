@@ -1,6 +1,5 @@
 // 목표 편집 (오른쪽에서 밀려 들어오는 화면): 이름 · 카테고리 · 기한 · 진척도 · 세부 목표 · 특성 · 일정에서 보기 · 마무리/삭제
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAccount, type Goal } from '../../account/AccountProvider';
 import { IMPORTANCE, MAX_GOAL_NAME, MAX_SUBGOAL_NAME, dueValue, isClosed } from '../../lib/goals';
@@ -24,13 +23,12 @@ export default function GoalPage({ id, active, onGone }: { id: string; active: b
     }
   });
   if (!g) return null;
-  return <GoalEditor g={g} />;
+  return <GoalEditor g={g} onDone={onGone} />;
 }
 
-function GoalEditor({ g }: { g: Goal }) {
+function GoalEditor({ g, onDone }: { g: Goal; onDone: () => void }) {
   const { goalCategories, goals, subgoals, yearCells, monthCells, practices, run } = useAccount();
   const { progress, saveProgress } = useMobile();
-  const navigate = useNavigate();
   const { tone } = useGoalTone(g);
   const totals = useGoalTotals(g.status)?.[g.id];
   const subs = subgoals.filter(s => s.goal_id === g.id);
@@ -154,7 +152,8 @@ function GoalEditor({ g }: { g: Goal }) {
       </fieldset>
 
       <div style={{ flex: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {!closed && <button className="btn btn-secondary" onClick={() => navigate('/plan/schedule?f=' + g.id)} style={{ height: 46, ...BODY }}>일정에서 보기</button>}
+        {/* 2026-10-03 기획 결정: '일정에서 보기' 대신 '작성 완료' — 고친 내용은 칸을 벗어나면 저장돼 있다 */}
+        {!closed && <button className="btn btn-primary" onClick={onDone} style={{ height: 46 }}>작성 완료</button>}
         {g.status === 'in_progress' && <button className="btn btn-secondary" onClick={() => setSheet('wrap')} style={{ height: 46, ...BODY }}>목표 마무리하기</button>}
         {g.status === 'not_started' && (
           <button onClick={() => setSheet('delete')} style={{ alignSelf: 'flex-start', border: 0, background: 'transparent', cursor: 'pointer', ...BODY, fontSize: 13, color: 'var(--color-accent-700)', padding: '6px 4px', textDecoration: 'underline', textUnderlineOffset: 3 }}>목표 삭제</button>

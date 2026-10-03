@@ -1,7 +1,7 @@
 // 모바일 앱 주소 (docs/MOBILE.md). 화면은 모두 한 번에 떠 있고, 주소는 "지금 무엇을 보는지"만 정한다
 export type Pane = 'plan' | 'record';
 export type Tab = 'goals' | 'schedule' | 'today' | 'review';
-export type PageKind = 'goal' | 'categories' | 'dream' | 'settings';
+export type PageKind = 'goal' | 'categories' | 'dream' | 'settings' | 'tutorial';
 
 export type MRoute = { kind: 'pane'; pane: Pane; tab: Tab } | { kind: 'page'; page: PageKind; id?: string };
 
@@ -18,6 +18,7 @@ export function parseRoute(path: string): MRoute | null {
   if (p === '/categories') return { kind: 'page', page: 'categories' };
   if (p === '/dream') return { kind: 'page', page: 'dream' };
   if (p === '/settings') return { kind: 'page', page: 'settings' };
+  if (p === '/tutorial') return { kind: 'page', page: 'tutorial' };
   return null;
 }
 

@@ -18,6 +18,7 @@ import GoalPage from './pages/GoalPage';
 import CategoriesPage from './pages/CategoriesPage';
 import DreamPage from './pages/DreamPage';
 import SettingsPage from './pages/SettingsPage';
+import TutorialPage from './pages/TutorialPage';
 import { AccountSheet } from './AccountSheet';
 
 export default function MobileApp() {
@@ -134,11 +135,16 @@ function Shell() {
         >
           {shownPage && (
             <>
-              <PageBar back={shownPage.page === 'settings' ? '뒤로' : '목표'} onBack={closePage} right={shownPage.page === 'goal' && shownPage.id ? <GoalStatusTag id={shownPage.id} /> : undefined} />
+              <PageBar
+                back={shownPage.page === 'settings' ? '뒤로' : shownPage.page === 'tutorial' ? '그만하기' : '목표'}
+                onBack={closePage}
+                right={shownPage.page === 'goal' && shownPage.id ? <GoalStatusTag id={shownPage.id} /> : shownPage.page === 'tutorial' ? <span className="tag tag-accent-2" style={{ fontWeight: 700 }}>체험 · 저장 안 돼요</span> : undefined}
+              />
               {shownPage.page === 'goal' && shownPage.id && <GoalPage key={shownPage.id} id={shownPage.id} active={pageOpen} onGone={closePage} />}
               {shownPage.page === 'categories' && <CategoriesPage />}
               {shownPage.page === 'dream' && <DreamPage />}
               {shownPage.page === 'settings' && <SettingsPage />}
+              {shownPage.page === 'tutorial' && pageOpen && <TutorialPage />}
             </>
           )}
         </div>

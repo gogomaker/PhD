@@ -1,6 +1,6 @@
 // 계획 › 목표: 시작하기(5단계) · 나의 꿈 · + 목표 추가 · 카테고리별 목표(진척도 막대) · 마무리한 목표
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, type Goal } from '../../account/AccountProvider';
 import { PALETTE } from '../../lib/palette';
 import { userDayKey } from '../../lib/day';
@@ -10,12 +10,21 @@ import { ScrollArea } from '../../ui/ScrollArea';
 import { BODY, Dot, H, ICON, Svg } from '../ui';
 import { useMobile } from '../store';
 import { NewGoalSheet, ReviewSheet } from './goalSheets';
+import { tutorialDone } from '../pages/TutorialPage';
 
 export default function GoalsTab() {
   const { profile, goalCategories, goals, subgoals } = useAccount();
   const { progress } = useMobile();
   const navigate = useNavigate();
   const [sheet, setSheet] = useState<null | { k: 'new' } | { k: 'review'; goal: Goal }>(null);
+  const loc = useLocation();
+  // 체험 모드 끝 → '내 목표 쓰러 가기': 새 목표 시트를 바로 연다 (기록 칸을 비워서 뒤로 가도 다시 안 열리게)
+  useEffect(() => {
+    if ((loc.state as { newGoal?: boolean } | null)?.newGoal) {
+      navigate(loc.pathname, { replace: true, state: null });
+      setSheet({ k: 'new' });
+    }
+  }, [loc, navigate]);
   const dream = profile?.dream?.trim();
   const closed = goals.filter(g => isClosed(g)).sort((a, b) => (b.finished_at ?? '').localeCompare(a.finished_at ?? ''));
   const dayOf = (ts: string) => userDayKey(new Date(ts), profile?.timezone, profile?.day_start_hour);
@@ -111,7 +120,10 @@ function StartSteps({ onNewGoal }: { onNewGoal: () => void }) {
   const navigate = useNavigate();
   const open = goals.filter(g => !isClosed(g));
   const target = open.find(g => !subgoals.some(s => s.goal_id === g.id)) ?? open[0];
+  // 체험해 보기는 이 기기에 기억한다 (데모라 계정에 남기지 않음)
+  const tried = tutorialDone();
   const steps: [string, boolean, () => void][] = [
+    ['체험해 보기 (3분, 저장 안 됨)', tried, () => navigate('/tutorial')],
     ['꿈 한 문장 적기', !!profile?.dream?.trim(), () => navigate('/dream')],
     ['첫 목표 만들기', goals.length > 0, onNewGoal],
     ['세부 목표로 나누기', subgoals.length > 0, () => (target ? navigate('/goal/' + target.id) : onNewGoal())],
@@ -120,7 +132,7 @@ function StartSteps({ onNewGoal }: { onNewGoal: () => void }) {
   ];
   const next = steps.findIndex(s => !s[1]);
   // 앞 단계를 다 했는데 기록 여부를 아직 모르면 잠깐 숨긴다 (다 마친 사람에게 깜빡이지 않게)
-  if (next < 0 || (next === 4 && recorded === null)) return null;
+  if (next < 0 || (next === steps.length - 1 && recorded === null)) return null;
   const done = steps.filter(s => s[1]).length;
   return (
     <div data-testid="start-checklist" style={{ flex: 'none', background: 'var(--color-surface)', borderRadius: 26, padding: '14px 12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>

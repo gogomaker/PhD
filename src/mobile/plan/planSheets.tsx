@@ -1,18 +1,19 @@
 // 일정 시트: 계획 칸(연간·월간) · 실천(주간) · 참고사항 추가 / 고치기 / 보기
 // DB 규칙: 칸은 기간·메모만 고칠 수 있고(R-P2), 실천은 추가·삭제만(지난 날이 없을 때) 된다. 지난 기간은 잠금(R-P12)
+// 2026-10-03 기획 결정: 위 단계 계획에서 먼저 고르고(계획 밖은 한 번 더), 시작·끝은 드롭다운, 달·해를 넘으면 나눠 저장
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAccount, useToday, type Goal, type MonthCell, type Note, type Practice, type YearCell } from '../../account/AccountProvider';
-import { addDays, dayLabel, type DayKey } from '../../lib/day';
+import { addDays, dayLabel } from '../../lib/day';
 import { PALETTE } from '../../lib/palette';
 import { isClosed, sortGoals } from '../../lib/goals';
-import { dayLocked, fmtDays, isoDow, md, monthLocked, monthOfWeek, monthWeeks, practiceDates, weekDays, weekLocked } from '../../lib/plan';
+import { dayLocked, fmtDays, isoDow, md, monthOfWeek, practiceDates, weekDays } from '../../lib/plan';
 import { NOTE, type Tone } from '../../desktop/plan/shared';
 import { BODY, Dot, Field, Notice, Sheet, SheetHead, chip } from '../ui';
+import { endsFrom, keysOf, splitRange, unitOf, unitsOf, type Unit, type Zoom } from './units';
 
-export type Zoom = 'year' | 'month' | 'week';
-type Slot = { label: string; locked: boolean };
+export type { Zoom } from './units';
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /** 진행 중인 목표: 카테고리 순서 → 목표 순서 */
@@ -28,13 +29,6 @@ export function useOpenGoals() {
   }, [goals, goalCategories, subgoals]);
 }
 
-/** 한 기간의 칸들: 연간 = 12달, 월간 = 그 달의 주, 주간 = 7일 */
-export function slotsOf(zoom: Zoom, key: string, today: DayKey): Slot[] {
-  if (zoom === 'year') return Array.from({ length: 12 }, (_, i) => ({ label: `${i + 1}월`, locked: monthLocked(`${key}-${pad(i + 1)}`, today) }));
-  if (zoom === 'month') return monthWeeks(key).map((w, i) => ({ label: `${i + 1}주`, locked: weekLocked(w, today) }));
-  return weekDays(key).map(d => ({ label: dayLabel(d).dow, locked: dayLocked(d, today) }));
-}
-
 /** 시트 머리 아래 기간 설명 */
 export function periodText(zoom: Zoom, key: string) {
   if (zoom === 'year') return `${key}년`;
@@ -43,81 +37,75 @@ export function periodText(zoom: Zoom, key: string) {
   return `${Number(ym.slice(5))}월 ${index + 1}주차 · ${md(key)} – ${md(addDays(key, 6))}`;
 }
 
-const unitOf = (zoom: Zoom) => (zoom === 'year' ? '개월' : zoom === 'month' ? '주' : '일');
-const rangeText = (slots: Slot[], s: number, e: number) => (s === e ? slots[s]?.label : `${slots[s]?.label}–${slots[e]?.label}`);
-
-/** 같은 목표(또는 참고사항)의 다른 칸이 차지한 자리 — 한 줄에 겹치지 않는다 (R-P1) */
-function useOccupied(zoom: Zoom, key: string, goalId: string | 'note' | null, except?: string) {
-  const { yearCells, monthCells, notes } = useAccount();
-  const n = zoom === 'year' ? 12 : zoom === 'month' ? monthWeeks(key).length : 7;
-  const occ = Array(n).fill(false) as boolean[];
-  const mark = (s: number, e: number) => { for (let i = Math.max(0, s); i <= Math.min(n - 1, e); i++) occ[i] = true; };
-  if (goalId === 'note') {
-    const scope = zoom === 'month' ? 'month' : 'week';
-    const pk = zoom === 'month' ? key + '-01' : key;
-    notes.filter(x => x.scope === scope && x.period_key === pk && x.id !== except).forEach(x => mark(x.start_index, x.end_index));
-  } else if (goalId && zoom === 'year') {
-    yearCells.filter(c => c.goal_id === goalId && c.id !== except && c.start_month.startsWith(key)).forEach(c => mark(Number(c.start_month.slice(5, 7)) - 1, Number(c.end_month.slice(5, 7)) - 1));
-  } else if (goalId && zoom === 'month') {
-    monthCells.filter(c => c.goal_id === goalId && c.id !== except && c.year_month === key + '-01').forEach(c => mark(c.start_week, c.end_week));
-  }
-  return occ;
+/**
+ * 위 단계 계획(R-P3): 월간이면 그 달에 걸친 연간 칸, 주간이면 그 주에 걸친 월간 칸의 (목표, 세부 목표).
+ * 연간은 맨 위라 없다. 위 단계가 비어 있으면 연결을 따지지 않는다 (연간은 선택, 2026-10-03 기획 결정)
+ */
+export function useUpper() {
+  const { yearCells, monthCells } = useAccount();
+  return (zoom: Zoom, period: string): { goalId: string; subId: string }[] => {
+    if (zoom === 'month') {
+      const mk = period + '-01';
+      return yearCells.filter(c => c.start_month <= mk && mk <= c.end_month).map(c => ({ goalId: c.goal_id, subId: c.subgoal_id }));
+    }
+    if (zoom === 'week') {
+      const { ym, index } = monthOfWeek(period);
+      return monthCells.filter(c => c.year_month === ym + '-01' && c.start_week <= index && index <= c.end_week).map(c => ({ goalId: c.goal_id, subId: c.subgoal_id }));
+    }
+    return [];
+  };
 }
 
-/** 시작 칸 + 길이 고르기. 지난 칸·이미 찬 칸은 시작으로 고를 수 없고, 찬 칸 앞까지만 늘어난다 */
-function RangePicker({ zoom, slots, occupied, start, len, onChange, startLabel }: { zoom: Zoom; slots: Slot[]; occupied: boolean[]; start: number; len: number; onChange: (start: number, len: number) => void; startLabel: string }) {
-  const maxLen = (s: number) => {
-    let k = 0;
-    while (s + k < slots.length && !occupied[s + k]) k++;
-    return Math.max(1, k);
-  };
-  const cols = zoom === 'year' ? 6 : slots.length;
+/** 위 단계에 계획이 있는데 이 (목표, 세부 목표)는 없으면 '계획 밖' */
+export const outside = (upper: { goalId: string; subId: string }[], goalId: string, subId: string) => upper.length > 0 && !upper.some(u => u.goalId === goalId && u.subId === subId);
+
+/** 같은 목표(또는 참고사항)의 다른 칸이 차지한 칸 key들 — 한 줄에 겹치지 않는다 (R-P1) */
+function useOccupied(zoom: Zoom, goalId: string | 'note' | null, except?: string) {
+  const { yearCells, monthCells, notes } = useAccount();
+  return useMemo(() => {
+    const occ = new Set<string>();
+    const add = (keys: string[]) => keys.forEach(k => occ.add(k));
+    if (goalId === 'note') {
+      const scope = zoom === 'month' ? 'month' : 'week';
+      notes.filter(n => n.scope === scope && n.id !== except).forEach(n => add(keysOf(zoom, scope === 'month' ? n.period_key.slice(0, 7) : n.period_key, n.start_index, n.end_index)));
+    } else if (goalId && zoom === 'year') {
+      yearCells.filter(c => c.goal_id === goalId && c.id !== except).forEach(c => add(keysOf('year', c.start_month.slice(0, 4), Number(c.start_month.slice(5, 7)) - 1, Number(c.end_month.slice(5, 7)) - 1)));
+    } else if (goalId && zoom === 'month') {
+      monthCells.filter(c => c.goal_id === goalId && c.id !== except).forEach(c => add(keysOf('month', c.year_month.slice(0, 7), c.start_week, c.end_week)));
+    }
+    return occ;
+  }, [zoom, goalId, except, yearCells, monthCells, notes]);
+}
+
+/** 시작·끝 드롭다운. 지난 칸·이미 찬 칸은 시작으로 고를 수 없다 */
+function RangeSelect({ zoom, starts, endsOf, start, end, onChange }: { zoom: Zoom; starts: Unit[]; endsOf: (start: string) => Unit[]; start: string; end: string; onChange: (s: string, e: string) => void }) {
+  const ends = endsOf(start);
+  const what = zoom === 'year' ? '달' : zoom === 'month' ? '주' : '요일';
+  const sel = { height: 44, fontWeight: 700, cursor: 'pointer', paddingInline: 12 } as const;
   return (
-    <>
-      <Field label={startLabel}>
-        <div role="group" aria-label={startLabel} style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))`, gap: 4 }}>
-          {slots.map((s, i) => {
-            const off = s.locked || occupied[i];
-            const on = i === start;
-            return (
-              <button key={i} aria-pressed={on} disabled={off} title={s.locked ? '지난 기간이에요' : occupied[i] ? '이미 계획이 있어요' : undefined} onClick={() => onChange(i, Math.min(len, maxLen(i)))} style={{ height: 34, padding: 0, border: 0, borderRadius: 999, cursor: off ? 'not-allowed' : 'pointer', ...BODY, fontSize: 12.5, background: on ? 'var(--color-text)' : 'var(--color-surface)', color: on ? 'var(--color-bg)' : 'var(--color-text)', opacity: off ? 0.35 : 1 }}>{s.label}</button>
-            );
-          })}
-        </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 8 }}>
+      <Field label={'시작 ' + what}>
+        <select className="input" aria-label={'시작 ' + what} value={start} onChange={e => { const s = e.target.value; onChange(s, endsOf(s).some(u => u.key === end) ? end : s); }} style={sel}>
+          {starts.map(u => <option key={u.key} value={u.key}>{u.long}</option>)}
+        </select>
       </Field>
-      <Field label="기간">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button className="btn btn-secondary" onClick={() => onChange(start, len - 1)} disabled={len <= 1} aria-label="기간 줄이기" style={{ width: 40, height: 40, padding: 0, fontSize: 18 }}>−</button>
-          <span data-testid="range-len" style={{ minWidth: 84, textAlign: 'center', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 18 }}>{len}{unitOf(zoom)}</span>
-          <button className="btn btn-secondary" onClick={() => onChange(start, len + 1)} disabled={len >= maxLen(start)} aria-label="기간 늘리기" style={{ width: 40, height: 40, padding: 0, fontSize: 18 }}>+</button>
-          <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--color-neutral-700)' }}>{rangeText(slots, start, start + len - 1)}</span>
-        </div>
+      <Field label={'끝 ' + what}>
+        <select className="input" aria-label={'끝 ' + what} value={end} onChange={e => onChange(start, e.target.value)} style={sel}>
+          {ends.map(u => <option key={u.key} value={u.key}>{u.long}</option>)}
+        </select>
       </Field>
-    </>
+    </div>
   );
 }
 
-/** 첫 번째로 고를 수 있는 시작 칸 (prefer가 되면 그것) */
-function firstFree(slots: Slot[], occupied: boolean[], prefer?: number) {
-  if (prefer != null && slots[prefer] && !slots[prefer].locked && !occupied[prefer]) return prefer;
-  const i = slots.findIndex((s, k) => !s.locked && !occupied[k]);
-  return i < 0 ? -1 : i;
-}
-
-/** 상위 계획(R-P3)에서 이 기간에 넣은 세부 목표 → 맨 앞 + 미리 고름 (R-P5, R-P7) */
-function useUpperSub(zoom: Zoom, key: string) {
-  const { yearCells, monthCells } = useAccount();
-  return (goalId: string): string | undefined => {
-    if (zoom === 'month') {
-      const mk = key + '-01';
-      return yearCells.find(c => c.goal_id === goalId && c.start_month <= mk && mk <= c.end_month)?.subgoal_id;
-    }
-    if (zoom === 'week') {
-      const { ym, index } = monthOfWeek(key);
-      return monthCells.find(c => c.goal_id === goalId && c.year_month === ym + '-01' && c.start_week <= index && index <= c.end_week)?.subgoal_id;
-    }
-    return undefined;
-  };
+/** 나눠 저장될 때 안내: '10월 2~4주 + 11월 1~3주로 나눠 저장돼요' */
+function splitHint(zoom: Zoom, start: string, end: string, today: string) {
+  const parts = splitRange(zoom, start, end, today);
+  if (parts.length < 2) return null;
+  const span = (a: number, b: number) => (a === b ? `${a + 1}` : `${a + 1}~${b + 1}`);
+  const name = (p: { piece: string; s: number; e: number }) =>
+    zoom === 'year' ? `${p.piece}년 ${span(p.s, p.e)}월` : `${Number(p.piece.slice(5))}월 ${span(p.s, p.e)}주`;
+  return parts.map(name).join(' + ') + '로 나눠 저장돼요. 나중에 따로 고칠 수 있어요.';
 }
 
 function GoalChips({ goals, cur, onPick, withNote, toneOf }: { goals: Goal[]; cur: string | null; onPick: (id: string) => void; withNote: boolean; toneOf: (g: Goal) => Tone }) {
@@ -131,24 +119,24 @@ function GoalChips({ goals, cur, onPick, withNote, toneOf }: { goals: Goal[]; cu
           </button>
         );
       })}
-      {withNote && (
-        <button aria-pressed={cur === 'note'} onClick={() => onPick('note')} style={{ height: 34, padding: '0 12px', border: 0, borderRadius: 999, cursor: 'pointer', ...BODY, fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6, ...chip(cur === 'note', NOTE) }}>
-          <Dot color={NOTE.dot} />참고사항
-        </button>
-      )}
+      {withNote && <NoteChip on={cur === 'note'} onPick={() => onPick('note')} />}
     </div>
   );
 }
 
-function SubChips({ subs, cur, onPick, tone, upper, upperLabel }: { subs: { id: string; name: string }[]; cur: string | null; onPick: (id: string) => void; tone: Tone; upper?: string; upperLabel: string }) {
-  const ordered = [...subs].sort((a, b) => Number(b.id === upper) - Number(a.id === upper));
+function NoteChip({ on, onPick }: { on: boolean; onPick: () => void }) {
+  return (
+    <button aria-pressed={on} onClick={onPick} style={{ height: 34, padding: '0 12px', border: 0, borderRadius: 999, cursor: 'pointer', ...BODY, fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6, ...chip(on, NOTE) }}>
+      <Dot color={NOTE.dot} />참고사항
+    </button>
+  );
+}
+
+function SubChips({ subs, cur, onPick, tone }: { subs: { id: string; name: string }[]; cur: string | null; onPick: (id: string) => void; tone: Tone }) {
   return (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-      {ordered.map(s => (
-        <button key={s.id} aria-pressed={cur === s.id} onClick={() => onPick(s.id)} style={{ height: 34, padding: '0 12px', border: 0, borderRadius: 999, cursor: 'pointer', ...BODY, fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6, ...chip(cur === s.id, tone) }}>
-          {s.name}
-          {s.id === upper && <span style={{ fontSize: 10.5, fontWeight: 700, opacity: 0.75 }}>{upperLabel}</span>}
-        </button>
+      {subs.map(s => (
+        <button key={s.id} aria-pressed={cur === s.id} onClick={() => onPick(s.id)} style={{ height: 34, padding: '0 12px', border: 0, borderRadius: 999, cursor: 'pointer', ...BODY, fontSize: 12.5, ...chip(cur === s.id, tone) }}>{s.name}</button>
       ))}
     </div>
   );
@@ -156,62 +144,74 @@ function SubChips({ subs, cur, onPick, tone, upper, upperLabel }: { subs: { id: 
 
 // ───────── + 계획 / + 실천 ─────────
 export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClose }: { zoom: Zoom; periodKey: string; initialGoal?: string | null; initialStart?: number; onClose: () => void }) {
-  const { create, run } = useAccount();
+  const { run } = useAccount();
   const today = useToday();
   const navigate = useNavigate();
-  const { list, toneOf, subsOf } = useOpenGoals();
-  const upperOf = useUpperSub(zoom, periodKey);
-  const slots = slotsOf(zoom, periodKey, today);
-  const pick0 = initialGoal && list.some(g => g.id === initialGoal) ? initialGoal : list[0]?.id ?? null;
-  const subOf = (gid: string | null) => (gid && gid !== 'note' ? upperOf(gid) ?? subsOf(gid)[0]?.id ?? null : null);
-  const [goalId, setGoalId] = useState<string | null>(pick0);
-  const [subId, setSubId] = useState<string | null>(subOf(pick0));
+  const { list, toneOf, subsOf, subName } = useOpenGoals();
+  const upperOf = useUpper();
+  const units = unitsOf(zoom, periodKey, today);
+  // 위 단계 계획에서 고르기 (진행 중 목표만, 같은 쌍은 한 번)
+  const upper = upperOf(zoom, periodKey).filter((u, i, a) => list.some(g => g.id === u.goalId) && a.findIndex(x => x.goalId === u.goalId && x.subId === u.subId) === i);
+  const upperName = zoom === 'month' ? '연간 계획' : '월간 계획';
+  const [mode, setMode] = useState<'upper' | 'all'>(upper.length ? 'upper' : 'all');
+  const first = upper.find(u => !initialGoal || u.goalId === initialGoal);
+  const g0 = mode === 'upper' && first ? first.goalId : initialGoal && list.some(g => g.id === initialGoal) ? initialGoal : list[0]?.id ?? null;
+  const [goalId, setGoalId] = useState<string | null>(g0);
+  const [subId, setSubId] = useState<string | null>(mode === 'upper' && first ? first.subId : g0 ? subsOf(g0)[0]?.id ?? null : null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const isNote = goalId === 'note';
-  const occupied = useOccupied(zoom, periodKey, goalId);
-  const [range, setRange] = useState(() => ({ start: firstFree(slots, occupied, initialStart), len: 1 }));
-  // 고른 목표가 바뀌면 시작 칸이 막혔을 수 있다
-  const start = range.start >= 0 && !slots[range.start]?.locked && !occupied[range.start] ? range.start : firstFree(slots, occupied, initialStart);
-  const len = start === range.start ? range.len : 1;
-  // 주간 실천: 요일 고르기 (요일 1개 = 그 요일 칸, 여러 개 = 반복)
-  const [days, setDays] = useState<number[]>(() => (zoom === 'week' && initialStart != null && !slots[initialStart]?.locked ? [initialStart] : []));
+  const practice = zoom === 'week' && !isNote;
+  const occupied = useOccupied(zoom, goalId);
+  const starts = units.filter(u => !u.locked && !occupied.has(u.key));
+  const pref = initialStart != null ? units[initialStart]?.key : undefined;
+  const [range, setRange] = useState<{ s: string; e: string } | null>(null);
+  // 고른 목표가 바뀌어 시작 칸이 막혔으면 첫 빈 칸으로
+  const s0 = range && starts.some(u => u.key === range.s) ? range.s : starts.find(u => u.key === pref)?.key ?? starts[0]?.key;
+  const within = zoom === 'week' ? periodKey : undefined;
+  const endsOf = (s: string) => endsFrom(zoom, s, occupied, today, within);
+  const e0 = s0 && range && range.s === s0 && endsOf(s0).some(u => u.key === range.e) ? range.e : s0;
+  const [days, setDays] = useState<number[]>(() => (zoom === 'week' && initialStart != null && !units[initialStart]?.locked ? [initialStart] : []));
 
   const goal = list.find(g => g.id === goalId);
   const tone = goal ? toneOf(goal) : NOTE;
   const subs = goal ? subsOf(goal.id) : [];
   const title = zoom === 'week' ? '실천 추가' : zoom === 'year' ? '연간 계획 추가' : '월간 계획 추가';
-  const practice = zoom === 'week' && !isNote;
-  const allLocked = slots.every(s => s.locked);
+  const allLocked = units.every(u => u.locked);
+  const out = !isNote && goalId && subId ? outside(upper, goalId, subId) : false;
 
   const pickGoal = (id: string) => {
     setGoalId(id);
-    setSubId(subOf(id));
+    setSubId(id === 'note' ? null : subsOf(id)[0]?.id ?? null);
   };
 
   const submit = async () => {
     if (busy) return;
     setBusy(true);
     let ok = false;
-    const end = start + len - 1;
     if (practice) {
       const wd = weekDays(periodKey);
       const weekdays = [...new Set(days.map(i => isoDow(wd[i])))].sort((a, b) => a - b);
       ok = await run(() => supabase.from('practices').insert({ goal_id: goalId, subgoal_id: subId, week_start_date: periodKey, name: text.trim(), weekdays }));
-    } else if (isNote) {
-      const scope = zoom === 'month' ? 'month' : 'week';
-      ok = !!(await create(() => supabase.from('notes').insert({ scope, period_key: zoom === 'month' ? periodKey + '-01' : periodKey, start_index: start, end_index: end, text: text.trim() }).select('id').single()));
-    } else if (zoom === 'year') {
-      ok = !!(await create(() => supabase.from('year_cells').insert({ goal_id: goalId, subgoal_id: subId, start_month: `${periodKey}-${pad(start + 1)}-01`, end_month: `${periodKey}-${pad(end + 1)}-01`, memo: text.trim() }).select('id').single()));
-    } else {
-      ok = !!(await create(() => supabase.from('month_cells').insert({ goal_id: goalId, subgoal_id: subId, year_month: periodKey + '-01', start_week: start, end_week: end, comment: text.trim() }).select('id').single()));
+    } else if (s0 && e0) {
+      // 달(월간)·해(연간)를 넘으면 나눠 저장 (2026-10-03 기획 결정)
+      const parts = splitRange(zoom, s0, e0, today);
+      if (isNote) {
+        const scope = zoom === 'month' ? 'month' : 'week';
+        ok = await run(() => supabase.from('notes').insert(parts.map(p => ({ scope, period_key: scope === 'month' ? p.piece + '-01' : p.piece, start_index: p.s, end_index: p.e, text: text.trim() }))));
+      } else if (zoom === 'year') {
+        ok = await run(() => supabase.from('year_cells').insert(parts.map(p => ({ goal_id: goalId, subgoal_id: subId, start_month: `${p.piece}-${pad(p.s + 1)}-01`, end_month: `${p.piece}-${pad(p.e + 1)}-01`, memo: text.trim() }))));
+      } else {
+        ok = await run(() => supabase.from('month_cells').insert(parts.map(p => ({ goal_id: goalId, subgoal_id: subId, year_month: p.piece + '-01', start_week: p.s, end_week: p.e, comment: text.trim() }))));
+      }
     }
     setBusy(false);
     if (ok) onClose();
   };
 
-  const off = busy || !goalId || (practice ? !subId || !text.trim() || days.length === 0 : isNote ? start < 0 || !text.trim() : !subId || start < 0);
-  const dayHint = days.length === 0 ? '요일을 하나 이상 골라 주세요.' : days.length === 1 ? `${slots[days[0]].label}요일 할 일이 돼요. 못 하면 다음 날로 넘어가요.` : `${fmtDays(days, slots.map(s => s.label))}마다 반복하는 할 일이 돼요.`;
+  const off = busy || !goalId || (practice ? !subId || !text.trim() || days.length === 0 : isNote ? !s0 || !text.trim() : !subId || !s0);
+  const labels = units.map(u => u.label);
+  const dayHint = days.length === 0 ? '요일을 하나 이상 골라 주세요.' : days.length === 1 ? `${labels[days[0]]}요일 할 일이 돼요. 못 하면 다음 날로 넘어가요.` : `${fmtDays(days, labels)}마다 반복하는 할 일이 돼요.`;
 
   return (
     <Sheet onClose={onClose} label={title}>
@@ -225,16 +225,39 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
         <Notice>지난 기간이라 새로 넣을 수 없어요.</Notice>
       ) : (
         <>
-          <Field label="목표">
-            <GoalChips goals={list} cur={goalId} onPick={pickGoal} withNote={zoom !== 'year'} toneOf={toneOf} />
-          </Field>
-          {!isNote && goal && (
-            <Field label="세부 목표">
-              <SubChips subs={subs} cur={subId} onPick={setSubId} tone={tone} upper={upperOf(goal.id)} upperLabel={zoom === 'month' ? '연간 계획' : '이번 주 계획'} />
-              {subs.length === 0 && (
-                <button onClick={() => { onClose(); navigate('/goal/' + goal.id, { replace: true }); }} className="btn btn-secondary" style={{ alignSelf: 'flex-start', height: 36, ...BODY, fontSize: 13 }}>이 목표에 세부 목표 추가하기</button>
-              )}
+          {mode === 'upper' ? (
+            <Field label={`${zoom === 'month' ? '이 달' : '이번 주'} ${upperName}에서 고르기`}>
+              <div data-testid="upper-picks" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {upper.map(u => {
+                  const g = list.find(x => x.id === u.goalId)!;
+                  const t = toneOf(g);
+                  const on = goalId === u.goalId && subId === u.subId;
+                  return (
+                    <button key={u.goalId + u.subId} aria-pressed={on} onClick={() => { setGoalId(u.goalId); setSubId(u.subId); }} style={{ minHeight: 34, padding: '6px 12px', border: 0, borderRadius: 999, cursor: 'pointer', ...BODY, fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6, textAlign: 'left', ...chip(on, t) }}>
+                      <Dot color={t.dot} />{g.name} · {subName(u.subId)}
+                    </button>
+                  );
+                })}
+                {zoom !== 'year' && <NoteChip on={isNote} onPick={() => pickGoal('note')} />}
+              </div>
+              <button onClick={() => setMode('all')} className="btn btn-ghost" style={{ alignSelf: 'flex-start', height: 32, padding: '0 6px', ...BODY, fontSize: 12.5 }}>{upperName} 밖에서 추가</button>
             </Field>
+          ) : (
+            <>
+              {zoom !== 'year' && upper.length === 0 && <span style={{ fontSize: 12.5, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>{zoom === 'month' ? '이 달 연간 계획이 비어 있어요. 모든 목표에서 골라요.' : '이번 주 월간 계획이 비어 있어요. 모든 목표에서 골라요.'}</span>}
+              <Field label="목표">
+                <GoalChips goals={list} cur={goalId} onPick={pickGoal} withNote={zoom !== 'year'} toneOf={toneOf} />
+              </Field>
+              {!isNote && goal && (
+                <Field label="세부 목표" hint={out ? `${upperName}에 없는 세부 목표예요. 일정에 '계획 밖'으로 표시돼요.` : undefined}>
+                  <SubChips subs={subs} cur={subId} onPick={setSubId} tone={tone} />
+                  {subs.length === 0 && (
+                    <button onClick={() => { onClose(); navigate('/goal/' + goal.id, { replace: true }); }} className="btn btn-secondary" style={{ alignSelf: 'flex-start', height: 36, ...BODY, fontSize: 13 }}>이 목표에 세부 목표 추가하기</button>
+                  )}
+                </Field>
+              )}
+              {upper.length > 0 && <button onClick={() => { setMode('upper'); setGoalId(upper[0].goalId); setSubId(upper[0].subId); }} className="btn btn-ghost" style={{ alignSelf: 'flex-start', height: 32, padding: '0 6px', ...BODY, fontSize: 12.5, marginTop: -6 }}>← {upperName}에서 고르기</button>}
+            </>
           )}
           {practice ? (
             <>
@@ -243,10 +266,10 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
               </Field>
               <Field label="요일" hint={dayHint}>
                 <div role="group" aria-label="요일" style={{ display: 'flex', gap: 4 }}>
-                  {slots.map((s, i) => {
+                  {units.map((u, i) => {
                     const on = days.includes(i);
                     return (
-                      <button key={i} aria-pressed={on} aria-label={s.label + '요일'} disabled={s.locked} title={s.locked ? '지난 날은 고를 수 없어요' : undefined} onClick={() => setDays(on ? days.filter(x => x !== i) : [...days, i])} style={{ flex: 1, height: 36, padding: 0, border: 0, borderRadius: 999, cursor: s.locked ? 'not-allowed' : 'pointer', ...BODY, fontSize: 13, background: on ? tone.ink : 'var(--color-surface)', color: on ? 'var(--color-bg)' : 'var(--color-text)', opacity: s.locked ? 0.35 : 1 }}>{s.label}</button>
+                      <button key={i} aria-pressed={on} aria-label={u.label + '요일'} disabled={u.locked} title={u.locked ? '지난 날은 고를 수 없어요' : undefined} onClick={() => setDays(on ? days.filter(x => x !== i) : [...days, i])} style={{ flex: 1, height: 36, padding: 0, border: 0, borderRadius: 999, cursor: u.locked ? 'not-allowed' : 'pointer', ...BODY, fontSize: 13, background: on ? tone.ink : 'var(--color-surface)', color: on ? 'var(--color-bg)' : 'var(--color-text)', opacity: u.locked ? 0.35 : 1 }}>{u.label}</button>
                     );
                   })}
                 </div>
@@ -257,10 +280,13 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
               <Field label={isNote ? '참고사항' : zoom === 'year' ? '메모' : '코멘트'} hint={isNote ? '할 일로 가지 않는 메모예요.' : undefined}>
                 <input className="input" aria-label={isNote ? '참고사항' : zoom === 'year' ? '메모' : '코멘트'} maxLength={200} value={text} onChange={e => setText(e.target.value)} placeholder={isNote ? '예: 추석 연휴' : zoom === 'year' ? '예: 기출 5회' : '예: 시험 일정에 맞춰 당김'} />
               </Field>
-              {start < 0 ? (
-                <Notice>이 기간에는 더 넣을 자리가 없어요.</Notice>
+              {!s0 || !e0 ? (
+                <Notice>이 기간에는 더 넣을 자리가 없어요. 한 기간에는 목표마다 세부 목표 하나만 들어가요.</Notice>
               ) : (
-                <RangePicker zoom={zoom} slots={slots} occupied={occupied} start={start} len={len} onChange={(s, l) => setRange({ start: s, len: l })} startLabel={zoom === 'year' ? '시작 달' : zoom === 'month' ? '시작 주' : '시작 요일'} />
+                <>
+                  <RangeSelect zoom={zoom} starts={starts} endsOf={endsOf} start={s0} end={e0} onChange={(s, e) => setRange({ s, e })} />
+                  {splitHint(zoom, s0, e0, today) && <span data-testid="split-hint" style={{ fontSize: 12, color: 'var(--color-neutral-700)', marginTop: -8, textWrap: 'pretty' }}>{splitHint(zoom, s0, e0, today)}</span>}
+                </>
               )}
             </>
           )}
@@ -271,31 +297,34 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
   );
 }
 
-// ───────── 계획 칸 고치기 (기간·메모만) ─────────
+// ───────── 계획 칸 고치기 (기간·메모만, 그 해·그 달 안에서) ─────────
 export function EditCellSheet({ zoom, cell, onClose }: { zoom: 'year' | 'month'; cell: YearCell | MonthCell; onClose: () => void }) {
   const { goals, run } = useAccount();
   const today = useToday();
   const { toneOf, subName } = useOpenGoals();
   const isYear = zoom === 'year';
-  const key = isYear ? (cell as YearCell).start_month.slice(0, 4) : (cell as MonthCell).year_month.slice(0, 7);
-  const slots = slotsOf(zoom, key, today);
+  const piece = isYear ? (cell as YearCell).start_month.slice(0, 4) : (cell as MonthCell).year_month.slice(0, 7);
+  const units = unitsOf(zoom, piece, today);
   const s0 = isYear ? Number((cell as YearCell).start_month.slice(5, 7)) - 1 : (cell as MonthCell).start_week;
   const e0 = isYear ? Number((cell as YearCell).end_month.slice(5, 7)) - 1 : (cell as MonthCell).end_week;
-  const occupied = useOccupied(zoom, key, cell.goal_id, cell.id);
-  const [range, setRange] = useState({ start: s0, len: e0 - s0 + 1 });
+  const occupied = useOccupied(zoom, cell.goal_id, cell.id);
+  const [range, setRange] = useState({ s: units[s0]?.key ?? '', e: units[e0]?.key ?? '' });
   const [text, setText] = useState(isYear ? (cell as YearCell).memo : (cell as MonthCell).comment);
   const [busy, setBusy] = useState(false);
   const goal = goals.find(g => g.id === cell.goal_id);
   const tone = goal ? toneOf(goal) : NOTE;
-  const locked = slots[s0]?.locked || (goal ? isClosed(goal) : true);
+  const locked = !!units[s0]?.locked || (goal ? isClosed(goal) : true);
   const label = isYear ? '메모' : '코멘트';
+  const starts = units.filter(u => (!u.locked && !occupied.has(u.key)) || u.key === range.s);
+  const endsOf = (s: string) => endsFrom(zoom, s, occupied, today, piece);
+  const span = (a: number, b: number) => (a === b ? units[a]?.label : `${units[a]?.label}–${units[b]?.label}`);
 
   const save = async () => {
     setBusy(true);
-    const s = range.start, e = range.start + range.len - 1;
+    const s = unitOf(zoom, range.s, today).idx, e = unitOf(zoom, range.e, today).idx;
     const ok = await run(() =>
       isYear
-        ? supabase.from('year_cells').update({ start_month: `${key}-${pad(s + 1)}-01`, end_month: `${key}-${pad(e + 1)}-01`, memo: text.trim() }).eq('id', cell.id)
+        ? supabase.from('year_cells').update({ start_month: `${piece}-${pad(s + 1)}-01`, end_month: `${piece}-${pad(e + 1)}-01`, memo: text.trim() }).eq('id', cell.id)
         : supabase.from('month_cells').update({ start_week: s, end_week: e, comment: text.trim() }).eq('id', cell.id),
     );
     setBusy(false);
@@ -310,7 +339,7 @@ export function EditCellSheet({ zoom, cell, onClose }: { zoom: 'year' | 'month';
 
   return (
     <Sheet onClose={onClose} label="계획 칸">
-      <SheetHead title={locked ? '계획 보기' : '계획 수정'} sub={`${periodText(zoom, key)} · ${rangeText(slots, s0, e0)}`} />
+      <SheetHead title={locked ? '계획 보기' : '계획 수정'} sub={`${periodText(zoom, piece)} · ${span(s0, e0)}`} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 18, background: tone.bg, color: tone.ink, ...BODY, fontSize: 13.5 }}>
         <Dot color={tone.dot} />
         <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{goal?.name} · {subName(cell.subgoal_id)}</span>
@@ -326,8 +355,8 @@ export function EditCellSheet({ zoom, cell, onClose }: { zoom: 'year' | 'month';
           <Field label={label}>
             <input className="input" aria-label={label} maxLength={200} value={text} onChange={e => setText(e.target.value)} />
           </Field>
-          <RangePicker zoom={zoom} slots={slots} occupied={occupied} start={range.start} len={range.len} onChange={(s, l) => setRange({ start: s, len: l })} startLabel={isYear ? '시작 달' : '시작 주'} />
-          <span style={{ fontSize: 12, color: 'var(--color-neutral-700)', marginTop: -6, textWrap: 'pretty' }}>다른 세부 목표로 바꾸려면 지우고 새로 넣어 주세요.</span>
+          <RangeSelect zoom={zoom} starts={starts} endsOf={endsOf} start={range.s} end={range.e} onChange={(s, e) => setRange({ s, e })} />
+          <span style={{ fontSize: 12, color: 'var(--color-neutral-700)', marginTop: -6, textWrap: 'pretty' }}>{isYear ? '이 해' : '이 달'} 안에서 고칠 수 있어요. 다른 세부 목표로 바꾸려면 지우고 새로 넣어 주세요.</span>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-ghost" onClick={remove} disabled={busy} style={{ flex: 'none', height: 46, padding: '0 20px', ...BODY, color: 'var(--color-accent-700)' }}>삭제</button>
             <button className="btn btn-primary" onClick={save} disabled={busy} style={{ flex: 1, height: 46 }}>저장</button>
@@ -343,17 +372,20 @@ export function EditNoteSheet({ note, onClose }: { note: Note; onClose: () => vo
   const { run } = useAccount();
   const today = useToday();
   const zoom: Zoom = note.scope === 'month' ? 'month' : 'week';
-  const key = note.scope === 'month' ? note.period_key.slice(0, 7) : note.period_key;
-  const slots = slotsOf(zoom, key, today);
-  const occupied = useOccupied(zoom, key, 'note', note.id);
-  const [range, setRange] = useState({ start: note.start_index, len: note.end_index - note.start_index + 1 });
+  const piece = note.scope === 'month' ? note.period_key.slice(0, 7) : note.period_key;
+  const units = unitsOf(zoom, piece, today);
+  const occupied = useOccupied(zoom, 'note', note.id);
+  const [range, setRange] = useState({ s: units[note.start_index]?.key ?? '', e: units[note.end_index]?.key ?? '' });
   const [text, setText] = useState(note.text);
   const [busy, setBusy] = useState(false);
-  const locked = !!slots[note.start_index]?.locked;
+  const locked = !!units[note.start_index]?.locked;
+  const starts = units.filter(u => (!u.locked && !occupied.has(u.key)) || u.key === range.s);
+  const endsOf = (s: string) => endsFrom(zoom, s, occupied, today, piece);
+  const span = note.start_index === note.end_index ? units[note.start_index]?.label : `${units[note.start_index]?.label}–${units[note.end_index]?.label}`;
 
   const save = async () => {
     setBusy(true);
-    const ok = await run(() => supabase.from('notes').update({ start_index: range.start, end_index: range.start + range.len - 1, text: text.trim() }).eq('id', note.id));
+    const ok = await run(() => supabase.from('notes').update({ start_index: unitOf(zoom, range.s, today).idx, end_index: unitOf(zoom, range.e, today).idx, text: text.trim() }).eq('id', note.id));
     setBusy(false);
     if (ok) onClose();
   };
@@ -366,7 +398,7 @@ export function EditNoteSheet({ note, onClose }: { note: Note; onClose: () => vo
 
   return (
     <Sheet onClose={onClose} label="참고사항">
-      <SheetHead title="참고사항" sub={`${periodText(zoom, key)} · ${rangeText(slots, note.start_index, note.end_index)}`} />
+      <SheetHead title="참고사항" sub={`${periodText(zoom, piece)} · ${span}`} />
       {locked ? (
         <>
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{note.text || '(비어 있음)'}</p>
@@ -378,7 +410,7 @@ export function EditNoteSheet({ note, onClose }: { note: Note; onClose: () => vo
           <Field label="참고사항" hint="할 일로 가지 않는 메모예요.">
             <input className="input" aria-label="참고사항" maxLength={200} value={text} onChange={e => setText(e.target.value)} />
           </Field>
-          <RangePicker zoom={zoom} slots={slots} occupied={occupied} start={range.start} len={range.len} onChange={(s, l) => setRange({ start: s, len: l })} startLabel={zoom === 'month' ? '시작 주' : '시작 요일'} />
+          <RangeSelect zoom={zoom} starts={starts} endsOf={endsOf} start={range.s} end={range.e} onChange={(s, e) => setRange({ s, e })} />
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-ghost" onClick={remove} disabled={busy} style={{ flex: 'none', height: 46, padding: '0 20px', ...BODY, color: 'var(--color-accent-700)' }}>삭제</button>
             <button className="btn btn-primary" onClick={save} disabled={busy || !text.trim()} style={{ flex: 1, height: 46 }}>저장</button>
