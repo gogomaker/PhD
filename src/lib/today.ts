@@ -57,7 +57,7 @@ const once1 = (p: PracticeLite) => p.kind === 'once' && p.weekdays.length === 1;
 /**
  * closedOn: 마무리한 목표 → 마무리한 날. 그 목표의 실천은 다음 날부터 나오지 않는다 (넘어온 일 포함, 2026-10-01 기획 결정)
  */
-export function computeDay(day: DayKey, today: DayKey, allPractices: PracticeLite[], tasks: TaskRow[], closedOn?: Map<string, DayKey>): { repeat: DayItem[]; day: DayItem[] } {
+export function computeDay(day: DayKey, today: DayKey, allPractices: PracticeLite[], tasks: TaskRow[], closedOn?: Map<string, DayKey>, subgoalGoal?: Map<string, string>): { repeat: DayItem[]; day: DayItem[] } {
   const rel = relOf(day, today);
   const practices = closedOn?.size ? allPractices.filter(p => { const f = closedOn.get(p.goal_id); return !f || day <= f; }) : allPractices;
   const dates = new Map(practices.map(p => [p.id, practiceDates(p.week_start_date, p.weekdays)]));
@@ -80,6 +80,10 @@ export function computeDay(day: DayKey, today: DayKey, allPractices: PracticeLit
       return item({ key: 'auto:' + p.id, section: 'day', source: 'auto', practice: p, row, insert: row ? undefined : { date: day, source: 'auto', practice_id: p.id }, originDate: day, carried: false });
     });
 
+  // 시간을 정한 실천은 시간 순으로 앞에 (지류 다이어리처럼, 2026-10-03 UT 2차)
+  repeat.sort((a, b) => byTime(a.practice!, b.practice!));
+  auto.sort((a, b) => byTime(a.practice!, b.practice!));
+
   // 모레 이후: 배정된 실천만
   if (rel > 1) return number({ repeat, day: auto });
 
@@ -100,8 +104,14 @@ export function computeDay(day: DayKey, today: DayKey, allPractices: PracticeLit
       const row = rowOf(t => t.source === 'auto' && t.practice_id === p.id && t.date === day);
       carried.push(item({ key: 'cauto:' + p.id, section: 'day', source: 'auto', practice: p, row, insert: row ? undefined : { date: day, source: 'auto', practice_id: p.id, carried_from_date: origin }, originDate: origin, carried: true }));
     }
+    // 목표에 연결한 직접 추가도 그 목표를 마무리한 다음 날부터는 넘어오지 않는다 (R-G8, 2026-10-03 UT 2차)
+    const closedLink = (o: TaskRow) => {
+      const g = o.subgoal_id ? subgoalGoal?.get(o.subgoal_id) : undefined;
+      const f = g ? closedOn?.get(g) : undefined;
+      return !!f && day > f;
+    };
     for (const o of tasks.filter(t => t.source === 'direct' && !t.carried_task_id && !t.is_timed && t.date < day)) {
-      if (o.done_at) continue;
+      if (o.done_at || closedLink(o)) continue;
       const doneRow = tasks.find(t => t.carried_task_id === o.id && t.done_at);
       if (doneRow && doneRow.date < day) continue;
       const row = rowOf(t => t.carried_task_id === o.id && t.date === day);
@@ -111,6 +121,11 @@ export function computeDay(day: DayKey, today: DayKey, allPractices: PracticeLit
   }
 
   return number({ repeat, day: [...auto, ...carried, ...direct] });
+}
+
+/** 시간을 정한 것이 먼저, 그 안에서는 이른 시각부터 (시간 없는 것끼리는 순서 그대로) */
+export function byTime(a: { start_time?: string | null }, b: { start_time?: string | null }) {
+  return (a.start_time ?? '99').localeCompare(b.start_time ?? '99');
 }
 
 function number(x: { repeat: DayItem[]; day: DayItem[] }) {

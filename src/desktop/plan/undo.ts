@@ -9,6 +9,11 @@ export function offerUndo(toast: (m: string, a?: ToastAction) => void, text: str
   toast(text, { label: '되돌리기', run: runUndo });
 }
 
+/** 다른 화면으로 가면 되돌리기는 잊는다 (보이지 않는 곳에서 몰래 살아나지 않게, 2026-10-03 UT 2차) */
+export function clearUndo() {
+  last = null;
+}
+
 export function runUndo() {
   const r = last;
   last = null;

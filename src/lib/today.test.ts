@@ -134,3 +134,22 @@ describe('nowSlot (2026-10-03 UT: 실제는 지금 칸까지만)', () => {
     expect(nowSlot(new Date('2026-10-02T19:59:00Z'), 'Asia/Seoul', 5)).toBe(143);
   });
 });
+
+describe('2026-10-03 UT 2차', () => {
+  const D = '2026-10-03';
+  it('시간을 정한 실천은 시간 순으로 앞에', () => {
+    const ps: PracticeLite[] = [
+      { id: 'a', goal_id: 'g', subgoal_id: 's', week_start_date: '2026-09-27', name: '저녁', kind: 'once', weekdays: [6], start_time: '20:00:00', end_time: '21:00:00' },
+      { id: 'b', goal_id: 'g', subgoal_id: 's', week_start_date: '2026-09-27', name: '없음', kind: 'once', weekdays: [6] },
+      { id: 'c', goal_id: 'g', subgoal_id: 's', week_start_date: '2026-09-27', name: '아침', kind: 'once', weekdays: [6], start_time: '07:00:00', end_time: '08:00:00' },
+    ];
+    expect(computeDay(D, D, ps, []).day.map(i => i.practice?.name)).toEqual(['아침', '저녁', '없음']);
+  });
+  it('마무리한 목표에 연결한 직접 추가는 다음 날부터 넘어오지 않음', () => {
+    const t: TaskRow = { id: 't', date: '2026-10-01', source: 'direct', practice_id: null, name: '연결', daily_keyword_id: null, subgoal_id: 's', is_timed: false, start_time: null, end_time: null, alarm: false, carried_from_date: null, carried_task_id: null, done_at: null, created_at: '2026-10-01T00:00:00Z' };
+    const sg = new Map([['s', 'g']]);
+    expect(computeDay(D, D, [], [t], new Map([['g', '2026-10-02']]), sg).day.length).toBe(0);
+    expect(computeDay(D, D, [], [t], new Map([['g', '2026-10-03']]), sg).day.length).toBe(1);
+    expect(computeDay(D, D, [], [t], new Map(), sg).day.length).toBe(1);
+  });
+});

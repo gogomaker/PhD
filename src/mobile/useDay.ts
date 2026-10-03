@@ -11,7 +11,7 @@ export type Journal = { id?: string; date: string; score: number | null; reason:
 
 /** 한 날의 할 일·시간표·하루 기록. 할 일은 넘어가기 계산 때문에 전부 읽는다 */
 export function useDay(day: DayKey, today: DayKey) {
-  const { practices, goals, profile, toast } = useAccount();
+  const { practices, goals, subgoals, profile, toast } = useAccount();
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [blocks, setBlocks] = useState<BlockRow[]>([]);
   const [journal, setJournal] = useState<Journal | null>(null);
@@ -55,7 +55,8 @@ export function useDay(day: DayKey, today: DayKey) {
     () => new Map(goals.filter(g => g.finished_at).map(g => [g.id, userDayKey(new Date(g.finished_at!), profile?.timezone, profile?.day_start_hour)])),
     [goals, profile?.timezone, profile?.day_start_hour],
   );
-  const list = useMemo(() => computeDay(day, today, practices, tasks, closedOn), [day, today, practices, tasks, closedOn]);
+  const subgoalGoal = useMemo(() => new Map(subgoals.map(s => [s.id, s.goal_id])), [subgoals]);
+  const list = useMemo(() => computeDay(day, today, practices, tasks, closedOn, subgoalGoal), [day, today, practices, tasks, closedOn, subgoalGoal]);
 
   /** 행이 없는 할 일(반복·자동·넘어온 일)은 지금 만든다. 행 id를 돌려준다 */
   const ensureRow = useCallback(

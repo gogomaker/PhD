@@ -6,6 +6,7 @@ import { IMPORTANCE, MAX_GOAL_NAME, MAX_SUBGOAL_NAME, dueValue, isClosed } from 
 import { hours } from '../../lib/tracking';
 import { BlurInput } from '../../ui/BlurInput';
 import { MonthPicker, isMonth } from '../../ui/MonthPicker';
+import { useTaskSubgoals } from '../../lib/useTaskSubgoals';
 import { ScrollArea } from '../../ui/ScrollArea';
 import { BODY, Field, H, ICON, Svg } from '../ui';
 import { useMobile } from '../store';
@@ -34,6 +35,8 @@ function GoalEditor({ g, onDone }: { g: Goal; onDone: () => void }) {
   const subs = subgoals.filter(s => s.goal_id === g.id);
   // R-G9: 계획에 배치된 세부 목표는 지울 수 없다
   const placed = new Set([...yearCells, ...monthCells, ...practices].map(c => c.subgoal_id));
+  // 직접 추가 할 일에 연결된 세부 목표도 지울 수 없다 (R-T5)
+  const usedByTasks = useTaskSubgoals(subs.map(s => s.id));
   const closed = isClosed(g);
   const [due, setDue] = useState(dueValue(g.due_month));
   const [traits, setTraits] = useState(false);
@@ -96,7 +99,7 @@ function GoalEditor({ g, onDone }: { g: Goal; onDone: () => void }) {
             <span style={{ fontSize: 11.5, fontWeight: 600, color: tone.ink }}>계획에 들어가는 단위</span>
           </div>
           {subs.map((s, i) => {
-            const isPlaced = placed.has(s.id);
+            const isPlaced = placed.has(s.id) || usedByTasks.has(s.id);
             return (
               <div key={s.id} data-testid="subgoal" style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-neutral-100)', borderRadius: 16, padding: '4px 4px 4px 2px' }}>
                 <div style={{ flex: 'none', display: 'flex', flexDirection: 'column' }}>
@@ -105,9 +108,9 @@ function GoalEditor({ g, onDone }: { g: Goal; onDone: () => void }) {
                 </div>
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                   <BlurInput label="세부 목표 이름" maxLength={MAX_SUBGOAL_NAME} value={s.name} onSave={name => run(() => supabase.from('subgoals').update({ name }).eq('id', s.id))} style={{ width: '100%', background: 'transparent', border: 0, outline: 'none', ...BODY, fontWeight: 600, fontSize: 14, color: 'var(--color-text)', padding: '2px 0' }} />
-                  {isPlaced && <span style={{ fontSize: 11, fontWeight: 700, color: tone.ink }}>계획에 배치됨</span>}
+                  {isPlaced && <span style={{ fontSize: 11, fontWeight: 700, color: tone.ink }}>{placed.has(s.id) ? '계획에 배치됨' : '할 일 기록에 쓰임'}</span>}
                 </div>
-                <button onClick={() => run(() => supabase.from('subgoals').delete().eq('id', s.id))} disabled={isPlaced} aria-label={s.name + ' 삭제'} title={isPlaced ? '계획에 배치된 세부 목표는 지울 수 없어요' : '삭제'} className="btn" style={{ flex: 'none', width: 36, height: 36, padding: 0, color: 'var(--color-accent-700)', opacity: isPlaced ? 0.35 : 1 }}>
+                <button onClick={() => run(() => supabase.from('subgoals').delete().eq('id', s.id))} disabled={isPlaced} aria-label={s.name + ' 삭제'} title={isPlaced ? (placed.has(s.id) ? '계획에 배치된 세부 목표는 지울 수 없어요' : '할 일 기록에 쓰인 세부 목표는 지울 수 없어요') : '삭제'} className="btn" style={{ flex: 'none', width: 36, height: 36, padding: 0, color: 'var(--color-accent-700)', opacity: isPlaced ? 0.35 : 1 }}>
                   <Svg d={ICON.trash} size={15} />
                 </button>
               </div>

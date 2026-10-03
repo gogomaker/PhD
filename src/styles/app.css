@@ -101,3 +101,10 @@ html, body { overscroll-behavior-x: none; }
 
 /* 띄어쓰기 없는 아주 긴 글도 칸 밖으로 나가지 않게 (2026-10-03 UT) */
 body { overflow-wrap: break-word; }
+
+/* 낮은 화면(가로로 돌린 휴대폰): 오늘 화면을 눌러 담지 않고 위아래로 넘겨 본다 (2026-10-03 UT 2차) */
+@media (max-height: 560px) {
+  [data-testid="today-tab"] { overflow-y: auto !important; }
+  [data-testid="today-tab"] > * { flex-shrink: 0 !important; }
+  .today-body { flex: none !important; min-height: 470px !important; height: 470px; }
+}
