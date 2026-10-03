@@ -5,17 +5,17 @@ import { Icon } from '../../Icon';
 import { useAccount, useToday } from '../../account/AccountProvider';
 import { addDays, dayLabel, diffDays, DEFAULT_DAY_START_HOUR, DEFAULT_TIMEZONE, isDayKey, type DayKey } from '../../lib/day';
 import { PALETTE } from '../../lib/palette';
-import { fmtMinutes, nowSlot, relOf, segments, SLOTS, timedSlots, timeOf, type DayItem, type TaskRow } from '../../lib/today';
+import { fmtMinutes, nowSlot, paint, relOf, segments, SLOTS, timedSlots, timeOf, type DayItem, type TaskRow } from '../../lib/today';
 import type { Tone } from '../../desktop/plan/shared';
-import { useDay } from '../useDay';
+import { useDay, type Journal } from '../useDay';
 import { useSwipe } from '../useSwipe';
-import { TimeTable, type BandView, type Cells, type PlanBoxView } from '../TimeTable';
-import { AddSheet, CalendarSheet, ConfirmSheet, JournalSheet, PlanSheet } from '../Sheets';
+import { DRAFT, TimeTable, type BandView, type Cells, type PlanBoxView } from '../TimeTable';
+import { AddSheet, CalendarSheet, ConfirmSheet, JournalSheet, PickSheet, PlanSheet } from '../Sheets';
 import { ensurePush } from '../push';
 import { BODY, ICON as MI, Svg } from '../ui';
 
 type PlanInfo = { task_id?: string | null; keyword_id?: string | null; label?: string | null };
-type SheetState = null | { k: 'cal' } | { k: 'add' } | { k: 'journal' } | { k: 'plan'; key: string; isNew: boolean } | { k: 'del'; task: TaskRow; name: string };
+type SheetState = null | { k: 'cal' } | { k: 'add' } | { k: 'journal' } | { k: 'plan'; key: string; isNew: boolean } | { k: 'del'; task: TaskRow; name: string } | { k: 'pick'; snap: Cells; from: number; to: number };
 
 const ICON = {
   repeat: 'M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8M21 3v5h-5',
@@ -40,6 +40,7 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
   const rel = relOf(day, today);
   const D = useDay(day, today);
   const [sheet, setSheet] = useState<SheetState>(null);
+  const [journalDraft, setJournalDraft] = useState<Journal | null>(null);
   const [mode, setMode] = useState<'plan' | 'actual'>(rel === 0 ? 'actual' : 'plan');
   const [brush, setBrush] = useState<string | null>(null);
   const [plan, setPlan] = useState<{ cells: Cells; info: Record<string, PlanInfo> }>({ cells: Array(SLOTS).fill(null), info: {} });
@@ -72,6 +73,7 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
   useEffect(() => {
     setBrush(null);
     setMode(day === today ? 'actual' : 'plan');
+    setJournalDraft(null);
   }, [day, today]);
 
   // DB 블록 → 칸 배열
@@ -150,6 +152,7 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
     return { name: inf.label ?? '' };
   };
   const bandView = (v: string): BandView => {
+    if (v === DRAFT) return { dot: 'var(--color-neutral-500)', mark: '' };
     if (v.startsWith('kw:')) return { dot: dailyTone.dot, mark: (allKeywords.find(k => k.id === v.slice(3))?.name ?? '').slice(0, 1) };
     const id = v.slice(5);
     const t = D.tasks.find(x => x.id === id);
@@ -181,7 +184,7 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
 
   const brushItem = brush?.startsWith('task:') ? itemByRow(brush.slice(5)) : undefined;
   const brushKw = brush?.startsWith('kw:') ? allKeywords.find(k => k.id === brush.slice(3)) : undefined;
-  const hint = !canPlan ? (rel < 0 ? '지난 기록 · 보기만 할 수 있어요' : '보기 전용') : effMode === 'plan' ? '드래그해서 계획을 회색으로' : brushItem ? '칠하는 중 · ' + meta(brushItem).name : brushKw ? '칠하는 중 · 일상 · ' + brushKw.name : '할 일을 먼저 골라 주세요';
+  const hint = !canPlan ? (rel < 0 ? '지난 기록 · 보기만 할 수 있어요' : '보기 전용') : effMode === 'plan' ? '드래그해서 계획을 회색으로' : brushItem ? '칠하는 중 · ' + meta(brushItem).name : brushKw ? '칠하는 중 · 일상 · ' + brushKw.name : '칠하면 무엇을 했는지 골라요';
 
   const j = D.journal;
   const nThanks = j ? j.thanks.filter(x => x.trim()).length : 0;
@@ -406,6 +409,7 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
               savePlan(cells, info);
               setSheet({ k: 'plan', key, isNew: true });
             }}
+            onDraft={(snap, from, to) => setSheet({ k: 'pick', snap, from, to })}
             onCommit={(layer, cells) => {
               if (layer === 'plan') {
                 setPlan(p => ({ ...p, cells }));
@@ -433,6 +437,31 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
         <span style={{ flex: 'none', width: 30, height: 30, borderRadius: '50%', background: 'var(--color-accent-200)', color: 'var(--color-accent-800)', display: 'grid', placeItems: 'center' }}><Icon name="chevronUp" size={14} /></span>
       </button>
 
+      {sheet?.k === 'pick' && (() => {
+        const pk = sheet;
+        const apply = (value: string) => {
+          const cells = paint(pk.snap, pk.from, pk.to, value, Array.from({ length: SLOTS }, (_, i) => i > actualUntil));
+          setBrush(value); // 이어서 칠할 때도 같은 것으로
+          setActual(cells);
+          saveActual(cells);
+          setSheet(null);
+        };
+        return (
+          <PickSheet
+            range={`${timeOf(pk.from, dayStart)} – ${timeOf(pk.to + 1, dayStart)}`}
+            todos={items.map(it => { const m = meta(it); return { key: it.key, tag: m.tag, name: m.name, tone: m.tone, on: false }; })}
+            keywords={keywords}
+            dailyTone={dailyTone}
+            onTodo={async key => {
+              const it = items.find(x => x.key === key);
+              const id = it && (await D.ensureRow(it));
+              if (id) apply('task:' + id);
+            }}
+            onKeyword={id => apply('kw:' + id)}
+            onClose={() => { setActual(pk.snap); setSheet(null); }}
+          />
+        );
+      })()}
       {sheet?.k === 'cal' && <CalendarSheet day={day} today={today} onPick={go} onClose={() => setSheet(null)} />}
       {sheet?.k === 'add' && (
         <AddSheet
@@ -446,10 +475,14 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
           onClose={() => setSheet(null)}
         />
       )}
-      {sheet?.k === 'journal' && <JournalSheet key={day + (D.journal?.id ?? '')} day={day} journal={D.journal} readOnly={rel !== 0} onSave={j => {
+      {sheet?.k === 'journal' && <JournalSheet key={day + (D.journal?.id ?? '')} day={day} journal={journalDraft ?? D.journal} readOnly={rel !== 0} onSave={async j => {
             // 회고 알림(4.6)을 켰으면 이 휴대폰도 알림 받을 곳으로 — 처음 한 번 허락을 받는다
             if (profile?.review_notify_enabled) ensurePush();
-            return D.saveJournal(j);
+            // 시트는 바로 닫고 뒤에서 저장한다. 못 하면 쓰던 내용 그대로 다시 연다 (2026-10-03 UT)
+            setJournalDraft(null);
+            const ok = await D.saveJournal(j);
+            if (!ok) { setJournalDraft(j); setSheet({ k: 'journal' }); }
+            return ok;
           }} onClose={() => setSheet(null)} />}
       {sheet?.k === 'del' && (
         <ConfirmSheet

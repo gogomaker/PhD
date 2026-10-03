@@ -30,7 +30,9 @@ function fmtLen(n: number) {
  * 10분 시간표 (R-S1~S9). 계획 = 회색 테두리 네모, 실제 = 형광펜 띠(계획 아래 층).
  * 드래그는 형광펜 방식(R-S5): 누른 칸부터 현재 칸까지, 되돌리면 드래그 전 상태로.
  */
-export function TimeTable({ dayStart, mode, canPlan, canAct, actualUntil = SLOTS - 1, brush, plan, actual, reserved, planView, bandView, hint, onPreview, onPlanTap, onPlanDrawn, onCommit }: {
+export const DRAFT = 'draft';
+
+export function TimeTable({ dayStart, mode, canPlan, canAct, actualUntil = SLOTS - 1, brush, plan, actual, reserved, planView, bandView, hint, onPreview, onPlanTap, onPlanDrawn, onCommit, onDraft }: {
   dayStart: number;
   mode: 'plan' | 'actual';
   canPlan: boolean;
@@ -49,6 +51,8 @@ export function TimeTable({ dayStart, mode, canPlan, canAct, actualUntil = SLOTS
   onPlanTap: (key: string) => void;
   onPlanDrawn: (cells: Cells, key: string) => void;
   onCommit: (layer: 'plan' | 'actual', cells: Cells) => void;
+  /** 고른 것 없이 칠한 구간 (먼저 칠하고 나중에 고르기, 2026-10-03 UT 10). snap = 칠하기 전 칸 */
+  onDraft?: (snap: Cells, from: number, to: number) => void;
 }) {
   const drag = useRef<{ layer: 'plan' | 'actual'; start: number; cur: number; value: string | null; snap: Cells; tap: string | null } | null>(null);
   const [range, setRange] = useState<[number, number] | null>(null);
@@ -77,14 +81,16 @@ export function TimeTable({ dayStart, mode, canPlan, canAct, actualUntil = SLOTS
       const ex = plan[i];
       drag.current = { layer: 'plan', start: i, cur: -1, value: ex ? null : 'b' + Date.now().toString(36), snap: plan.slice(), tap: ex };
     } else {
-      if (!canAct || !brush) return;
+      if (!canAct) return;
+      // 고른 것이 없으면 빈 칸에서 시작할 때만 '임시로' 칠하고, 손을 떼면 무엇이었는지 묻는다
+      if (!brush && (actual[i] || !onDraft)) return;
       // 아직 오지 않은 시간에서는 칠하기를 시작하지 않는다 (칠해 둔 칸 지우기는 된다)
       if (future[i] && actual[i] !== brush) {
         setNote('아직 오지 않은 시간은 칠할 수 없어요');
         return;
       }
       // 같은 것으로 이미 칠한 칸에서 시작하면 지우기, 아니면 덮어 칠하기 (R-S5, R-S7)
-      drag.current = { layer: 'actual', start: i, cur: -1, value: actual[i] === brush ? null : brush, snap: actual.slice(), tap: null };
+      drag.current = { layer: 'actual', start: i, cur: -1, value: !brush ? DRAFT : actual[i] === brush ? null : brush, snap: actual.slice(), tap: null };
     }
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     apply(i);
@@ -99,10 +105,14 @@ export function TimeTable({ dayStart, mode, canPlan, canAct, actualUntil = SLOTS
       onPreview('plan', g.snap);
       onPlanTap(g.tap);
     } else if (g.layer === 'plan' && g.value) onPlanDrawn(cells, g.value);
-    else onCommit(g.layer, cells);
+    else if (g.value === DRAFT && onDraft) {
+      const lo = Math.min(g.start, g.cur), hi = Math.min(Math.max(g.start, g.cur), actualUntil);
+      if (lo <= hi) onDraft(g.snap, lo, hi);
+      else onPreview('actual', g.snap);
+    } else onCommit(g.layer, cells);
   };
 
-  const editable = mode === 'plan' ? canPlan : canAct && !!brush;
+  const editable = mode === 'plan' ? canPlan : canAct;
   const rangeHint = range ? `${timeOf(range[0], dayStart)} – ${timeOf(range[1] + 1, dayStart)} · ${fmtLen(range[1] - range[0] + 1)}` : note ?? hint;
   const showFuture = mode === 'actual' && canAct && actualUntil < SLOTS - 1;
 

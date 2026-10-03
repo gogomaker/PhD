@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAccount, useToday, type Goal, type Practice } from '../../account/AccountProvider';
 import { addDays, dayLabel, isDayKey, type DayKey } from '../../lib/day';
 import { dayLocked, fmtDays, isoDow, md, monthOfWeek, monthWeeks, outside, practiceDates, weekDays, weekStartOf, WEEK_START } from '../../lib/plan';
 import { MergeColumn, type MBlock } from './MergeColumn';
+import { offerUndo, typing } from './undo';
 import { TimeToggle, badTime, type TimeValue } from '../../mobile/Sheets';
 import { Chip, ColumnHeader, ICONS, LockNote, NOTE, NoColumns, OutTag, PlanHeader, PopHead, Popover, RefRow, RowLabel, SubgoalPicker, Svg, TableFrame, useSelection, useTableGoals, type RefCell, type Tone } from './shared';
 
@@ -15,7 +16,7 @@ type Pop = { goalId: string; row: number; anchor: DOMRect; sub: string | null; n
 
 // 주간 계획: "이번 주" 줄 + 요일 7줄. 목표 열에는 병합 없이 실천을 쌓는다 (R-P6). 참고사항 열만 병합
 export default function WeekPlan() {
-  const { monthCells, notes, practices, run, create } = useAccount();
+  const { monthCells, notes, practices, run, create, toast } = useAccount();
   const today = useToday();
   const ws = WEEK_START;
   const [params, setParams] = useSearchParams();
@@ -57,10 +58,26 @@ export default function WeekPlan() {
       .sort((a, b) => Math.min(...a.pos) - Math.min(...b.pos) || a.p.created_at.localeCompare(b.p.created_at));
 
   const noteBlocks: MBlock[] = notes.filter(n => n.scope === 'week' && n.period_key === week).map(n => ({ id: n.id, start: n.start_index, end: n.end_index, text: n.text }));
-  const addNote = async (row: number) => {
-    const id = await create(() => supabase.from('notes').insert({ scope: 'week', period_key: week, start_index: row, end_index: row }).select('id').single());
+  const addNote = async (row: number, end = row) => {
+    const id = await create(() => supabase.from('notes').insert({ scope: 'week', period_key: week, start_index: row, end_index: end }).select('id').single());
     if (id) { setSel(id); setFocusId(id); }
   };
+
+  // 실천 지우기 + 되돌리기 (2026-10-03 UT 11). 고른 실천은 Delete 키로도
+  const removePractice = async (p: Practice) => {
+    setSel(null);
+    if (!(await run(() => supabase.from('practices').delete().eq('id', p.id)))) return;
+    offerUndo(toast, `'${p.name}' 실천을 지웠어요`, () => run(() => supabase.from('practices').insert({ goal_id: p.goal_id, subgoal_id: p.subgoal_id, week_start_date: p.week_start_date, name: p.name, weekdays: p.weekdays, ...(p.start_time ? { start_time: p.start_time, end_time: p.end_time } : {}) })));
+  };
+  useEffect(() => {
+    const p = inWeek.find(x => x.p.id === sel && !x.locked)?.p;
+    if (!p) return;
+    const key = (e: KeyboardEvent) => {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && !typing()) { e.preventDefault(); removePractice(p); }
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  });
 
   const submit = async () => {
     if (!pop || !pop.sub || !pop.name.trim() || pop.days.length === 0 || badTime(pop.time)) return;
@@ -123,10 +140,14 @@ export default function WeekPlan() {
             sel={sel}
             setSel={setSel}
             focusId={focusId}
-            onEmpty={row => addNote(row)}
+            onEmpty={(row, _a, end) => addNote(row, end)}
             onRange={(b, s, e) => run(() => supabase.from('notes').update({ start_index: s, end_index: e }).eq('id', b.id))}
             onText={(b, text) => run(() => supabase.from('notes').update({ text }).eq('id', b.id))}
-            onDelete={b => run(() => supabase.from('notes').delete().eq('id', b.id))}
+            onDelete={async b => {
+              const n = notes.find(x => x.id === b.id);
+              if (!n || !(await run(() => supabase.from('notes').delete().eq('id', b.id)))) return;
+              offerUndo(toast, '참고사항을 지웠어요', () => run(() => supabase.from('notes').insert({ scope: n.scope, period_key: n.period_key, start_index: n.start_index, end_index: n.end_index, text: n.text })));
+            }}
           />
           {cols.flatMap((g, ci) =>
             [-1, 0, 1, 2, 3, 4, 5, 6].map(row => {
@@ -151,7 +172,7 @@ export default function WeekPlan() {
                   popOn={pop?.goalId === g.id && pop.row === row}
                   label={`${g.name} ${row === -1 ? '이번 주' : labels[row] + '요일'}`}
                   onAdd={anchor => { setSel(null); setPop({ goalId: g.id, row, anchor, sub: null, name: '', days: row === -1 ? [] : [row], time: { on: false, start: '19:00', end: '20:00' } }); }}
-                  onDelete={p => { setSel(null); run(() => supabase.from('practices').delete().eq('id', p.id)); }}
+                  onDelete={removePractice}
                 />
               );
             }),

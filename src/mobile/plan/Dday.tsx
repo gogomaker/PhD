@@ -1,5 +1,7 @@
 // D-day 하나 (2026-10-03 기획 결정): 계획 › 목표에서 이름 + 날짜를 정하고, 기록 › 오늘 탭 줄 오른쪽에 보인다
 import { useState } from 'react';
+import { Count } from '../../ui/Count';
+import { isDayKey } from '../../lib/day';
 import { supabase } from '../../lib/supabase';
 import { useAccount } from '../../account/AccountProvider';
 import { type DayKey } from '../../lib/day';
@@ -45,7 +47,7 @@ function DdaySheet({ onClose }: { onClose: () => void }) {
     setBusy(false);
     if (ok) onClose();
   };
-  const ok = name.trim() && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const ok = name.trim() && isDayKey(date);
   return (
     <Sheet onClose={onClose} label="D-day">
       <SheetHead title="D-day" sub="하나만 정해요. 기록 › 오늘 화면 위에 보여요." />
@@ -65,9 +67,10 @@ function DdaySheet({ onClose }: { onClose: () => void }) {
       )}
       <Field label="이름">
         <input className="input" aria-label="D-day 이름" maxLength={30} value={name} onChange={e => setName(e.target.value)} placeholder="예: 토익 시험" />
+          <Count value={name} max={30} />
       </Field>
       <Field label="날짜">
-        <input className="input" type="date" aria-label="D-day 날짜" value={date} onChange={e => setDate(e.target.value)} style={{ height: 44, fontWeight: 700 }} />
+        <input className="input" type="date" aria-label="D-day 날짜" min="2000-01-01" max="2100-12-31" value={date} onChange={e => setDate(e.target.value)} style={{ height: 44, fontWeight: 700 }} />
       </Field>
       <div style={{ display: 'flex', gap: 8 }}>
         {profile.dday_name && <button className="btn btn-ghost" disabled={busy} onClick={() => save({ dday_name: null, dday_date: null })} style={{ flex: 'none', height: 46, padding: '0 20px', ...BODY, color: 'var(--color-accent-700)' }}>지우기</button>}

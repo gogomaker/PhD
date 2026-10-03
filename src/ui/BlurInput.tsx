@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
+import { Count } from './Count';
 
 // 고치는 동안은 화면에만, 칸을 벗어나거나 Enter를 누르면 저장.
 // required면 비웠을 때 원래 값으로 되돌린다.
@@ -33,13 +34,16 @@ export function BlurInput({ value, onSave, label, maxLength, placeholder, requir
     onBlur: commit,
   };
   if (multiline) {
-    return <textarea {...common} rows={rows} onChange={e => setDraft(e.target.value)} />;
+    return <><textarea {...common} rows={rows} onChange={e => setDraft(e.target.value)} /><Count value={draft} max={maxLength} /></>;
   }
   return (
-    <input
-      {...common}
-      onChange={e => setDraft(e.target.value)}
-      onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && e.currentTarget.blur()}
-    />
+    <>
+      <input
+        {...common}
+        onChange={e => setDraft(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && e.currentTarget.blur()}
+      />
+      <Count value={draft} max={maxLength} />
+    </>
   );
 }

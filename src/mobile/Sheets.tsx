@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Sheet } from './ui';
+import { Count } from '../ui/Count';
 import { dayLabel, toDayKey, type DayKey } from '../lib/day';
 import type { Tone } from '../desktop/plan/shared';
 import type { Journal } from './useDay';
@@ -61,7 +62,7 @@ export function AddSheet({ keywords, tone, goals, onSubmit, onClose }: { keyword
   return (
     <Sheet onClose={onClose} label="직접 추가">
       <span style={H}>직접 추가</span>
-      <div className="field"><label htmlFor="add-name">이름</label><input id="add-name" className="input" maxLength={40} value={name} onChange={e => setName(e.target.value)} placeholder={kind === 'goal' ? '예: 기출 1회 풀기' : '예: 장보기'} /></div>
+      <div className="field"><label htmlFor="add-name">이름</label><input id="add-name" className="input" maxLength={40} value={name} onChange={e => setName(e.target.value)} placeholder={kind === 'goal' ? '예: 기출 1회 풀기' : '예: 장보기'} /><Count value={name} max={40} /></div>
       <div className="field">
         <label>무엇에 쓰는 시간인가요</label>
         <div role="group" aria-label="연결" style={{ display: 'flex', gap: 6 }}>
@@ -216,17 +217,59 @@ export function PlanSheet({ isNew, range, todos, keywords, current, dailyTone, o
   );
 }
 
+// 먼저 칠하고 나중에 고르기 (2026-10-03 UT 10): 할 일을 안 고른 채 칠하면 무엇을 했는지 묻는다
+export function PickSheet({ range, todos, keywords, dailyTone, onTodo, onKeyword, onClose }: {
+  range: string;
+  todos: PlanTodo[];
+  keywords: { id: string; name: string }[];
+  dailyTone: Tone;
+  onTodo: (key: string) => void;
+  onKeyword: (id: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <Sheet onClose={onClose} label="무엇을 했나요">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <span style={H}>무엇을 했나요?</span>
+        <span data-testid="pick-range" style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-neutral-700)' }}>{range} · 고르면 그 색으로 칠해요</span>
+      </div>
+      {todos.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-neutral-700)' }}>오늘 할 일</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 220, overflowY: 'auto' }}>
+            {todos.map(t => (
+              <button key={t.key} onClick={() => onTodo(t.key)} style={{ flex: 'none', border: 0, cursor: 'pointer', font: 'inherit', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 16, background: 'var(--color-surface)', color: 'var(--color-text)' }}>
+                <span style={{ flex: 'none', maxWidth: '45%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: t.tone.bg, color: t.tone.ink }}>{t.tag}</span>
+                <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-neutral-700)' }}>{todos.length ? '또는 일상' : '일상'}</span>
+        <div role="group" aria-label="일상 키워드" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {keywords.map(k => (
+            <button key={k.id} onClick={() => onKeyword(k.id)} style={{ height: 36, padding: '0 16px', borderRadius: 999, border: 0, cursor: 'pointer', font: 'inherit', fontSize: 13, fontWeight: 700, ...pill(false, dailyTone) }}>{k.name}</button>
+          ))}
+        </div>
+      </div>
+      <button className="btn btn-ghost" onClick={onClose} style={{ height: 44, fontFamily: 'var(--font-body)', fontWeight: 700 }}>칠하지 않기</button>
+    </Sheet>
+  );
+}
+
 // 하루 기록 (R-J1~J3): 점수 → 이유 한 줄 → 감사 세 줄 → 메모. 오늘만 쓸 수 있다
 export function JournalSheet({ day, journal, readOnly, onSave, onClose }: { day: DayKey; journal: Journal | null; readOnly: boolean; onSave: (j: Journal) => Promise<boolean>; onClose: () => void }) {
   const [j, setJ] = useState<Journal>(journal ?? { date: day, score: null, reason: '', thanks: ['', '', ''], memo: '' });
   const [busy, setBusy] = useState(false);
   const { md: mdLabel, dow } = dayLabel(day);
-  const close = async () => {
-    if (readOnly) return onClose();
+  // 닫으면 바로 닫고, 저장은 뒤에서 (실패하면 TodayTab이 쓰던 내용으로 다시 연다, 2026-10-03 UT)
+  const close = () => {
+    if (readOnly || busy) return onClose();
     setBusy(true);
-    const ok = await onSave(j);
-    setBusy(false);
-    if (ok) onClose();
+    onClose();
+    void onSave(j);
   };
   return (
     <Sheet onClose={readOnly ? onClose : close} label="하루 기록">
@@ -245,7 +288,7 @@ export function JournalSheet({ day, journal, readOnly, onSave, onClose }: { day:
           })}
         </div>
       </div>
-      <div className="field"><label htmlFor="j-reason">이유 한 줄</label><input id="j-reason" className="input" maxLength={100} value={j.reason} readOnly={readOnly} onChange={e => setJ({ ...j, reason: e.target.value })} placeholder="왜 이 점수인가요?" /></div>
+      <div className="field"><label htmlFor="j-reason">이유 한 줄</label><input id="j-reason" className="input" maxLength={100} value={j.reason} readOnly={readOnly} onChange={e => setJ({ ...j, reason: e.target.value })} placeholder="왜 이 점수인가요?" />{!readOnly && <Count value={j.reason} max={100} />}</div>
       <div className="field">
         <label>감사</label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

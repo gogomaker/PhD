@@ -10,6 +10,7 @@ import { MAX_GOAL_NAME } from '../../lib/goals';
 import { hours, shortDate } from '../../lib/tracking';
 import { photoUrls, removePhotos, shrinkPhoto, uploadPhoto } from '../../lib/photos';
 import { MonthPicker, isMonth } from '../../ui/MonthPicker';
+import { Count } from '../../ui/Count';
 import { RETRO_QS } from '../../desktop/WrapDialog';
 import { BODY, Dot, Field, H, Sheet, SheetHead, chip } from '../ui';
 
@@ -73,6 +74,7 @@ export function NewGoalSheet({ onClose, categoryId }: { onClose: () => void; cat
       </Field>
       <Field label="목표">
         <input className="input" aria-label="목표 이름" maxLength={MAX_GOAL_NAME} value={name} onChange={e => setName(e.target.value)} placeholder="예: 토익 850" />
+        <Count value={name} max={MAX_GOAL_NAME} />
       </Field>
       <Field label="기한" required>
         <MonthPicker label="목표 기한" value={due} onChange={setDue} />

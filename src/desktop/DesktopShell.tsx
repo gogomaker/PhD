@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { runUndo, typing } from './plan/undo';
 import { Icon, ICON } from '../Icon';
 import { Logo } from '../ui/Logo';
 import { ScrollArea } from '../ui/ScrollArea';
@@ -31,10 +33,18 @@ const NAV: [string, [ScreenKey, string, string][]][] = [
 
 
 export default function DesktopShell() {
+  // Ctrl+Z(⌘Z): 계획 표에서 방금 지운 것 되돌리기 (2026-10-03 UT 11)
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !typing() && runUndo()) e.preventDefault();
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, []);
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar />
-      <main style={{ flex: 1, minWidth: 0, padding: '36px 44px 56px', display: 'flex', flexDirection: 'column', gap: 28 }}>
+      <main className="desk-main" style={{ flex: 1, minWidth: 0, padding: '36px 44px 56px', display: 'flex', flexDirection: 'column', gap: 28 }}>
         <Routes>
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/account" element={<AccountPage />} />
@@ -60,27 +70,27 @@ function Sidebar() {
   const dream = profile?.dream?.trim();
   const name = profile?.name ?? '';
   return (
-    <aside style={{ flex: 'none', width: 236, position: 'sticky', top: 0, height: '100vh', padding: 14, boxSizing: 'border-box' }}>
-      <ScrollArea fade="var(--color-surface)" radius={32} style={{ height: '100%', background: 'var(--color-surface)', borderRadius: 32 }} innerStyle={{ padding: '24px 14px 14px', display: 'flex', flexDirection: 'column', gap: 22, boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 12px' }}>
+    <aside className="side" style={{ flex: 'none', width: 236, position: 'sticky', top: 0, height: '100vh', padding: 14, boxSizing: 'border-box' }}>
+      <ScrollArea className="side-inner" fade="var(--color-surface)" radius={32} style={{ height: '100%', background: 'var(--color-surface)', borderRadius: 32 }} innerStyle={{ padding: '24px 14px 14px', display: 'flex', flexDirection: 'column', gap: 22, boxSizing: 'border-box' }}>
+        <div className="side-logo" style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 12px' }}>
           <Logo height={50} />
-          <span style={{ fontSize: 12, color: 'var(--color-neutral-700)', letterSpacing: '.02em' }}>Plan Higher Dream</span>
+          <span className="side-hide" style={{ fontSize: 12, color: 'var(--color-neutral-700)', letterSpacing: '.02em' }}>Plan Higher Dream</span>
         </div>
-        <StartChecklist />
+        <div className="side-hide"><StartChecklist /></div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {NAV.map(([label, items]) => (
             <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: 'var(--color-neutral-600)', padding: '0 14px 4px' }}>{label}</span>
+              <span className="side-hide" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: 'var(--color-neutral-600)', padding: '0 14px 4px' }}>{label}</span>
               {items.map(([icon, text, to]) => (
-                <NavLink key={to} to={to} className={({ isActive }) => 'btn nav-item' + (isActive ? ' active' : '')}>
+                <NavLink key={to} to={to} title={text} aria-label={text} className={({ isActive }) => 'btn nav-item' + (isActive ? ' active' : '')}>
                   <Icon name={icon} />
-                  {text}
+                  <span className="side-hide">{text}</span>
                 </NavLink>
               ))}
             </div>
           ))}
         </nav>
-        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="side-hide" style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <SideDday />
         <NavLink to="/dream" title="꿈 작성으로 이동" className="side-card dream-card" style={{ borderRadius: 24, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: 'var(--color-accent-800)' }}>나의 꿈</span>
@@ -95,7 +105,7 @@ function Sidebar() {
         </div>
         <NavLink to="/account" className={({ isActive }) => 'side-card account-card' + (isActive ? ' active' : '')} style={{ borderRadius: 24, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ flex: 'none', width: 38, height: 38, borderRadius: '50%', background: 'var(--color-accent-2)', color: 'var(--color-neutral-100)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 13 }}>{initials(name)}</span>
-          <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <span className="side-hide" style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             <span style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
             <span style={{ fontSize: 12, color: 'var(--color-neutral-700)' }}>계정 관리</span>
           </span>

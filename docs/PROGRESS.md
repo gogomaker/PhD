@@ -154,6 +154,14 @@
 - PC 오늘 `src/desktop/TodayPage.tsx`: 모바일 `TodayTab`(base·weekPath·wide)을 넣고 판 안에 `#m-sheet-root`
 - DB 테스트 `supabase/tests/ut_time_link.sql`, E2E scratchpad `e2e-ut2.mjs`(25개). `seed-dsk.sh`는 예전처럼 숨긴 목표로 만든다(표 밖 열 테스트용)
 
+## UT 10 이후(2026-10-03)에서 만든 것
+- 먼저 칠하고 고르기: `TimeTable`의 `DRAFT`·`onDraft`, `Sheets.tsx`의 `PickSheet`
+- PC 표: `MergeColumn` 빈 칸 끌기(`onEmpty(row, anchor, end)`), 늘리기·줄이기 바로 반영(`over`), 고른 칸 Delete, 새 칸만 한 번 메모에 글쇠(`autoFocusOf`). 되돌리기 `desktop/plan/undo.ts` + 안내 버튼(`toast(message, action)`) + Ctrl+Z(DesktopShell)
+- 좁은 PC 창: `useIsMobile`(마우스 기기 600px, 손가락 기기 768px/짧은 변), 사이드바 접기 CSS(`.side`, `.side-hide`, 1000px 미만)
+- 빠른 시작: `AccountProvider` 저장본 localStorage `phd-data:<사용자>`(로그아웃하면 지움), 화면 코드 미리 받기(App). 다른 기기 반영: 창 포커스·보이기·1분마다 다시 읽기
+- 작은 것: `MonthPicker` 지난 달 막기, D-day 2000~2100(화면 + DB `20261003000014`), `ui/Count.tsx`(BlurInput에도), `body { overflow-wrap: break-word }`, PC 시작하기 6단계, 하루 기록 바로 닫고 뒤에서 저장
+- E2E: scratchpad `e2e-ut3.mjs`(26개)
+
 ## 남은 일 / 알려진 제약
 - 이메일 변경: Supabase 기본 메일은 기획자 계정 이메일에만 보내져서 지금은 이메일을 읽기 전용으로 둠. 메일 서비스(SMTP) 붙일 때 같이 연다
 - 비밀번호 찾기 메일도 같은 제약(기획자 본인 이메일로는 옴)

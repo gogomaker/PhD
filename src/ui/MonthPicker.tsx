@@ -1,12 +1,17 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 
 // 기한 고르기: 연도 + 월. 값은 'YYYY-MM' (없으면 '')
+// 지난 달은 새로 고를 수 없다 (2026-10-03 UT). 이미 지난 기한이 들어 있던 목표는 그 값만 그대로 보인다
 export function MonthPicker({ value, onChange, label = '기한', style }: { value: string; onChange: (v: string) => void; label?: string; style?: CSSProperties }) {
-  const thisYear = new Date().getFullYear();
+  const now = new Date();
+  const thisYear = now.getFullYear(), thisMonth = now.getMonth() + 1;
   const [y, m] = value ? value.split('-').map(Number) : [0, 0];
+  const [y0, m0] = useState(() => [y, m])[0];
+  const past = (yy: number, mm: number) => yy * 12 + mm < thisYear * 12 + thisMonth && !(yy === y0 && mm === m0);
   const years = Array.from({ length: 11 }, (_, i) => thisYear + i);
   if (y && !years.includes(y)) years.unshift(y);
-  const set = (ny: number, nm: number) => {
+  const set = (ny: number, nm0: number) => {
+    const nm = ny && nm0 && past(ny, nm0) ? 0 : nm0;
     if (ny && nm) onChange(`${ny}-${String(nm).padStart(2, '0')}`);
     else onChange(ny ? `${ny}-` : nm ? `-${String(nm).padStart(2, '0')}` : '');
   };
@@ -19,7 +24,7 @@ export function MonthPicker({ value, onChange, label = '기한', style }: { valu
       </select>
       <select className="input" aria-label={label + ' 월'} value={m || ''} onChange={e => set(y, Number(e.target.value))} style={{ ...sel, flex: '1 1 0' }}>
         <option value="" disabled>월</option>
-        {Array.from({ length: 12 }, (_, i) => i + 1).map(mm => <option key={mm} value={mm}>{mm}월</option>)}
+        {Array.from({ length: 12 }, (_, i) => i + 1).map(mm => <option key={mm} value={mm} disabled={!!y && past(y, mm)}>{mm}월</option>)}
       </select>
     </div>
   );
