@@ -1,5 +1,5 @@
 // 모바일 공통 부품 (docs/MOBILE.md). 생김새 기준: 'PhD only for Mobile v2' 목업
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ScrollArea } from '../ui/ScrollArea';
@@ -23,7 +23,7 @@ export function Sheet({ onClose, children, label }: { onClose: () => void; child
   const loc = useLocation();
   /** 이 시트가 넣은 기록 칸의 위치. 뒤로 가서 이보다 앞으로 가면 닫는다 */
   const myIdx = useRef<number | null>(null);
-  const closeRef = useRef(onClose);
+  const closeRef = useRef<() => unknown>(onClose);
   closeRef.current = onClose;
 
   useEffect(() => {
@@ -52,22 +52,80 @@ export function Sheet({ onClose, children, label }: { onClose: () => void; child
     }
   }, [loc]);
 
+  // 위쪽 손잡이를 끌어내려 닫기 (누르기만 해도 닫힘). 손을 떼면 많이 내렸거나 빠르게 내렸을 때만 닫고, 아니면 제자리로
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ y: number; t: number; h: number; d: number } | null>(null);
+  const [dy, setDy] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [h, setH] = useState(600);
+  const dismiss = () => {
+    if (leaving) return;
+    setLeaving(true);
+    setDy(sheetRef.current?.offsetHeight ?? 600);
+    // 저장에 실패하는 등으로 시트가 남아 있으면 제자리로 (예: 하루 기록은 닫을 때 저장)
+    setTimeout(async () => {
+      await closeRef.current();
+      setLeaving(false);
+      setDy(0);
+    }, 200);
+  };
+  const handle = {
+    onPointerDown: (e: RPointerEvent<HTMLDivElement>) => {
+      if (leaving) return;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      drag.current = { y: e.clientY, t: performance.now(), h: sheetRef.current?.offsetHeight ?? 600, d: 0 };
+      setH(drag.current.h);
+      setDragging(true);
+    },
+    onPointerMove: (e: RPointerEvent<HTMLDivElement>) => {
+      const g = drag.current;
+      if (!g) return;
+      g.d = Math.max(0, e.clientY - g.y);
+      setDy(g.d);
+    },
+    onPointerUp: () => {
+      const g = drag.current;
+      drag.current = null;
+      setDragging(false);
+      if (!g) return;
+      const speed = g.d / Math.max(1, performance.now() - g.t);
+      if (g.d < 6 || g.d > Math.min(120, g.h * 0.25) || (speed > 0.5 && g.d > 24)) dismiss();
+      else setDy(0);
+    },
+    onPointerCancel: () => { drag.current = null; setDragging(false); setDy(0); },
+  };
   const root = document.getElementById('m-sheet-root');
   const body = (
     <>
-      <div className="m-scrim" onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'var(--scrim)', pointerEvents: 'auto' }} />
-      <ScrollArea
+      <div className="m-scrim" onClick={dismiss} style={{ position: 'absolute', inset: 0, background: 'var(--scrim)', pointerEvents: leaving ? 'none' : 'auto', opacity: dy ? Math.max(0, 1 - dy / h) : 1, transition: dragging ? 'none' : 'opacity .2s ease' }} />
+      <div
+        ref={sheetRef}
         role="dialog"
         aria-label={label}
         className="m-sheet"
-        fade="var(--color-neutral-100)"
-        radius={32}
-        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '86%', background: 'var(--color-neutral-100)', borderRadius: '32px 32px 0 0', boxShadow: 'var(--shadow-lg)', pointerEvents: 'auto' }}
-        innerStyle={{ padding: '10px 20px max(30px, env(safe-area-inset-bottom))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 16 }}
+        data-testid="m-sheet"
+        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '86%', display: 'flex', flexDirection: 'column', background: 'var(--color-neutral-100)', borderRadius: '32px 32px 0 0', boxShadow: 'var(--shadow-lg)', pointerEvents: leaving ? 'none' : 'auto', overflow: 'hidden', transform: dy ? `translateY(${dy}px)` : undefined, transition: dragging ? 'none' : 'transform .2s ease' }}
       >
-        <span style={{ alignSelf: 'center', width: 40, height: 5, borderRadius: 99, background: 'var(--color-neutral-300)', flex: 'none' }} />
-        {children}
-      </ScrollArea>
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="끌어내리면 닫혀요"
+          data-testid="sheet-handle"
+          {...handle}
+          onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), dismiss())}
+          style={{ flex: 'none', height: 28, display: 'grid', placeItems: 'center', touchAction: 'none', cursor: dragging ? 'grabbing' : 'grab' }}
+        >
+          <span style={{ width: 40, height: 5, borderRadius: 99, background: 'var(--color-neutral-300)' }} />
+        </div>
+        <ScrollArea
+          fade="var(--color-neutral-100)"
+          style={{ flex: '1 1 auto', minHeight: 0 }}
+          innerStyle={{ padding: '4px 20px max(30px, env(safe-area-inset-bottom))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 16 }}
+        >
+          {children}
+        </ScrollArea>
+      </div>
     </>
   );
   return root ? createPortal(body, root) : body;

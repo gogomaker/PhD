@@ -21,7 +21,7 @@
 ```
 
 주소: `/plan`(목표) `/plan/schedule?z=year|month|week&k=…&f=목표`(일정) `/record?d=날짜`(오늘) `/record/review?r=week|month&k=…`(돌아보기) `/goal/:id` `/categories` `/dream` `/settings`.
-시트는 열 때 기록(history)에 한 칸을 넣어, 휴대폰 뒤로 가기로 닫힌다.
+시트는 열 때 기록(history)에 한 칸을 넣어, 휴대폰 뒤로 가기로 닫힌다. 위쪽 회색 손잡이를 끌어내려도 닫힌다(많이 또는 빠르게 내리면 닫히고, 조금만 내리면 제자리로, 톡 눌러도 닫힘 — 2026-10-03 기획 요청).
 
 ## 목업과 다른 점 (기존 기능·결정을 따른 것)
 
