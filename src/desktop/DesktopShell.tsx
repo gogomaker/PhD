@@ -14,6 +14,7 @@ import MonthPlan from './plan/MonthPlan';
 import WeekPlan from './plan/WeekPlan';
 import AccountPage from './AccountPage';
 import TrackingPage from './TrackingPage';
+import TodayPage from './TodayPage';
 import ReviewsPage from './ReviewsPage';
 import TutorialPage from './TutorialPage';
 import { initials } from '../lib/initials';
@@ -25,7 +26,7 @@ const NAV: [string, [ScreenKey, string, string][]][] = [
   ['꿈', [['dreamWrite', '꿈 작성', '/dream']]],
   ['목표', [['cats', '인생 카테고리', '/categories'], ['goals', '목표 설정', '/goals'], ['dream', '꿈 보드', '/board']]],
   ['계획', [['year', '연간 계획', '/plan/year'], ['month', '월간 계획', '/plan/month'], ['week', '주간 계획', '/plan/week']]],
-  ['기록', [['track', '트래킹', '/tracking'], ['reviews', '회고 모음', '/reviews']]],
+  ['기록', [['today', '오늘', '/today'], ['track', '트래킹', '/tracking'], ['reviews', '회고 모음', '/reviews']]],
 ];
 
 
@@ -43,6 +44,7 @@ export default function DesktopShell() {
           <Route path="/plan/year" element={<YearPlan />} />
           <Route path="/plan/month" element={<MonthPlan />} />
           <Route path="/plan/week" element={<WeekPlan />} />
+          <Route path="/today" element={<TodayPage />} />
           <Route path="/tracking" element={<TrackingPage />} />
           <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/tutorial" element={<TutorialPage />} />

@@ -12,6 +12,8 @@ import { dayLocked, fmtDays, isoDow, md, monthOfWeek, outside, practiceDates, we
 import { NOTE, type Tone } from '../../desktop/plan/shared';
 import { BODY, Dot, Field, Notice, Sheet, SheetHead, chip } from '../ui';
 import { endsFrom, keysOf, splitRange, unitOf, unitsOf, type Unit, type Zoom } from './units';
+import { TimeToggle, badTime, type TimeValue } from '../Sheets';
+import { ensurePush } from '../push';
 
 export type { Zoom } from './units';
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -172,6 +174,8 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
   const endsOf = (s: string) => endsFrom(zoom, s, occupied, today, within);
   const e0 = s0 && range && range.s === s0 && endsOf(s0).some(u => u.key === range.e) ? range.e : s0;
   const [days, setDays] = useState<number[]>(() => (zoom === 'week' && initialStart != null && !units[initialStart]?.locked ? [initialStart] : []));
+  // 실천 시간 (선택, 2026-10-03 UT 5)
+  const [time, setTime] = useState<TimeValue>({ on: false, start: '19:00', end: '20:00' });
 
   const goal = list.find(g => g.id === goalId);
   const tone = goal ? toneOf(goal) : NOTE;
@@ -192,7 +196,9 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
     if (practice) {
       const wd = weekDays(periodKey);
       const weekdays = [...new Set(days.map(i => isoDow(wd[i])))].sort((a, b) => a - b);
-      ok = await run(() => supabase.from('practices').insert({ goal_id: goalId, subgoal_id: subId, week_start_date: periodKey, name: text.trim(), weekdays }));
+      const tm = time.on ? { start_time: time.start, end_time: time.end } : {};
+      if (time.on) ensurePush(); // 실천 알람 — 처음 한 번 알림 허락을 받는다
+      ok = await run(() => supabase.from('practices').insert({ goal_id: goalId, subgoal_id: subId, week_start_date: periodKey, name: text.trim(), weekdays, ...tm }));
     } else if (s0 && e0) {
       // 달(월간)·해(연간)를 넘으면 나눠 저장 (2026-10-03 기획 결정)
       const parts = splitRange(zoom, s0, e0, today);
@@ -209,7 +215,7 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
     if (ok) onClose();
   };
 
-  const off = busy || !goalId || (practice ? !subId || !text.trim() || days.length === 0 : isNote ? !s0 || !text.trim() : !subId || !s0);
+  const off = busy || !goalId || (practice ? !subId || !text.trim() || days.length === 0 || badTime(time) : isNote ? !s0 || !text.trim() : !subId || !s0);
   const labels = units.map(u => u.label);
   const dayHint = days.length === 0 ? '요일을 하나 이상 골라 주세요.' : days.length === 1 ? `${labels[days[0]]}요일 할 일이 돼요. 못 하면 다음 날로 넘어가요.` : `${fmtDays(days, labels)}마다 반복하는 할 일이 돼요.`;
 
@@ -274,6 +280,7 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
                   })}
                 </div>
               </Field>
+              <TimeToggle value={time} onChange={setTime} label="시간 정하기" sub="고른 요일마다 시간표에 계획으로 놓이고 알람이 울려요 (선택)" />
             </>
           ) : (
             <>
@@ -450,6 +457,7 @@ export function PracticeSheet({ practice: p, onClose }: { practice: Practice; on
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 14 }}>
         <span><b>{fmtDays(pos, labels)}</b> {p.weekdays.length > 1 ? '· 고른 요일마다 반복해요' : '· 못 하면 다음 날로 넘어가요'}</span>
         <span style={{ fontSize: 12.5, color: 'var(--color-neutral-700)' }}>{dates.map(d => md(d)).join(', ')}</span>
+        {p.start_time && <span data-testid="practice-time"><b>{p.start_time.slice(0, 5)}–{p.end_time?.slice(0, 5)}</b> · 시간표에 놓이고 알람이 울려요</span>}
       </div>
       {locked ? (
         <Notice>지난 날이 들어간 실천은 지울 수 없어요.</Notice>

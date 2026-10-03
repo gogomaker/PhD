@@ -1,5 +1,5 @@
 // 기록 › 오늘: 할 일 + 10분 시간표 + 하루 기록 (SPEC 4.3~4.5, 기존 모바일 하루 플래너를 새 틀에)
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../../Icon';
 import { useAccount, useToday } from '../../account/AccountProvider';
@@ -8,6 +8,7 @@ import { PALETTE } from '../../lib/palette';
 import { fmtMinutes, nowSlot, relOf, segments, SLOTS, timedSlots, timeOf, type DayItem, type TaskRow } from '../../lib/today';
 import type { Tone } from '../../desktop/plan/shared';
 import { useDay } from '../useDay';
+import { useSwipe } from '../useSwipe';
 import { TimeTable, type BandView, type Cells, type PlanBoxView } from '../TimeTable';
 import { AddSheet, CalendarSheet, ConfirmSheet, JournalSheet, PlanSheet } from '../Sheets';
 import { ensurePush } from '../push';
@@ -26,7 +27,8 @@ const ICON = {
 };
 const SRC: Record<DayItem['source'], string> = { repeat: '반복', auto: '자동 배정', picked: '담은 일', direct: '직접 추가' };
 
-export default function TodayTab() {
+/** base = 이 화면 주소 (휴대폰 /record, PC /today), weekPath = 주간 실천 적는 곳, wide = PC 폭 (시간표를 넓게) */
+export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?z=week', wide = false }: { base?: string; weekPath?: string; wide?: boolean } = {}) {
   const { profile, subgoals, goals, goalCategories, dailyCategory, keywords, allKeywords, practices, toast } = useAccount();
   const dayStart = profile?.day_start_hour ?? DEFAULT_DAY_START_HOUR;
   const today = useToday();
@@ -64,7 +66,7 @@ export default function TodayTab() {
 
   const go = (d: DayKey) => {
     setSheet(null);
-    navigate(d === today ? '/record' : '/record?d=' + d, { replace: true });
+    navigate(d === today ? base : base + '?d=' + d, { replace: true });
   };
   // 날이 바뀌면 붓과 모드를 처음으로
   useEffect(() => {
@@ -100,6 +102,13 @@ export default function TodayTab() {
     return { tone: PALETTE[c?.color ?? 'red'], tag: subgoals.find(s => s.id === p?.subgoal_id)?.name ?? '', name: p?.name ?? '' };
   };
   const directMeta = (t: TaskRow | undefined) => {
+    // 목표의 세부목표에 연결한 직접 추가 (2026-10-03 UT 9): 실천처럼 목표 색 + 세부목표 이름
+    if (t?.subgoal_id) {
+      const sg = subgoals.find(x => x.id === t.subgoal_id);
+      const g = sg && goals.find(x => x.id === sg.goal_id);
+      const c = g && goalCategories.find(x => x.id === g.category_id);
+      return { tone: PALETTE[c?.color ?? 'red'], tag: sg?.name ?? '', name: t.name ?? '' };
+    }
     const k = allKeywords.find(x => x.id === t?.daily_keyword_id);
     return { tone: dailyTone, tag: `${dailyCategory?.name ?? '일상'} · ${k?.name ?? ''}`, name: t?.name ?? '' };
   };
@@ -113,16 +122,24 @@ export default function TodayTab() {
 
   // ───────── 시간표 ─────────
   const timed = D.tasks.filter(t => t.date === day && t.source === 'direct' && t.is_timed);
+  // 시간을 정한 실천 (2026-10-03 UT 5): 그날(넘어온 날 말고) 시간표에 예약처럼
+  const timedPractices = items.filter(it => it.practice?.start_time && it.practice.end_time && !it.carried).map(it => it.practice!);
   const reserved = useMemo(() => {
     const r: Cells = Array(SLOTS).fill(null);
     for (const t of timed) {
       const [s, e] = timedSlots(t, dayStart);
       for (let i = s; i < e; i++) r[i] = 'res:' + t.id;
     }
+    for (const p of timedPractices) {
+      const [s, e] = timedSlots(p as { start_time: string; end_time: string }, dayStart);
+      for (let i = s; i < e; i++) r[i] ??= 'resp:' + p.id;
+    }
     return r;
-  }, [timed, dayStart]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timed, dayStart, timedPractices.map(p => p.id + p.start_time + p.end_time).join()]);
   const planView = (key: string): PlanBoxView => {
     if (key.startsWith('res:')) return { name: D.tasks.find(t => t.id === key.slice(4))?.name ?? '', alarm: true };
+    if (key.startsWith('resp:')) { const m = practiceMeta(key.slice(5)); return { name: m.name, dot: m.tone.dot, alarm: true }; }
     const inf = plan.info[key] ?? {};
     if (inf.task_id) {
       const t = D.tasks.find(x => x.id === inf.task_id);
@@ -171,7 +188,10 @@ export default function TodayTab() {
   const jSummary = [j?.score && '★' + j.score, nThanks && '감사 ' + nThanks, j?.memo.trim() && '메모'].filter(Boolean).join(' · ');
 
   // 앱바 좌우 스와이프 (R-D3: 앱바 영역에서만)
-  const sw = useRef<number | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const goRef = useRef({ prev: () => {}, next: () => {} });
+  goRef.current = { prev: () => go(addDays(day, -1)), next: () => go(addDays(day, 1)) };
+  useSwipe(rootRef, useCallback(() => goRef.current.prev(), []), useCallback(() => goRef.current.next(), []));
 
   // 할 일 길게 누르기 → 삭제 (오늘·내일 직접 추가한 것, 기획 결정)
   const press = useRef<{ t: number; fired: boolean } | null>(null);
@@ -230,12 +250,15 @@ export default function TodayTab() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
             <span data-testid="todo-tag" style={{ flex: '0 1 auto', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 10.5, fontWeight: 700, lineHeight: 1.2, padding: '2px 7px', borderRadius: 999, background: m.tone.bg, color: m.tone.ink }}>{m.tag}</span>
             {carriedLabel && <span data-testid="carried" style={{ flex: 'none', fontSize: 10, fontWeight: 700, color: 'var(--color-accent-700)', whiteSpace: 'nowrap' }}>{carriedLabel}</span>}
-            {t?.is_timed && (
-              <span style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 700, color: 'var(--color-neutral-700)', whiteSpace: 'nowrap' }}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round" aria-label="알람"><path d={ICON.alarm} /></svg>
-                {t.start_time?.slice(0, 5)}–{t.end_time?.slice(0, 5)}
-              </span>
-            )}
+            {(() => {
+              const tm = t?.is_timed ? t : it.practice?.start_time && !it.carried ? it.practice : null;
+              return tm && (
+                <span data-testid="todo-time" style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 700, color: 'var(--color-neutral-700)', whiteSpace: 'nowrap' }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round" aria-label="알람"><path d={ICON.alarm} /></svg>
+                  {tm.start_time?.slice(0, 5)}–{tm.end_time?.slice(0, 5)}
+                </span>
+              );
+            })()}
           </div>
           <span data-testid="todo-name" style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1.25, textDecoration: it.done ? 'line-through' : 'none', color: it.done ? 'var(--color-neutral-600)' : 'var(--color-text)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{m.name}</span>
         </div>
@@ -270,18 +293,9 @@ export default function TodayTab() {
   };
 
   return (
-    <div data-testid="today-tab" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8, padding: '0 12px max(16px, env(safe-area-inset-bottom))' }}>
-      {/* 날짜 줄: ‹ 10.1 목 › 오늘 · 계획/실제 (R-D3: 이 줄을 좌우로 밀면 날짜 이동) */}
-      <div
-        onPointerDown={e => { sw.current = e.clientX; }}
-        onPointerUp={e => {
-          if (sw.current == null) return;
-          const dx = e.clientX - sw.current;
-          sw.current = null;
-          if (Math.abs(dx) > 50) go(addDays(day, dx < 0 ? 1 : -1));
-        }}
-        style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 2, padding: '0 4px 0 0', minHeight: 40, touchAction: 'pan-y', userSelect: 'none' }}
-      >
+    <div ref={rootRef} data-testid="today-tab" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8, padding: '0 12px max(16px, env(safe-area-inset-bottom))' }}>
+      {/* 날짜 줄: ‹ 10.1 목 › 오늘 · 계획/실제 (R-D3: 화면을 좌우로 밀면 날짜 이동 — 시간표 위는 칠하기라 빼고, 2026-10-03 UT) */}
+      <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 2, padding: '0 4px 0 0', minHeight: 40, userSelect: 'none' }}>
         <button onClick={() => go(addDays(day, -1))} aria-label="전날" className="btn m-hover" style={{ width: 32, height: 32, padding: 0, color: 'var(--color-neutral-700)' }}><Svg d={MI.left} /></button>
         <button onClick={() => setSheet({ k: 'cal' })} aria-label="달력 열기" style={{ border: 0, background: 'transparent', cursor: 'pointer', font: 'inherit', color: 'var(--color-text)', padding: '4px 2px', borderRadius: 999, display: 'flex', alignItems: 'baseline', gap: 5 }}>
           <span data-testid="day-label" style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 22, lineHeight: 1 }}>{md}</span>
@@ -317,7 +331,7 @@ export default function TodayTab() {
       </div>
 
       {/* 할 일 | 시간표 — 폭 비율 고정 (SPEC 5장 알려진 문제) */}
-      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 166px', gap: 8 }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: wide ? 'minmax(260px, 1fr) minmax(0, 1.5fr)' : 'minmax(0,1fr) 166px', gap: wide ? 14 : 8 }}>
         <div style={{ position: 'relative', minHeight: 0, background: 'var(--color-surface)', borderRadius: 24, overflow: 'hidden' }}>
           <div ref={listRef} onScroll={measure} style={{ position: 'absolute', inset: 0, padding: '8px 6px', display: 'flex', flexDirection: 'column', gap: 3, overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', padding: '2px 8px 4px', gap: 6 }}>
@@ -337,7 +351,7 @@ export default function TodayTab() {
             )}
             {(canAdd || (D.loaded && items.length === 0 && rel <= 1)) && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5, padding: '8px 2px 2px' }}>
-                {D.loaded && items.length === 0 && rel <= 1 && <button onClick={() => navigate('/plan/schedule?z=week')} className="btn btn-secondary" style={{ height: 36, ...BODY, fontSize: 12.5, borderRadius: 16, padding: '0 10px' }}>주간 실천 적으러 가기</button>}
+                {D.loaded && items.length === 0 && rel <= 1 && <button onClick={() => navigate(weekPath)} className="btn btn-secondary" style={{ height: 36, ...BODY, fontSize: 12.5, borderRadius: 16, padding: '0 10px' }}>주간 실천 적으러 가기</button>}
                 {canAdd && <button onClick={() => setSheet({ k: 'add' })} className="btn add-dashed" style={{ height: 36, border: '2px dashed var(--color-neutral-400)', color: 'var(--color-neutral-800)', ...BODY, fontSize: 12.5, borderRadius: 16, padding: '0 10px' }}>+ 직접 추가</button>}
               </div>
             )}
@@ -424,6 +438,7 @@ export default function TodayTab() {
         <AddSheet
           keywords={keywords}
           tone={dailyTone}
+          goals={goals.filter(g => g.status === 'not_started' || g.status === 'in_progress').map(g => ({ id: g.id, name: g.name, tone: PALETTE[goalCategories.find(c => c.id === g.category_id)?.color ?? 'red'], subs: subgoals.filter(x => x.goal_id === g.id).map(x => ({ id: x.id, name: x.name })) }))}
           onSubmit={async x => {
             if (x.timed) ensurePush(); // 예약 할 일 알람 (R-T3) — 처음 한 번 알림 허락을 받는다
             return D.addDirect(x);

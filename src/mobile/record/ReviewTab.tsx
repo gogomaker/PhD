@@ -1,6 +1,7 @@
 // 기록 › 돌아보기 (SPEC 4.7): 주간·월간 숫자 → 목표별 계획 대비 실제 → 하루 점수 달력
 // 진척도와 누적 시간은 목표 편집 화면에서 (docs/MOBILE.md)
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSwipe } from '../useSwipe';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { errorText } from '../../lib/errors';
@@ -61,7 +62,14 @@ export default function ReviewTab() {
   const tile = { background: 'var(--color-surface)', borderRadius: 22, padding: 14, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 } as const;
   const big = { ...H, fontSize: 24, lineHeight: 1.1, whiteSpace: 'nowrap' } as const;
 
+  // 화면을 좌우로 밀면 지난·다음 기간 (2026-10-03 UT 6). 앞으로는 이번 기간까지만
+  const rootRef = useRef<HTMLDivElement>(null);
+  const nav = useRef({ prev: () => {}, next: () => {} });
+  nav.current = { prev: () => go(shiftPeriod(period, -1)), next: () => { if (!isCurrent) go(shiftPeriod(period, 1)); } };
+  useSwipe(rootRef, useCallback(() => nav.current.prev(), []), useCallback(() => nav.current.next(), []));
+
   return (
+    <div ref={rootRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
     <ScrollArea data-testid="review-tab" fade="var(--color-bg)" style={{ flex: 1, minHeight: 0 }} innerStyle={{ padding: '0 16px 40px', display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
         <Seg tone="accent" options={[['week', '주간'], ['month', '월간']] as [Range, string][]} cur={range} onPick={rr => go(periodOf(rr, period.from <= today && today <= period.to ? today : period.from))} label="기간 단위" />
@@ -84,6 +92,7 @@ export default function ReviewTab() {
       <GoalTimes sum={sum} goals={ordered.filter(g => g.status === 'in_progress' || sum?.goals.some(x => x.goal_id === g.id && (x.planned || x.actual)))} toneOf={toneOf} />
       <Scores period={period} today={today} scores={scores} isCurrent={isCurrent} />
     </ScrollArea>
+    </div>
   );
 }
 
@@ -123,7 +132,7 @@ function GoalTimes({ sum, goals, toneOf }: { sum: Summary | null; goals: Goal[];
       )}
       {!empty && rows.length > 0 && (
         <span data-testid="vs-note" style={{ fontSize: 11.5, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>
-          목표별 계획은 할 일과 연결한 계획 블록만 셌어요. 키워드만 적은 계획과 예약 할 일({sum ? hours(sum.plan_unlinked) : '–'}시간)은 전체 계획에만 들어가요.
+          목표별 계획은 할 일과 연결한 계획 블록과 시간을 정한 실천을 셌어요. 키워드만 적은 계획과 예약 할 일({sum ? hours(sum.plan_unlinked) : '–'}시간)은 전체 계획에만 들어가요.
         </span>
       )}
     </div>

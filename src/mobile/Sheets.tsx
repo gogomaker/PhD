@@ -43,51 +43,72 @@ export function CalendarSheet({ day, today, onPick, onClose }: { day: DayKey; to
   );
 }
 
-// 직접 추가 (+ 시간 지정 = 예약, R-T3)
-export function AddSheet({ keywords, tone, onSubmit, onClose }: { keywords: { id: string; name: string }[]; tone: Tone; onSubmit: (x: { name: string; keywordId: string; timed: null | { start: string; end: string } }) => Promise<boolean>; onClose: () => void }) {
+// 직접 추가 (+ 시간 지정 = 예약, R-T3). 일상 키워드 대신 목표의 세부목표에 연결할 수 있다 (2026-10-03 UT 9)
+export type AddGoal = { id: string; name: string; tone: Tone; subs: { id: string; name: string }[] };
+export type DirectInput = { name: string; keywordId: string | null; subgoalId: string | null; timed: null | { start: string; end: string } };
+export function AddSheet({ keywords, tone, goals, onSubmit, onClose }: { keywords: { id: string; name: string }[]; tone: Tone; goals: AddGoal[]; onSubmit: (x: DirectInput) => Promise<boolean>; onClose: () => void }) {
   const [name, setName] = useState('');
+  const [kind, setKind] = useState<'daily' | 'goal'>('daily');
   const [kw, setKw] = useState(keywords.find(k => k.name === '생활')?.id ?? keywords[0]?.id ?? '');
-  const [timed, setTimed] = useState(false);
-  const [start, setStart] = useState('18:00');
-  const [end, setEnd] = useState('18:30');
+  const withSubs = goals.filter(g => g.subs.length);
+  const [goalId, setGoalId] = useState(withSubs[0]?.id ?? '');
+  const goal = withSubs.find(g => g.id === goalId);
+  const [subId, setSubId] = useState(withSubs[0]?.subs[0]?.id ?? '');
+  const [time, setTime] = useState<TimeValue>({ on: false, start: '18:00', end: '18:30' });
   const [busy, setBusy] = useState(false);
-  const badTime = timed && !(start && end && end > start);
-  const off = !name.trim() || !kw || badTime || busy;
+  const target = kind === 'daily' ? !!kw : !!goal && goal.subs.some(x => x.id === subId);
+  const off = !name.trim() || !target || badTime(time) || busy;
   return (
     <Sheet onClose={onClose} label="직접 추가">
       <span style={H}>직접 추가</span>
-      <div className="field"><label htmlFor="add-name">이름</label><input id="add-name" className="input" maxLength={40} value={name} onChange={e => setName(e.target.value)} placeholder="예: 장보기" /></div>
+      <div className="field"><label htmlFor="add-name">이름</label><input id="add-name" className="input" maxLength={40} value={name} onChange={e => setName(e.target.value)} placeholder={kind === 'goal' ? '예: 기출 1회 풀기' : '예: 장보기'} /></div>
       <div className="field">
-        <label>일상 키워드</label>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {keywords.map(k => (
-            <button key={k.id} aria-pressed={kw === k.id} onClick={() => setKw(k.id)} style={{ height: 36, padding: '0 16px', borderRadius: 999, border: 0, cursor: 'pointer', font: 'inherit', fontSize: 13, fontWeight: 700, ...pill(kw === k.id, tone) }}>{k.name}</button>
+        <label>무엇에 쓰는 시간인가요</label>
+        <div role="group" aria-label="연결" style={{ display: 'flex', gap: 6 }}>
+          {([['daily', '일상'], ['goal', '목표']] as const).map(([k, l]) => (
+            <button key={k} aria-pressed={kind === k} disabled={k === 'goal' && !withSubs.length} onClick={() => setKind(k)} style={{ flex: 1, height: 38, borderRadius: 999, border: 0, cursor: 'pointer', font: 'inherit', fontSize: 13.5, fontWeight: 700, background: kind === k ? 'var(--color-text)' : 'var(--color-surface)', color: kind === k ? 'var(--color-bg)' : 'var(--color-text)', opacity: k === 'goal' && !withSubs.length ? 0.4 : 1 }}>{l}</button>
           ))}
         </div>
+        {!withSubs.length && <span style={{ fontSize: 12, color: 'var(--color-neutral-700)' }}>세부 목표가 있는 진행 중 목표가 없어요.</span>}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontWeight: 700, fontSize: 14 }}>시간 지정</span>
-          <span style={{ fontSize: 12, color: 'var(--color-neutral-700)' }}>시간표에 계획으로 놓이고 알람이 울려요</span>
-        </div>
-        <button role="switch" aria-checked={timed} aria-label="시간 지정" onClick={() => setTimed(!timed)} style={{ flex: 'none', width: 52, height: 30, borderRadius: 999, border: 0, padding: 3, cursor: 'pointer', background: timed ? 'var(--color-accent-2)' : 'var(--color-neutral-400)', display: 'flex', justifyContent: timed ? 'flex-end' : 'flex-start' }}>
-          <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--color-neutral-100)', boxShadow: 'var(--shadow-sm)' }} />
-        </button>
-      </div>
-      {timed && (
-        <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-            <div className="field"><label htmlFor="add-start">시작</label><TimeSelect id="add-start" value={start} onChange={setStart} /></div>
-            <div className="field"><label htmlFor="add-end">끝</label><TimeSelect id="add-end" value={end} onChange={setEnd} /></div>
+      {kind === 'daily' ? (
+        <div className="field">
+          <label>일상 키워드</label>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {keywords.map(k => (
+              <button key={k.id} aria-pressed={kw === k.id} onClick={() => setKw(k.id)} style={{ height: 36, padding: '0 16px', borderRadius: 999, border: 0, cursor: 'pointer', font: 'inherit', fontSize: 13, fontWeight: 700, ...pill(kw === k.id, tone) }}>{k.name}</button>
+            ))}
           </div>
-          <span style={{ fontSize: 12, color: badTime ? 'var(--color-accent-700)' : 'var(--color-neutral-700)', marginTop: -6 }}>{badTime ? '끝 시각이 시작보다 늦어야 해요.' : '예약 할 일은 다음 날로 넘어가지 않아요.'}</span>
+        </div>
+      ) : (
+        <>
+          <div className="field">
+            <label>목표</label>
+            <div role="group" aria-label="목표" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {withSubs.map(g => (
+                <button key={g.id} aria-pressed={goalId === g.id} onClick={() => { setGoalId(g.id); setSubId(g.subs[0]?.id ?? ''); }} style={{ minHeight: 36, padding: '6px 14px', borderRadius: 999, border: 0, cursor: 'pointer', font: 'inherit', fontSize: 13, fontWeight: 700, textAlign: 'left', ...pill(goalId === g.id, g.tone) }}>{g.name}</button>
+              ))}
+            </div>
+          </div>
+          {goal && (
+            <div className="field">
+              <label>세부 목표</label>
+              <div role="group" aria-label="세부 목표" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {goal.subs.map(x => (
+                  <button key={x.id} aria-pressed={subId === x.id} onClick={() => setSubId(x.id)} style={{ height: 36, padding: '0 14px', borderRadius: 999, border: 0, cursor: 'pointer', font: 'inherit', fontSize: 13, fontWeight: 700, ...pill(subId === x.id, goal.tone) }}>{x.name}</button>
+                ))}
+              </div>
+              <span style={{ fontSize: 12, color: 'var(--color-neutral-700)' }}>칠한 시간이 이 목표에 쌓여요.</span>
+            </div>
+          )}
         </>
       )}
+      <TimeToggle value={time} onChange={setTime} sub="시간표에 계획으로 놓이고 알람이 울려요" note="예약 할 일은 다음 날로 넘어가지 않아요." />
       <button
         disabled={off}
         onClick={async () => {
           setBusy(true);
-          const ok = await onSubmit({ name: name.trim(), keywordId: kw, timed: timed ? { start, end } : null });
+          const ok = await onSubmit({ name: name.trim(), keywordId: kind === 'daily' ? kw : null, subgoalId: kind === 'goal' ? subId : null, timed: time.on ? { start: time.start, end: time.end } : null });
           setBusy(false);
           if (ok) onClose();
         }}
@@ -97,6 +118,35 @@ export function AddSheet({ keywords, tone, onSubmit, onClose }: { keywords: { id
         추가
       </button>
     </Sheet>
+  );
+}
+
+// 시간 지정: 켜기 + 시작·끝 (10분 단위). 직접 추가·실천 추가가 같이 쓴다
+export type TimeValue = { on: boolean; start: string; end: string };
+export const badTime = (t: TimeValue) => t.on && !(t.start && t.end && t.end > t.start);
+export function TimeToggle({ value: t, onChange, sub, note, label = '시간 지정' }: { value: TimeValue; onChange: (t: TimeValue) => void; sub: string; note?: string; label?: string }) {
+  const bad = badTime(t);
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={{ fontWeight: 700, fontSize: 14 }}>{label}</span>
+          <span style={{ fontSize: 12, color: 'var(--color-neutral-700)' }}>{sub}</span>
+        </div>
+        <button role="switch" aria-checked={t.on} aria-label={label} onClick={() => onChange({ ...t, on: !t.on })} style={{ flex: 'none', width: 52, height: 30, borderRadius: 999, border: 0, padding: 3, cursor: 'pointer', background: t.on ? 'var(--color-accent-2)' : 'var(--color-neutral-400)', display: 'flex', justifyContent: t.on ? 'flex-end' : 'flex-start' }}>
+          <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--color-neutral-100)', boxShadow: 'var(--shadow-sm)' }} />
+        </button>
+      </div>
+      {t.on && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
+            <div className="field"><label htmlFor="time-start">시작</label><TimeSelect id="time-start" value={t.start} onChange={v => onChange({ ...t, start: v })} /></div>
+            <div className="field"><label htmlFor="time-end">끝</label><TimeSelect id="time-end" value={t.end} onChange={v => onChange({ ...t, end: v })} /></div>
+          </div>
+          <span style={{ fontSize: 12, color: bad ? 'var(--color-accent-700)' : 'var(--color-neutral-700)', marginTop: -6 }}>{bad ? '끝 시각이 시작보다 늦어야 해요.' : note}</span>
+        </>
+      )}
+    </>
   );
 }
 
