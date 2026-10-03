@@ -147,6 +147,13 @@
 - DB 테스트 m4·m5: 실제 칠하기가 '지금'에 묶여서 테스트 사용자의 시간대를 그날 22시쯤으로 맞춤
 - E2E: scratchpad `e2e-ut.mjs`(26개), `e2e-mv.mjs` 칠하기를 지금 바로 전 1시간으로
 
+## UT 5~9(2026-10-03)에서 만든 것
+- DB `20261003000012`: `practices.start_time/end_time`(선택, 10분 단위), `tasks.subgoal_id`(직접 추가 ↔ 세부목표, 키워드와 둘 중 하나), `subgoal_open()` 정책, 연결 할 일 → 목표 진행 중 트리거, `task_goal()`로 트래킹·누적 집계, `claim_due_alarms`에 시간 정한 실천(보낼 때 할 일 행을 만들고 '보냄' 표시), `goals.table_hidden` 기본 false. `20261003000013`: 시간 정한 실천을 트래킹 계획 시간에
+- 화면: 시간 고르기 `Sheets.tsx`의 `TimeToggle`(직접 추가·실천 추가·PC 실천 팝오버가 같이 씀), 오늘 시간표 예약 칸 `resp:<실천>`, 직접 추가 `AddSheet`에 일상/목표
+- 옆으로 밀기 `src/mobile/useSwipe.ts`(시간표·입력·[data-no-swipe] 제외) + `overscroll-behavior-x: none`(브라우저 '밀어서 뒤로'와 겹치지 않게)
+- PC 오늘 `src/desktop/TodayPage.tsx`: 모바일 `TodayTab`(base·weekPath·wide)을 넣고 판 안에 `#m-sheet-root`
+- DB 테스트 `supabase/tests/ut_time_link.sql`, E2E scratchpad `e2e-ut2.mjs`(25개). `seed-dsk.sh`는 예전처럼 숨긴 목표로 만든다(표 밖 열 테스트용)
+
 ## 남은 일 / 알려진 제약
 - 이메일 변경: Supabase 기본 메일은 기획자 계정 이메일에만 보내져서 지금은 이메일을 읽기 전용으로 둠. 메일 서비스(SMTP) 붙일 때 같이 연다
 - 비밀번호 찾기 메일도 같은 제약(기획자 본인 이메일로는 옴)

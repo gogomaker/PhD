@@ -91,13 +91,14 @@ export function useDay(day: DayKey, today: DayKey) {
     await mutate(supabase.from('tasks').update({ done_at: it.done ? null : new Date().toISOString() }).eq('id', id));
   };
 
-  const addDirect = (x: { name: string; keywordId: string; timed: null | { start: string; end: string } }) =>
+  const addDirect = (x: { name: string; keywordId: string | null; subgoalId?: string | null; timed: null | { start: string; end: string } }) =>
     mutate(
       supabase.from('tasks').insert({
         date: day,
         source: 'direct',
         name: x.name,
         daily_keyword_id: x.keywordId,
+        subgoal_id: x.subgoalId ?? null,
         is_timed: !!x.timed,
         start_time: x.timed?.start ?? null,
         end_time: x.timed?.end ?? null,

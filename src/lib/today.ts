@@ -4,7 +4,7 @@
 import { diffDays, type DayKey } from './day';
 import { practiceDates } from './plan';
 
-export type PracticeLite = { id: string; goal_id: string; subgoal_id: string; week_start_date: string; name: string; kind: 'repeat' | 'once'; weekdays: number[] };
+export type PracticeLite = { id: string; goal_id: string; subgoal_id: string; week_start_date: string; name: string; kind: 'repeat' | 'once'; weekdays: number[]; start_time?: string | null; end_time?: string | null };
 
 export type TaskRow = {
   id: string;
@@ -13,6 +13,8 @@ export type TaskRow = {
   practice_id: string | null;
   name: string | null;
   daily_keyword_id: string | null;
+  /** 직접 추가를 목표의 세부목표에 연결 (2026-10-03 UT 9) */
+  subgoal_id?: string | null;
   is_timed: boolean;
   start_time: string | null;
   end_time: string | null;

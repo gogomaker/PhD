@@ -182,7 +182,7 @@ function VsCard({ sum, goals, toneOf }: { sum: Summary | null; goals: Goal[]; to
         );
       })}
       <p style={{ margin: 0, fontSize: 12, color: 'var(--color-neutral-700)', textWrap: 'pretty' }} data-testid="vs-note">
-        계획 시간은 모바일 계획 블록 중 할 일과 연결된 것만 셌어요. 키워드만 적은 계획과 예약 할 일 {sum ? hours(sum.plan_unlinked) : '–'}시간은 전체 계획에만 포함돼요.
+        계획 시간은 할 일과 연결된 계획 블록과 시간을 정한 실천을 셌어요. 키워드만 적은 계획과 예약 할 일 {sum ? hours(sum.plan_unlinked) : '–'}시간은 전체 계획에만 포함돼요.
       </p>
     </div>
   );

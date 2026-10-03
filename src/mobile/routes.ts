@@ -38,6 +38,8 @@ export function mobilePathFor(path: string, search: string): string | null {
       return '/plan/schedule?z=week' + (q.get('w') ? '&k=' + q.get('w') : '');
     case '/tracking':
       return '/record/review';
+    case '/today':
+      return '/record' + (q.get('d') ? '?d=' + q.get('d') : '');
     case '/account':
       return '/settings';
     default:

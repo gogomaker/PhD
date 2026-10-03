@@ -83,3 +83,6 @@ h1, h2, h3 { word-break: keep-all; }
 }
 /* 밀려 들어오는 화면에 포커스가 가도 바깥 상자가 옆으로 스크롤되지 않게 (hidden은 스크롤될 수 있다) */
 .m-clip { overflow: hidden; overflow: clip; }
+
+/* 옆으로 밀어 넘기기(2026-10-03 UT 6)가 브라우저의 '밀어서 뒤로 가기'와 겹치지 않게 */
+html, body { overscroll-behavior-x: none; }

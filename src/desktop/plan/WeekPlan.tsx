@@ -5,12 +5,13 @@ import { useAccount, useToday, type Goal, type Practice } from '../../account/Ac
 import { addDays, dayLabel, isDayKey, type DayKey } from '../../lib/day';
 import { dayLocked, fmtDays, isoDow, md, monthOfWeek, monthWeeks, outside, practiceDates, weekDays, weekStartOf, WEEK_START } from '../../lib/plan';
 import { MergeColumn, type MBlock } from './MergeColumn';
+import { TimeToggle, badTime, type TimeValue } from '../../mobile/Sheets';
 import { Chip, ColumnHeader, ICONS, LockNote, NOTE, NoColumns, OutTag, PlanHeader, PopHead, Popover, RefRow, RowLabel, SubgoalPicker, Svg, TableFrame, useSelection, useTableGoals, type RefCell, type Tone } from './shared';
 
 const MAX_SHOWN = 3; // R-P9
 const pill = (on: boolean) => (on ? 'btn btn-primary' : 'btn btn-secondary');
 
-type Pop = { goalId: string; row: number; anchor: DOMRect; sub: string | null; name: string; days: number[] };
+type Pop = { goalId: string; row: number; anchor: DOMRect; sub: string | null; name: string; days: number[]; time: TimeValue };
 
 // 주간 계획: "이번 주" 줄 + 요일 7줄. 목표 열에는 병합 없이 실천을 쌓는다 (R-P6). 참고사항 열만 병합
 export default function WeekPlan() {
@@ -62,9 +63,9 @@ export default function WeekPlan() {
   };
 
   const submit = async () => {
-    if (!pop || !pop.sub || !pop.name.trim() || pop.days.length === 0) return;
+    if (!pop || !pop.sub || !pop.name.trim() || pop.days.length === 0 || badTime(pop.time)) return;
     const weekdays = [...new Set(pop.days.map(i => isoDow(days[i])))].sort((a, b) => a - b);
-    const ok = await run(() => supabase.from('practices').insert({ goal_id: pop.goalId, subgoal_id: pop.sub, week_start_date: week, name: pop.name.trim(), weekdays }));
+    const ok = await run(() => supabase.from('practices').insert({ goal_id: pop.goalId, subgoal_id: pop.sub, week_start_date: week, name: pop.name.trim(), weekdays, ...(pop.time.on ? { start_time: pop.time.start, end_time: pop.time.end } : {}) }));
     if (ok) setPop(null);
   };
 
@@ -149,7 +150,7 @@ export default function WeekPlan() {
                   setSel={setSel}
                   popOn={pop?.goalId === g.id && pop.row === row}
                   label={`${g.name} ${row === -1 ? '이번 주' : labels[row] + '요일'}`}
-                  onAdd={anchor => { setSel(null); setPop({ goalId: g.id, row, anchor, sub: null, name: '', days: row === -1 ? [] : [row] }); }}
+                  onAdd={anchor => { setSel(null); setPop({ goalId: g.id, row, anchor, sub: null, name: '', days: row === -1 ? [] : [row], time: { on: false, start: '19:00', end: '20:00' } }); }}
                   onDelete={p => { setSel(null); run(() => supabase.from('practices').delete().eq('id', p.id)); }}
                 />
               );
@@ -161,7 +162,7 @@ export default function WeekPlan() {
         요일을 하나 고르면 그 요일 칸에, 여러 개 고르면 '이번 주' 줄에 모여요. 실천은 고른 요일마다 모바일 할 일이 돼요. 요일 하나짜리는 못 하면 다음 날로 넘어가고, 여러 요일(↻)은 그날만 해요.
       </p>
       {pop && popGoal && (
-        <Popover anchor={pop.anchor} width={300} height={560} onClose={() => setPop(null)}>
+        <Popover anchor={pop.anchor} width={300} height={680} onClose={() => setPop(null)}>
           <PracticeForm
             goal={popGoal}
             tone={toneOf(popGoal)}
@@ -233,6 +234,7 @@ function StackCell({ gridRow, col, tone, items, locked, labels, multi, subName, 
             <Chip tone={tone}>{subName(p.subgoal_id)}</Chip>
             {isOut(p) && <OutTag />}
             <span style={{ flex: '1 1 64px', minWidth: 0, textWrap: 'pretty' }}>{p.name}</span>
+            {p.start_time && <span data-testid="practice-time" style={{ flex: 'none', fontSize: 11, fontWeight: 700, color: tone.ink, whiteSpace: 'nowrap' }}>{p.start_time.slice(0, 5)}–{p.end_time?.slice(0, 5)}</span>}
             <span style={{ flex: 'none', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
               {p.kind === 'repeat' && <span title="반복" aria-label="반복" style={{ color: tone.ink, display: 'flex' }}><Svg d={ICONS.repeat} size={12} /></span>}
               {multi && <span data-testid="practice-days" style={{ fontSize: 11, fontWeight: 700, color: tone.ink, whiteSpace: 'nowrap' }}>{fmtDays(pos, labels)}</span>}
@@ -307,7 +309,8 @@ function PracticeForm({ goal, tone, subs, highlight, upperOn, upperName, when, l
           </div>
           <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: 'var(--color-neutral-700)' }}>{dayHint}</span>
         </div>
-        <button className="btn btn-primary" disabled={!(pop.sub && pop.name.trim() && ds.length)} onClick={onSubmit}>실천 추가</button>
+        <TimeToggle value={pop.time} onChange={time => setPop({ ...pop, time })} label="4. 시간 (선택)" sub="고른 요일마다 휴대폰 시간표에 놓이고 알람이 울려요" />
+        <button className="btn btn-primary" disabled={!(pop.sub && pop.name.trim() && ds.length) || badTime(pop.time)} onClick={onSubmit}>실천 추가</button>
       </div>
     </>
   );

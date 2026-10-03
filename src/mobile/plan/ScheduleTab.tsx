@@ -1,5 +1,6 @@
 // 계획 › 일정: 연간(줄 = 달) · 월간(줄 = 주) · 주간(줄 = 여러 요일 + 요일). 목표 필터, 상위 계획 참고(R-P3), 지난 기간 잠금(R-P12)
-import { useState, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
+import { useSwipe } from '../useSwipe';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useToday, type MonthCell, type Note, type Practice, type YearCell } from '../../account/AccountProvider';
 import { addDays, dayLabel, isDayKey, isYearKey, isYearMonth, type DayKey } from '../../lib/day';
@@ -50,7 +51,12 @@ export default function ScheduleTab() {
     const anchor: DayKey = zoom === 'week' ? addDays(key, 3) : zoom === 'month' ? (key === thisYm ? today : key + '-01') : key === thisYear ? today : key + '-01-01';
     set(z, z === 'year' ? anchor.slice(0, 4) : z === 'month' ? (zoom === 'week' ? monthOfWeek(key).ym : ymOf(anchor)) : anchor === today ? thisWeek : monthWeeks(ymOf(anchor))[0]);
   };
+  // 화면을 좌우로 밀면 이전·다음 기간 (2026-10-03 UT 6)
+  const rootRef = useRef<HTMLDivElement>(null);
+  const shiftRef = useRef<(n: number) => void>(() => {});
+  useSwipe(rootRef, useCallback(() => shiftRef.current(-1), []), useCallback(() => shiftRef.current(1), []));
   const shift = (n: number) => set(zoom, zoom === 'year' ? String(Number(key) + n) : zoom === 'month' ? addMonths(key, n) : addDays(key, 7 * n));
+  shiftRef.current = shift;
   // 이번 주가 지난달에 속하는 달 초(4번째 날 규칙)에는 달력상 이번 달도 '이번 달'로 본다
   const isCur = zoom === 'month' ? key === thisYm || key === ymOf(today) : key === (zoom === 'year' ? thisYear : thisWeek);
   const shown = (goalId: string) => list.some(g => g.id === goalId) && (!filter || filter === goalId);
@@ -144,7 +150,7 @@ export default function ScheduleTab() {
       .filter(p => p.week_start_date === key && shown(p.goal_id))
       .map(p => ({ p, pos: practiceDates(p.week_start_date, p.weekdays).map(d => days.indexOf(d)).filter(i => i >= 0) }))
       .sort((a, b) => Math.min(...a.pos) - Math.min(...b.pos) || a.p.created_at.localeCompare(b.p.created_at));
-    const actItem = (p: Practice, span: string): Item => ({ id: p.id, tone: toneById(p.goal_id), meta: goalName(p.goal_id) + ' · ' + subName(p.subgoal_id), name: p.name, span, onTap: () => setSheet({ k: 'practice', practice: p }), out: outside(ups, p.goal_id, p.subgoal_id) });
+    const actItem = (p: Practice, span: string): Item => ({ id: p.id, tone: toneById(p.goal_id), meta: goalName(p.goal_id) + ' · ' + subName(p.subgoal_id), name: p.name, span: [span, p.start_time ? `${p.start_time.slice(0, 5)}–${p.end_time?.slice(0, 5)}` : ''].filter(Boolean).join(' · '), onTap: () => setSheet({ k: 'practice', practice: p }), out: outside(ups, p.goal_id, p.subgoal_id) });
     const wNotes = notes.filter(n => n.scope === 'week' && n.period_key === key);
     rows = [
       {
@@ -188,7 +194,7 @@ export default function ScheduleTab() {
     ) : null;
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div ref={rootRef} data-testid="schedule-tab" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '0 16px' }}>
         <Seg options={ZOOMS} cur={zoom} onPick={zoomTo} label="보기 단위" />
         <button onClick={() => setSheet({ k: 'add' })} aria-label={zoom === 'week' ? '실천 추가' : '계획 추가'} className="btn btn-primary" style={{ height: 40, padding: '0 16px', gap: 6, fontSize: 14 }}>
@@ -205,7 +211,7 @@ export default function ScheduleTab() {
         <button onClick={() => shift(1)} aria-label="다음" className="btn m-hover" style={{ width: 34, height: 34, padding: 0, color: 'var(--color-neutral-700)' }}><Svg d={ICON.right} /></button>
       </div>
       {list.length > 0 && (
-        <div role="group" aria-label="목표 필터" style={{ flex: 'none', display: 'flex', gap: 6, overflowX: 'auto', padding: '0 16px' }}>
+        <div role="group" aria-label="목표 필터" data-no-swipe style={{ flex: 'none', display: 'flex', gap: 6, overflowX: 'auto', padding: '0 16px' }}>
           <button aria-pressed={!filter} onClick={() => set(zoom, key, null)} style={{ flex: 'none', height: 32, padding: '0 12px', border: 0, borderRadius: 999, cursor: 'pointer', ...BODY, fontSize: 12.5, whiteSpace: 'nowrap', background: !filter ? 'var(--color-text)' : 'var(--color-surface)', color: !filter ? 'var(--color-bg)' : 'var(--color-text)' }}>전체</button>
           {list.map(g => {
             const on = filter === g.id;
