@@ -5,15 +5,10 @@ import { useNavigate } from 'react-router-dom';
 import { useToday } from '../../account/AccountProvider';
 import { addMonths, fmtDays, monthOfWeek, monthWeeks, weekStartOf } from '../../lib/plan';
 import { ScrollArea } from '../../ui/ScrollArea';
+import { markTutorialDone } from '../../lib/tutorial';
 import { BODY, Dot, Field, H, ICON, Svg, chip } from '../ui';
 
-const KEY = 'phd-tutorial-done';
-export function tutorialDone() {
-  try { return localStorage.getItem(KEY) === '1'; } catch { return false; }
-}
-function markDone() {
-  try { localStorage.setItem(KEY, '1'); } catch { /* 저장 못 해도 진행 */ }
-}
+const markDone = markTutorialDone;
 
 const TONE = { bg: 'var(--cat-green-bg)', ink: 'var(--cat-green-ink)', dot: 'var(--cat-green-dot)' };
 const STEPS = ['목표', '세부 목표', '연간', '월간', '주간', '오늘', '마무리'];

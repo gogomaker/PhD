@@ -10,7 +10,7 @@ import { ScrollArea } from '../../ui/ScrollArea';
 import { BODY, Dot, H, ICON, Svg } from '../ui';
 import { useMobile } from '../store';
 import { NewGoalSheet, ReviewSheet } from './goalSheets';
-import { tutorialDone } from '../pages/TutorialPage';
+import { tutorialDone } from '../../lib/tutorial';
 import { DdayRow } from './Dday';
 import { useToday } from '../../account/AccountProvider';
 

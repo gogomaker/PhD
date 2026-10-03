@@ -8,7 +8,7 @@ import { useAccount, useToday, type Goal, type MonthCell, type Note, type Practi
 import { addDays, dayLabel } from '../../lib/day';
 import { PALETTE } from '../../lib/palette';
 import { isClosed, sortGoals } from '../../lib/goals';
-import { dayLocked, fmtDays, isoDow, md, monthOfWeek, practiceDates, weekDays } from '../../lib/plan';
+import { dayLocked, fmtDays, isoDow, md, monthOfWeek, outside, practiceDates, weekDays } from '../../lib/plan';
 import { NOTE, type Tone } from '../../desktop/plan/shared';
 import { BODY, Dot, Field, Notice, Sheet, SheetHead, chip } from '../ui';
 import { endsFrom, keysOf, splitRange, unitOf, unitsOf, type Unit, type Zoom } from './units';
@@ -56,8 +56,8 @@ export function useUpper() {
   };
 }
 
-/** 위 단계에 계획이 있는데 이 (목표, 세부 목표)는 없으면 '계획 밖' */
-export const outside = (upper: { goalId: string; subId: string }[], goalId: string, subId: string) => upper.length > 0 && !upper.some(u => u.goalId === goalId && u.subId === subId);
+/** 위 단계에 계획이 있는데 이 (목표, 세부 목표)는 없으면 '계획 밖' (lib/plan) */
+export { outside };
 
 /** 같은 목표(또는 참고사항)의 다른 칸이 차지한 칸 key들 — 한 줄에 겹치지 않는다 (R-P1) */
 function useOccupied(zoom: Zoom, goalId: string | 'note' | null, except?: string) {

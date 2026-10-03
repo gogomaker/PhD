@@ -3,6 +3,7 @@ import { Icon, ICON } from '../Icon';
 import { Logo } from '../ui/Logo';
 import { ScrollArea } from '../ui/ScrollArea';
 import { StartChecklist } from './StartChecklist';
+import { SideDday } from './Dday';
 import { useAccount } from '../account/AccountProvider';
 import CategoriesPage from './CategoriesPage';
 import DreamPage from './DreamPage';
@@ -14,6 +15,7 @@ import WeekPlan from './plan/WeekPlan';
 import AccountPage from './AccountPage';
 import TrackingPage from './TrackingPage';
 import ReviewsPage from './ReviewsPage';
+import TutorialPage from './TutorialPage';
 import { initials } from '../lib/initials';
 
 type ScreenKey = keyof typeof ICON;
@@ -43,6 +45,7 @@ export default function DesktopShell() {
           <Route path="/plan/week" element={<WeekPlan />} />
           <Route path="/tracking" element={<TrackingPage />} />
           <Route path="/reviews" element={<ReviewsPage />} />
+          <Route path="/tutorial" element={<TutorialPage />} />
           <Route path="*" element={<Navigate to="/board" replace />} />
         </Routes>
       </main>
@@ -75,7 +78,9 @@ function Sidebar() {
             </div>
           ))}
         </nav>
-        <NavLink to="/dream" title="꿈 작성으로 이동" className="side-card dream-card" style={{ marginTop: 'auto', borderRadius: 24, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <SideDday />
+        <NavLink to="/dream" title="꿈 작성으로 이동" className="side-card dream-card" style={{ borderRadius: 24, padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: 'var(--color-accent-800)' }}>나의 꿈</span>
           {dream ? (
             <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 16, lineHeight: 1.3 }}>{dream}</span>
@@ -85,6 +90,7 @@ function Sidebar() {
             </span>
           )}
         </NavLink>
+        </div>
         <NavLink to="/account" className={({ isActive }) => 'side-card account-card' + (isActive ? ' active' : '')} style={{ borderRadius: 24, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ flex: 'none', width: 38, height: 38, borderRadius: '50%', background: 'var(--color-accent-2)', color: 'var(--color-neutral-100)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 13 }}>{initials(name)}</span>
           <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>

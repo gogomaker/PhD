@@ -3,9 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAccount, useToday, type Goal, type Practice } from '../../account/AccountProvider';
 import { addDays, dayLabel, type DayKey } from '../../lib/day';
-import { dayLocked, fmtDays, isoDow, md, monthOfWeek, monthWeeks, practiceDates, weekDays, weekStartOf, WEEK_START } from '../../lib/plan';
+import { dayLocked, fmtDays, isoDow, md, monthOfWeek, monthWeeks, outside, practiceDates, weekDays, weekStartOf, WEEK_START } from '../../lib/plan';
 import { MergeColumn, type MBlock } from './MergeColumn';
-import { Chip, ColumnHeader, ICONS, LockNote, NOTE, NoColumns, PlanHeader, PopHead, Popover, RefRow, RowLabel, SubgoalPicker, Svg, TableFrame, useSelection, useTableGoals, type RefCell, type Tone } from './shared';
+import { Chip, ColumnHeader, ICONS, LockNote, NOTE, NoColumns, OutTag, PlanHeader, PopHead, Popover, RefRow, RowLabel, SubgoalPicker, Svg, TableFrame, useSelection, useTableGoals, type RefCell, type Tone } from './shared';
 
 const MAX_SHOWN = 3; // R-P9
 const pill = (on: boolean) => (on ? 'btn btn-primary' : 'btn btn-secondary');
@@ -26,7 +26,7 @@ export default function WeekPlan() {
   const { ym, index } = monthOfWeek(week);
   const [y, m] = ym.split('-').map(Number);
   const tabs = monthWeeks(ym, ws);
-  const { cols, toneOf, catOf, subsOf } = useTableGoals();
+
   const [sel, setSel] = useSelection();
   const [focusId, setFocusId] = useState<string | null>(null);
   const [pop, setPop] = useState<Pop | null>(null);
@@ -46,6 +46,10 @@ export default function WeekPlan() {
     .map(p => ({ p, pos: practiceDates(p.week_start_date, p.weekdays).map(d => days.indexOf(d)).filter(i => i >= 0) }))
     .filter(x => x.pos.length > 0)
     .map(x => ({ ...x, locked: dayLocked(practiceDates(x.p.week_start_date, x.p.weekdays)[0], today) }));
+  // 이번 주에 실천이 있는 목표는 숨겼어도 열로
+  const { cols, toneOf, catOf, subsOf, pinned } = useTableGoals(new Set(inWeek.map(x => x.p.goal_id)));
+  // R-P14: 이번 주의 월간 계획 (어느 목표든)
+  const ups = monthCells.filter(c => c.year_month === ym + '-01' && c.start_week <= index && index <= c.end_week).map(c => ({ goalId: c.goal_id, subId: c.subgoal_id }));
   const cellItems = (goalId: string, row: number) =>
     inWeek
       .filter(x => x.p.goal_id === goalId && (row === -1 ? x.p.weekdays.length > 1 : x.p.weekdays.length === 1 && x.pos[0] === row))
@@ -100,7 +104,7 @@ export default function WeekPlan() {
         <TableFrame columns={'96px minmax(124px, 1fr) ' + cols.map(() => 'minmax(168px, 1fr)').join(' ')} minWidth={96 + 129 + cols.length * 173} rowHeight={56}>
           <div style={{ gridRow: 1, gridColumn: 1, display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: 12, fontWeight: 700, color: 'var(--color-neutral-700)' }}>요일</div>
           <ColumnHeader col={2} name="참고사항" sub="모바일로 가지 않는 메모" dot={NOTE.dot} />
-          {cols.map((g, i) => <ColumnHeader key={g.id} col={i + 3} name={g.name} sub={catOf(g)?.name ?? ''} dot={toneOf(g).dot} goalId={g.id} />)}
+          {cols.map((g, i) => <ColumnHeader key={g.id} col={i + 3} name={g.name} sub={catOf(g)?.name ?? ''} dot={toneOf(g).dot} goalId={g.id} pinned={pinned(g)} />)}
           <RefRow label={`월간 · ${index + 1}주차`} cells={refs} emptyText="월간 표의 이번 주 칸이 여기로 내려와요" lastCol={cols.length + 2} />
           <RowLabel row={3} label="이번 주" sub="여러 날에 걸친 실천" tone="week" />
           {days.map((d, i) => <RowLabel key={d} row={i + 4} label={labels[i]} sub={md(d)} today={i === todayRow} />)}
@@ -138,6 +142,7 @@ export default function WeekPlan() {
                   labels={labels}
                   multi={row === -1}
                   subName={sid => subName(g.id, sid)}
+                  isOut={p => outside(ups, p.goal_id, p.subgoal_id)}
                   expanded={!!open[key]}
                   setExpanded={v => setOpen(o => ({ ...o, [key]: v }))}
                   sel={sel}
@@ -162,6 +167,8 @@ export default function WeekPlan() {
             tone={toneOf(popGoal)}
             subs={subsOf(popGoal.id)}
             highlight={upper(popGoal.id)?.subgoal_id}
+            upperOn={ups.length > 0}
+            upperName={`월간 계획의 ${index + 1}주차`}
             when={pop.row === -1 ? '이번 주' : `${labels[pop.row]} ${md(days[pop.row])}`}
             labels={labels}
             lockedDays={lockedDays}
@@ -175,7 +182,7 @@ export default function WeekPlan() {
   );
 }
 
-function StackCell({ gridRow, col, tone, items, locked, labels, multi, subName, expanded, setExpanded, sel, setSel, popOn, label, onAdd, onDelete }: {
+function StackCell({ gridRow, col, tone, items, locked, labels, multi, subName, isOut, expanded, setExpanded, sel, setSel, popOn, label, onAdd, onDelete }: {
   gridRow: number;
   col: number;
   goal: Goal;
@@ -186,6 +193,7 @@ function StackCell({ gridRow, col, tone, items, locked, labels, multi, subName, 
   labels: string[];
   multi: boolean;
   subName: (sid: string) => string;
+  isOut: (p: Practice) => boolean;
   expanded: boolean;
   setExpanded: (v: boolean) => void;
   sel: string | null;
@@ -223,6 +231,7 @@ function StackCell({ gridRow, col, tone, items, locked, labels, multi, subName, 
             style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, minWidth: 0, background: 'var(--color-neutral-100)', borderRadius: 10, padding: '4px 6px', fontSize: 12, fontWeight: 600, lineHeight: 1.3, color: 'var(--color-text)', outline: selected ? '2px solid var(--color-accent)' : '0 solid transparent', outlineOffset: 1, cursor: 'default' }}
           >
             <Chip tone={tone}>{subName(p.subgoal_id)}</Chip>
+            {isOut(p) && <OutTag />}
             <span style={{ flex: '1 1 64px', minWidth: 0, textWrap: 'pretty' }}>{p.name}</span>
             <span style={{ flex: 'none', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
               {p.kind === 'repeat' && <span title="반복" aria-label="반복" style={{ color: tone.ink, display: 'flex' }}><Svg d={ICONS.repeat} size={12} /></span>}
@@ -254,11 +263,13 @@ function StackCell({ gridRow, col, tone, items, locked, labels, multi, subName, 
 }
 
 // R-P7: 세부목표 → 이름 → 요일 칩(복수). 요일 칸에서 열면 그 요일이 미리 골라져 있다. 단발/반복은 요일 수로 정해진다(기획 결정)
-function PracticeForm({ goal, tone, subs, highlight, when, labels, lockedDays, pop, setPop, onSubmit }: {
+function PracticeForm({ goal, tone, subs, highlight, upperOn, upperName, when, labels, lockedDays, pop, setPop, onSubmit }: {
   goal: Goal;
   tone: Tone;
   subs: { id: string; name: string }[];
   highlight?: string | null;
+  upperOn: boolean;
+  upperName: string;
   when: string;
   labels: string[];
   /** 앞에서부터 이만큼은 지난 날 → 고를 수 없음 */
@@ -276,7 +287,7 @@ function PracticeForm({ goal, tone, subs, highlight, when, labels, lockedDays, p
       {subs.length === 0 ? (
         <span style={{ fontSize: 13, padding: '4px 10px 8px' }}>이 목표에 세부목표가 없어요. <Link to="/board">꿈 보드에서 추가하기</Link></span>
       ) : (
-        <SubgoalPicker subs={subs} highlight={highlight} badge="이번 주 계획" selected={pop.sub} tone={tone} onPick={id => setPop({ ...pop, sub: id })} />
+        <SubgoalPicker subs={subs} highlight={highlight} badge="이번 주 계획" upperOn={upperOn} upperName={upperName} selected={pop.sub} tone={tone} onPick={id => setPop({ ...pop, sub: id })} />
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '10px 6px 4px' }}>
         <div className="field">

@@ -18,7 +18,7 @@ import DreamPage from './pages/DreamPage';
 import SettingsPage from './pages/SettingsPage';
 import TutorialPage from './pages/TutorialPage';
 import { AccountSheet } from './AccountSheet';
-import { ddayText } from './plan/Dday';
+import { ddayText } from '../lib/dday';
 
 export default function MobileApp() {
   return (

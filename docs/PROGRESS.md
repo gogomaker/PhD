@@ -131,6 +131,14 @@
 - 기존 날짜 박힌 E2E(M3~M6)는 `run-reg.sh`의 시간대 바꾸기가 10.2 17시(UTC) 이후로는 '오늘=10.1'을 못 맞춰 더 못 돈다. 날짜를 상대로 바꾸기 전까지는 M1·M2·테마 + 모바일 E2E로 확인
 - E2E: scratchpad `e2e-mv.mjs`(모바일 124개, 실행하는 날 기준 날짜), 기존 `e2e*.mjs`는 날짜가 박혀 있어 `run-reg.sh`가 사용자 시간대를 바꿔 '오늘'=10.1로 맞춰 돌림
 
+## PC 맞추기(2026-10-03)에서 만든 것
+- D-day: `src/lib/dday.ts`(모바일·PC 같이), PC `src/desktop/Dday.tsx`(목표 설정 줄 + 다이얼로그, 사이드바 `SideDday`)
+- 시작하기(`StartChecklist`): 휴대폰과 같은 단계 − 첫 기록. 체험 여부 `src/lib/tutorial.ts`(localStorage `phd-tutorial-done`, 모바일과 같은 키)
+- PC 체험 `src/desktop/TutorialPage.tsx`: 진짜 표 부품(`TableFrame`, `MergeColumn`, `RefRow`, `SubgoalPicker`, `Popover`)을 화면 안 상태로 씀
+- R-P14: `SubgoalPicker`에 `upperOn`·`upperName`(위 계획 먼저, '계획 밖에서 고르기'), `OutTag`, 판정은 `lib/plan`의 `outside`(모바일과 같은 함수)
+- R-G10: `useTableGoals(planned)` — 그 기간 계획이 있는 목표는 표에 안 올렸어도 열(`pinned` → '표 밖', ‹ › × 없음)
+- E2E: scratchpad `e2e-dsk.mjs`(45개, 오늘 = 2026-10-03 기준 날짜) + `seed-dsk.sh`
+
 ## 남은 일 / 알려진 제약
 - 이메일 변경: Supabase 기본 메일은 기획자 계정 이메일에만 보내져서 지금은 이메일을 읽기 전용으로 둠. 메일 서비스(SMTP) 붙일 때 같이 연다
 - 비밀번호 찾기 메일도 같은 제약(기획자 본인 이메일로는 옴)

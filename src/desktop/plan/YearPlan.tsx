@@ -15,7 +15,9 @@ export default function YearPlan() {
   const [params, setParams] = useSearchParams();
   const thisYear = Number(today.slice(0, 4));
   const year = Number(params.get('y')) || thisYear;
-  const { cols, toneOf, catOf, subsOf } = useTableGoals();
+  // 이 해에 계획이 있는 목표는 숨겼어도 열로
+  const planned = new Set(yearCells.filter(c => c.start_month.startsWith(String(year))).map(c => c.goal_id));
+  const { cols, toneOf, catOf, subsOf, pinned } = useTableGoals(planned);
   const [sel, setSel] = useSelection();
   const [focusId, setFocusId] = useState<string | null>(null);
   const [pop, setPop] = useState<{ goalId: string; row: number; anchor: DOMRect } | null>(null);
@@ -56,7 +58,7 @@ export default function YearPlan() {
       ) : (
         <TableFrame columns={'96px ' + cols.map(() => 'minmax(140px, 1fr)').join(' ')} minWidth={96 + cols.length * 145} rowHeight={56}>
           <div style={{ gridRow: 1, gridColumn: 1, display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: 12, fontWeight: 700, color: 'var(--color-neutral-700)' }}>기간</div>
-          {cols.map((g, i) => <ColumnHeader key={g.id} col={i + 2} name={g.name} sub={catOf(g)?.name ?? ''} dot={toneOf(g).dot} goalId={g.id} />)}
+          {cols.map((g, i) => <ColumnHeader key={g.id} col={i + 2} name={g.name} sub={catOf(g)?.name ?? ''} dot={toneOf(g).dot} goalId={g.id} pinned={pinned(g)} />)}
           {Array.from({ length: 12 }, (_, m) => <RowLabel key={m} row={m + 2} label={`${m + 1}월`} sub={String(year)} today={year === thisYear && m === curMonth} />)}
           {cols.map((g, i) => (
             <MergeColumn

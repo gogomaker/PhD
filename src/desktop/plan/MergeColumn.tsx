@@ -1,8 +1,9 @@
 import { useState, type CSSProperties } from 'react';
 import { BlurInput } from '../../ui/BlurInput';
-import { Chip, ICONS, Svg, type Tone } from './shared';
+import { Chip, ICONS, OutTag, Svg, type Tone } from './shared';
 
-export type MBlock = { id: string; start: number; end: number; chip?: string; text: string };
+/** out = 위 계획에 없는 세부목표 (R-P14, '계획 밖') */
+export type MBlock = { id: string; start: number; end: number; chip?: string; text: string; out?: boolean };
 
 const AREA: CSSProperties = { width: '100%', background: 'transparent', border: 0, resize: 'none', font: 'inherit', fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: 'var(--color-text)', textAlign: 'center', outline: 'none', padding: 0, fieldSizing: 'content', overflow: 'hidden' } as CSSProperties;
 
@@ -85,8 +86,9 @@ export function MergeColumn({ col, firstRow, rowCount, lockedBefore = 0, blocks,
             style={{ gridRow: `${firstRow + b.start} / span ${b.end - b.start + 1}`, gridColumn: col, minWidth: 0, position: 'relative', background: tone.bg, color: tone.ink, borderRadius: 16, padding: '8px 10px', display: 'flex', flexDirection: 'column', justifyContent: 'center', outline: selected ? '2px solid var(--color-accent)' : '0 solid transparent', outlineOffset: 2, boxShadow: selected ? 'var(--shadow-md)' : 'none', zIndex: selected ? 3 : 1, cursor: selected || locked ? 'default' : 'pointer', opacity: locked ? 0.8 : 1 }}
           >
             {!noteOnly && (
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: b.text || selected ? 4 : 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginBottom: b.text || selected ? 4 : 0 }}>
                 {b.text || selected ? <Chip tone={tone} white>{b.chip}</Chip> : <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35, color: 'var(--color-text)', textAlign: 'center' }}>{b.chip}</span>}
+                {b.out && <OutTag />}
               </div>
             )}
             {locked && b.text && <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: 'var(--color-text)', textAlign: 'center', whiteSpace: 'pre-wrap' }}>{b.text}</span>}
