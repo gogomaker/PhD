@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, dayLabel, dayRelation, userDayKey } from './day';
+import { addDays, dayLabel, dayRelation, isDayKey, isYearKey, isYearMonth, userDayKey } from './day';
 
 describe('userDayKey (R-D1)', () => {
   it('서울 기준 오전 10시는 그날', () => {
@@ -37,5 +37,24 @@ describe('날짜 도우미', () => {
     expect(dayRelation('2026-10-01', '2026-10-01')).toBe('today');
     expect(dayRelation('2026-10-02', '2026-10-01')).toBe('tomorrow');
     expect(dayRelation('2026-10-03', '2026-10-01')).toBe('later');
+  });
+});
+
+describe('주소 값 검사 (2026-10-03 UT)', () => {
+  it('날짜', () => {
+    expect(isDayKey('2026-10-03')).toBe(true);
+    expect(isDayKey('2026-02-30')).toBe(false);
+    expect(isDayKey('9999-99-99')).toBe(false);
+    expect(isDayKey('1900-01-01')).toBe(false);
+    expect(isDayKey('abc')).toBe(false);
+    expect(isDayKey(null)).toBe(false);
+  });
+  it('달·해', () => {
+    expect(isYearMonth('2026-12')).toBe(true);
+    expect(isYearMonth('2026-13')).toBe(false);
+    expect(isYearMonth('2026-00')).toBe(false);
+    expect(isYearKey('2026')).toBe(true);
+    expect(isYearKey('99999')).toBe(false);
+    expect(isYearKey('1999')).toBe(false);
   });
 });

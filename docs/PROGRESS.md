@@ -139,6 +139,14 @@
 - R-G10: `useTableGoals(planned)` — 그 기간 계획이 있는 목표는 표에 안 올렸어도 열(`pinned` → '표 밖', ‹ › × 없음)
 - E2E: scratchpad `e2e-dsk.mjs`(45개, 오늘 = 2026-10-03 기준 날짜) + `seed-dsk.sh`
 
+## UT 고침(2026-10-03)에서 만든 것
+- 휴대폰 판별 `src/useIsMobile.ts`: 폭 768 미만 또는 `(pointer: coarse) and (hover: none) and (max-height: 767px)` (가로 휴대폰)
+- 주소 값 검사 `lib/day.ts`의 `isDayKey`·`isYearMonth`·`isYearKey`(2000~2100년, 없는 날 거름) → 모바일 일정·오늘·돌아보기, PC 연간·월간·주간·트래킹. 그래도 그리다 오류가 나면 `src/ui/ErrorBoundary.tsx`
+- 실제는 지금 칸까지(R-S11): `lib/today.ts` `nowSlot`, `TimeTable`의 `actualUntil`(뒤 칸 흐리게·시작 막기), 저장할 때 미래 칸은 빼고 보냄. DB `user_now_slot()` + 정책·`save_day_blocks`(`future_time`), 마이그레이션 `20261003000011`
+- 연결 끊김(R-S12): `src/mobile/pendingBlocks.ts`(localStorage `phd-pending-blocks`, 하루·한 층의 마지막 상태), `useDay`의 `saveLayer`·`flush`를 한 줄로(늦게 끝난 옛 상태가 덮지 않게). 연결 오류만 보관, 서버 거절은 예전처럼 되돌림
+- DB 테스트 m4·m5: 실제 칠하기가 '지금'에 묶여서 테스트 사용자의 시간대를 그날 22시쯤으로 맞춤
+- E2E: scratchpad `e2e-ut.mjs`(26개), `e2e-mv.mjs` 칠하기를 지금 바로 전 1시간으로
+
 ## 남은 일 / 알려진 제약
 - 이메일 변경: Supabase 기본 메일은 기획자 계정 이메일에만 보내져서 지금은 이메일을 읽기 전용으로 둠. 메일 서비스(SMTP) 붙일 때 같이 연다
 - 비밀번호 찾기 메일도 같은 제약(기획자 본인 이메일로는 옴)

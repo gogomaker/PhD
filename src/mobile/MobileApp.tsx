@@ -19,6 +19,7 @@ import SettingsPage from './pages/SettingsPage';
 import TutorialPage from './pages/TutorialPage';
 import { AccountSheet } from './AccountSheet';
 import { ddayText } from '../lib/dday';
+import { isDayKey } from '../lib/day';
 
 export default function MobileApp() {
   return (
@@ -186,7 +187,7 @@ function DdayChip() {
   const today = useToday();
   const loc = useLocation();
   const asked = new URLSearchParams(loc.search).get('d');
-  const day = asked && /^\d{4}-\d{2}-\d{2}$/.test(asked) ? asked : today;
+  const day = isDayKey(asked) ? asked : today;
   if (!profile?.dday_name || !profile.dday_date) return null;
   return (
     <span data-testid="dday" className="tag" style={{ maxWidth: '100%', background: 'var(--color-text)', color: 'var(--color-bg)', fontWeight: 700, fontSize: 11.5, gap: 5, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>

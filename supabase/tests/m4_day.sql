@@ -7,6 +7,12 @@ values
   ('a0000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'a@test.local', '{"name":"김가나"}'),
   ('b0000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'b@test.local', '{"name":"이다라"}');
 
+-- 실제 칠하기는 지금 칸까지만이라(2026-10-03), 테스트 사용자의 '지금'을 그날 22시쯤으로 맞춘다
+update public.profiles set timezone = (
+  select case when o > 0 then 'Etc/GMT-' || o when o < 0 then 'Etc/GMT+' || -o else 'UTC' end
+  from (select ((22 - extract(hour from now() at time zone 'UTC')::int + 36) % 24) - 12 as o) x)
+where id in ('a0000000-0000-0000-0000-00000000000a', 'b0000000-0000-0000-0000-00000000000b');
+
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-00000000000a","role":"authenticated"}', true);
 create temp table d on commit drop as select public.user_today() as today;
 grant select on d to authenticated;
@@ -124,6 +130,16 @@ begin
     insert into public.time_blocks (date, layer, start_slot, end_slot, label) values (today, 'actual', 100, 101, '자유');
     raise exception 'FAIL 실제 층 자유 키워드';
   exception when check_violation then null; end;
+  -- 실제는 지금 칸(+1 여유)까지만 (2026-10-03 UT)
+  begin
+    perform public.save_day_blocks(today, 'actual', jsonb_build_array(jsonb_build_object('start', 20, 'end', public.user_now_slot() + 3, 'task_id', t3)));
+    raise exception 'FAIL 아직 오지 않은 시간 칠하기';
+  exception when raise_exception then if sqlerrm <> 'future_time' then raise; end if; end;
+  begin
+    insert into public.time_blocks (date, layer, start_slot, end_slot, task_id) values (today, 'actual', public.user_now_slot() + 2, public.user_now_slot() + 2, t3);
+    raise exception 'FAIL 아직 오지 않은 시간 직접 추가';
+  exception when insufficient_privilege then null; end;
+  perform public.save_day_blocks(today, 'actual', jsonb_build_array(jsonb_build_object('start', 20, 'end', 25, 'task_id', t3)));
 
   -- ── 하루 기록: 오늘만 ──
   insert into public.day_journals (date, score, reason, thanks) values (today, 4, '단어를 다 외웠다', array['친구', '', '']);
@@ -200,6 +216,8 @@ end $$;
 do $$
 declare A uuid := 'a0000000-0000-0000-0000-00000000000a'; d0 date; n int; ok boolean; kw uuid; st time; tid uuid;
 begin
+  -- 이 부분은 서울 시간 기준으로 본다 (위에서 바꾼 테스트용 시간대를 되돌림)
+  update public.profiles set timezone = 'Asia/Seoul' where id = A;
   -- 05시 시작: 10.2 새벽 1시는 아직 10.1
   if public.user_day_at(A, '2026-10-02 01:00+09') <> '2026-10-01' then raise exception 'FAIL 새벽 1시가 전날이 아님'; end if;
   if public.user_day_at(A, '2026-10-02 05:00+09') <> '2026-10-02' then raise exception 'FAIL 05시부터 새 날'; end if;

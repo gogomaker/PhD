@@ -168,3 +168,10 @@ export function paint<T>(snapshot: (T | null)[], from: number, to: number, value
 export function fmtMinutes(m: number) {
   return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
 }
+
+/** 지금이 오늘의 몇 번째 10분 칸인지 (사용자 시간대 + 하루 시작 시각, R-D1). 실제 시간은 이 칸까지만 칠한다 (2026-10-03 UT) */
+export function nowSlot(at: Date, timeZone: string, dayStart: number) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(at);
+  const get = (t: string) => Number(parts.find(p => p.type === t)!.value);
+  return ((get('hour') - dayStart + 24) % 24) * 6 + Math.floor(get('minute') / 10);
+}

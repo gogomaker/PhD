@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { errorText } from '../../lib/errors';
 import { useAccount, useToday, type Goal } from '../../account/AccountProvider';
 import { PALETTE } from '../../lib/palette';
-import { addDays, dayLabel, type DayKey } from '../../lib/day';
+import { addDays, dayLabel, isDayKey, isYearMonth, type DayKey } from '../../lib/day';
 import { isClosed, sortGoals } from '../../lib/goals';
 import { hours, periodFromKey, periodLabel, periodOf, rate, shiftPeriod, type Period, type Range } from '../../lib/tracking';
 import { md } from '../../lib/plan';
@@ -28,7 +28,7 @@ export default function ReviewTab() {
   const q = new URLSearchParams(loc.search);
   const range: Range = q.get('r') === 'month' ? 'month' : 'week';
   const key = q.get('k');
-  const period = key && (range === 'week' ? /^\d{4}-\d{2}-\d{2}$/.test(key) : /^\d{4}-\d{2}$/.test(key)) ? periodFromKey(range, key) : periodOf(range, today);
+  const period = range === 'week' ? (isDayKey(key) ? periodFromKey(range, key) : periodOf(range, today)) : isYearMonth(key) ? periodFromKey(range, key) : periodOf(range, today);
   const isCurrent = period.key === periodOf(range, today).key;
   const go = (p: Period) => {
     const cur = periodOf(p.range, today).key === p.key;

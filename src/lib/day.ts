@@ -56,3 +56,17 @@ export function dayRelation(key: DayKey, today: DayKey): DayRelation {
   if (diff === 1) return 'tomorrow';
   return 'later';
 }
+
+// ───────── 주소에서 읽은 값 검사 (2026-10-03 UT: 이상한 주소로 앱이 멈추던 문제) ─────────
+const YEAR_MIN = 2000, YEAR_MAX = 2100;
+const okYear = (y: number) => y >= YEAR_MIN && y <= YEAR_MAX;
+/** '2026' — 2000~2100년 */
+export const isYearKey = (s: string | null | undefined): s is string => !!s && /^\d{4}$/.test(s) && okYear(Number(s));
+/** '2026-10' — 달은 01~12 */
+export const isYearMonth = (s: string | null | undefined): s is string => !!s && /^\d{4}-(0[1-9]|1[0-2])$/.test(s) && okYear(Number(s.slice(0, 4)));
+/** '2026-10-03' — 실제로 있는 날 (2월 30일 같은 날은 아님) */
+export const isDayKey = (s: string | null | undefined): s is DayKey => {
+  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const [y, m, d] = s.split('-').map(Number);
+  return okYear(y) && toDayKey(y, m, d) === s;
+};

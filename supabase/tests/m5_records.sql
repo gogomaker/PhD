@@ -7,6 +7,12 @@ values
   ('a0000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'a@test.local', '{"name":"김가나"}'),
   ('b0000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'b@test.local', '{"name":"이다라"}');
 
+-- 실제 칠하기는 지금 칸까지만이라(2026-10-03), 테스트 사용자의 '지금'을 그날 22시쯤으로 맞춘다
+update public.profiles set timezone = (
+  select case when o > 0 then 'Etc/GMT-' || o when o < 0 then 'Etc/GMT+' || -o else 'UTC' end
+  from (select ((22 - extract(hour from now() at time zone 'UTC')::int + 36) % 24) - 12 as o) x)
+where id in ('a0000000-0000-0000-0000-00000000000a', 'b0000000-0000-0000-0000-00000000000b');
+
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-00000000000a","role":"authenticated"}', true);
 create temp table d on commit drop as select public.user_today() as today;
 grant select on d to authenticated;
@@ -108,7 +114,7 @@ reset role;
 do $$
 declare A uuid := 'a0000000-0000-0000-0000-00000000000a'; B uuid := 'b0000000-0000-0000-0000-00000000000b'; n int; nowt time;
 begin
-  nowt := date_trunc('minute', (now() at time zone 'Asia/Seoul')::time);
+  nowt := date_trunc('minute', (now() at time zone (select timezone from public.profiles where id = A))::time);
   insert into public.push_subscriptions (user_id, endpoint, p256dh, auth) values (A, 'https://example.invalid/a', 'k', 'a'), (B, 'https://example.invalid/b', 'k', 'a');
   update public.profiles set review_notify_enabled = true, review_notify_time = nowt where id in (A, B);
   -- B는 오늘 하루 기록을 이미 썼다 → 안 보냄

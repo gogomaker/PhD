@@ -2,7 +2,7 @@
 import { useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useToday, type MonthCell, type Note, type Practice, type YearCell } from '../../account/AccountProvider';
-import { addDays, dayLabel, type DayKey } from '../../lib/day';
+import { addDays, dayLabel, isDayKey, isYearKey, isYearMonth, type DayKey } from '../../lib/day';
 import { addMonths, fmtDays, md, monthOfWeek, monthWeeks, practiceDates, weekDays, weekStartOf, ymOf } from '../../lib/plan';
 
 const slotsOf = (zoom: Zoom, key: string, today: string) => unitsOf(zoom, key, today);
@@ -33,7 +33,7 @@ export default function ScheduleTab() {
   const thisYm = monthOfWeek(thisWeek).ym;
   const thisYear = today.slice(0, 4);
   const k = q.get('k') ?? '';
-  const key = zoom === 'year' ? (/^\d{4}$/.test(k) ? k : thisYear) : zoom === 'month' ? (/^\d{4}-\d{2}$/.test(k) ? k : thisYm) : /^\d{4}-\d{2}-\d{2}$/.test(k) ? weekStartOf(k) : thisWeek;
+  const key = zoom === 'year' ? (isYearKey(k) ? k : thisYear) : zoom === 'month' ? (isYearMonth(k) ? k : thisYm) : isDayKey(k) ? weekStartOf(k) : thisWeek;
   const filter = list.some(g => g.id === q.get('f')) ? q.get('f') : null;
   const set = (z: Zoom, kk: string, f: string | null = filter) => {
     const p = new URLSearchParams();
