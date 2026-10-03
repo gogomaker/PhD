@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeDay, paint, segments, slotOf, timeOf, timedSlots, type PracticeLite, type TaskRow } from './today';
+import { computeDay, nowSlot, paint, segments, slotOf, timeOf, timedSlots, type PracticeLite, type TaskRow } from './today';
 
 // 2026-09-27(일) 주. 목 = 10-01
 const W = '2026-09-27';
@@ -122,5 +122,15 @@ describe('형광펜 (R-S5)', () => {
   });
   it('구간으로 묶기 (R-S4)', () => {
     expect(segments(['A', 'A', null, 'A', 'B', 'B'])).toEqual([{ value: 'A', start: 0, end: 1 }, { value: 'A', start: 3, end: 3 }, { value: 'B', start: 4, end: 5 }]);
+  });
+});
+
+describe('nowSlot (2026-10-03 UT: 실제는 지금 칸까지만)', () => {
+  it('05시 시작: 서울 16:53 → 71번째 칸 (16:50~17:00)', () => {
+    expect(nowSlot(new Date('2026-10-03T07:53:00Z'), 'Asia/Seoul', 5)).toBe(71);
+  });
+  it('하루 시작 직후·직전', () => {
+    expect(nowSlot(new Date('2026-10-02T20:00:00Z'), 'Asia/Seoul', 5)).toBe(0);
+    expect(nowSlot(new Date('2026-10-02T19:59:00Z'), 'Asia/Seoul', 5)).toBe(143);
   });
 });

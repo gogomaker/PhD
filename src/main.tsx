@@ -7,6 +7,7 @@ import './styles/app.css';
 import './styles/theme.css';
 import App from './App';
 import { AccountProvider } from './account/AccountProvider';
+import { ErrorBoundary } from './ui/ErrorBoundary';
 import { registerServiceWorker } from './mobile/push';
 import { watchSystemTheme } from './lib/theme';
 
@@ -16,9 +17,11 @@ registerServiceWorker();
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <AccountProvider>
-        <App />
-      </AccountProvider>
+      <ErrorBoundary>
+        <AccountProvider>
+          <App />
+        </AccountProvider>
+      </ErrorBoundary>
     </BrowserRouter>
   </StrictMode>,
 );

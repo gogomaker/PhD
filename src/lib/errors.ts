@@ -19,6 +19,7 @@ export function errorText(e: unknown): string {
   };
   if (auth[code]) return auth[code];
   if (msg.includes('day_locked')) return '이 날은 시간표를 바꿀 수 없어요';
+  if (msg.includes('future_time')) return '아직 오지 않은 시간은 칠할 수 없어요';
   if (msg.includes('goal_not_in_progress')) return '진행 중인 목표만 마무리할 수 있어요';
   if (msg.includes('finish_photo_invalid')) return '인증사진은 완성일 때만 올릴 수 있어요';
   if (msg.includes('mime type') || msg.includes('exceeded the maximum allowed size')) return '사진은 5MB 이하 JPG·PNG·WEBP만 올릴 수 있어요';
@@ -32,6 +33,6 @@ export function errorText(e: unknown): string {
   if (code === '23505' && msg.includes('color')) return '이미 다른 카테고리가 쓰는 색이에요';
   if (code === '23505') return '이미 있는 이름이에요';
   if (code === '23514') return '입력한 내용을 확인해 주세요';
-  if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) return '연결이 불안정해요. 다시 시도해 주세요';
+  if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Load failed')) return '연결이 불안정해요. 다시 시도해 주세요';
   return '문제가 생겼어요. 다시 시도해 주세요';
 }

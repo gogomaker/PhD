@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAccount, useToday } from '../../account/AccountProvider';
-import { addDays } from '../../lib/day';
+import { addDays, isYearMonth } from '../../lib/day';
 import { addMonths, md, monthOfWeek, monthWeeks, outside, weekLocked, weekStartOf, WEEK_START } from '../../lib/plan';
 import { MergeColumn, type MBlock } from './MergeColumn';
 import { ColumnHeader, LockNote, NOTE, NoColumns, PlanHeader, PopHead, Popover, RefRow, RowLabel, SubgoalPicker, TableFrame, useSelection, useTableGoals, type RefCell } from './shared';
@@ -14,7 +14,8 @@ export default function MonthPlan() {
   const ws = WEEK_START;
   const [params, setParams] = useSearchParams();
   const thisYm = monthOfWeek(weekStartOf(today, ws)).ym;
-  const ym = /^\d{4}-\d{2}$/.test(params.get('m') ?? '') ? params.get('m')! : thisYm;
+  const asked = params.get('m');
+  const ym = isYearMonth(asked) ? asked : thisYm;
   const ymKey = ym + '-01';
   const weeks = monthWeeks(ym, ws);
   const todayWeek = weeks.indexOf(weekStartOf(today, ws));

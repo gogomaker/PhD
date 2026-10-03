@@ -30,11 +30,13 @@ function fmtLen(n: number) {
  * 10분 시간표 (R-S1~S9). 계획 = 회색 테두리 네모, 실제 = 형광펜 띠(계획 아래 층).
  * 드래그는 형광펜 방식(R-S5): 누른 칸부터 현재 칸까지, 되돌리면 드래그 전 상태로.
  */
-export function TimeTable({ dayStart, mode, canPlan, canAct, brush, plan, actual, reserved, planView, bandView, hint, onPreview, onPlanTap, onPlanDrawn, onCommit }: {
+export function TimeTable({ dayStart, mode, canPlan, canAct, actualUntil = SLOTS - 1, brush, plan, actual, reserved, planView, bandView, hint, onPreview, onPlanTap, onPlanDrawn, onCommit }: {
   dayStart: number;
   mode: 'plan' | 'actual';
   canPlan: boolean;
   canAct: boolean;
+  /** 실제는 이 칸까지만 칠한다 (오늘의 지금 칸). 그 뒤는 지우기만 */
+  actualUntil?: number;
   brush: string | null;
   plan: Cells;
   actual: Cells;
@@ -51,6 +53,9 @@ export function TimeTable({ dayStart, mode, canPlan, canAct, brush, plan, actual
   const drag = useRef<{ layer: 'plan' | 'actual'; start: number; cur: number; value: string | null; snap: Cells; tap: string | null } | null>(null);
   const [range, setRange] = useState<[number, number] | null>(null);
   const skip = reserved.map(Boolean);
+  const future = Array.from({ length: SLOTS }, (_, i) => i > actualUntil);
+  const [note, setNote] = useState<string | null>(null);
+  const skipOf = (g: { layer: 'plan' | 'actual'; value: string | null }) => (g.layer === 'plan' ? skip : g.value ? future : undefined);
 
   const cellAt = (e: RPointerEvent) => {
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
@@ -61,7 +66,7 @@ export function TimeTable({ dayStart, mode, canPlan, canAct, brush, plan, actual
     const g = drag.current;
     if (!g || i < 0 || i === g.cur) return;
     g.cur = i;
-    onPreview(g.layer, paint(g.snap, g.start, i, g.value, g.layer === 'plan' ? skip : undefined));
+    onPreview(g.layer, paint(g.snap, g.start, i, g.value, skipOf(g)));
     setRange([Math.min(g.start, i), Math.max(g.start, i)]);
   };
   const down = (e: RPointerEvent) => {
@@ -73,6 +78,11 @@ export function TimeTable({ dayStart, mode, canPlan, canAct, brush, plan, actual
       drag.current = { layer: 'plan', start: i, cur: -1, value: ex ? null : 'b' + Date.now().toString(36), snap: plan.slice(), tap: ex };
     } else {
       if (!canAct || !brush) return;
+      // 아직 오지 않은 시간에서는 칠하기를 시작하지 않는다 (칠해 둔 칸 지우기는 된다)
+      if (future[i] && actual[i] !== brush) {
+        setNote('아직 오지 않은 시간은 칠할 수 없어요');
+        return;
+      }
       // 같은 것으로 이미 칠한 칸에서 시작하면 지우기, 아니면 덮어 칠하기 (R-S5, R-S7)
       drag.current = { layer: 'actual', start: i, cur: -1, value: actual[i] === brush ? null : brush, snap: actual.slice(), tap: null };
     }
@@ -84,7 +94,7 @@ export function TimeTable({ dayStart, mode, canPlan, canAct, brush, plan, actual
     drag.current = null;
     setRange(null);
     if (!g) return;
-    const cells = paint(g.snap, g.start, g.cur, g.value, g.layer === 'plan' ? skip : undefined);
+    const cells = paint(g.snap, g.start, g.cur, g.value, skipOf(g));
     if (g.layer === 'plan' && g.tap && g.cur === g.start) {
       onPreview('plan', g.snap);
       onPlanTap(g.tap);
@@ -93,7 +103,8 @@ export function TimeTable({ dayStart, mode, canPlan, canAct, brush, plan, actual
   };
 
   const editable = mode === 'plan' ? canPlan : canAct && !!brush;
-  const rangeHint = range ? `${timeOf(range[0], dayStart)} – ${timeOf(range[1] + 1, dayStart)} · ${fmtLen(range[1] - range[0] + 1)}` : hint;
+  const rangeHint = range ? `${timeOf(range[0], dayStart)} – ${timeOf(range[1] + 1, dayStart)} · ${fmtLen(range[1] - range[0] + 1)}` : note ?? hint;
+  const showFuture = mode === 'actual' && canAct && actualUntil < SLOTS - 1;
 
   // 계획 층: 예약 블록(알람)과 그린 블록. 이름은 첫 줄 중 3칸 이상인 곳에, 20분 이하는 생략 (R-S3)
   const planCells = plan.map((v, i) => reserved[i] ?? v);
@@ -116,7 +127,7 @@ export function TimeTable({ dayStart, mode, canPlan, canAct, brush, plan, actual
       </div>
       <div
         data-testid="time-grid"
-        onPointerDown={down}
+        onPointerDown={e => { setNote(null); down(e); }}
         onPointerMove={e => drag.current && apply(cellAt(e))}
         onPointerUp={up}
         onPointerCancel={up}
@@ -133,7 +144,7 @@ export function TimeTable({ dayStart, mode, canPlan, canAct, brush, plan, actual
         {/* R-S2: 얇은 선, 칸 사이 틈 없음, 30분 위치 점선 */}
         {Array.from({ length: SLOTS }, (_, i) => {
           const c = i % 6;
-          return <div key={i} data-i={i} style={{ gridColumn: c + 2, gridRow: Math.floor(i / 6) + 1, borderRight: c === 5 ? 'none' : c === 2 ? '1px dashed var(--color-neutral-400)' : '1px solid var(--color-neutral-200)', borderBottom: '1px solid var(--color-neutral-400)' }} />;
+          return <div key={i} data-i={i} data-future={(showFuture && future[i]) || undefined} style={{ gridColumn: c + 2, gridRow: Math.floor(i / 6) + 1, background: showFuture && future[i] ? 'color-mix(in oklch, var(--color-neutral-400) 22%, transparent)' : undefined, borderRight: c === 5 ? 'none' : c === 2 ? '1px dashed var(--color-neutral-400)' : '1px solid var(--color-neutral-200)', borderBottom: '1px solid var(--color-neutral-400)' }} />;
         })}
         {/* 실제: 형광펜 띠 (칸 높이 약 70%) */}
         {bands.map(b => (

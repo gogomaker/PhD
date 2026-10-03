@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAccount, useToday } from '../../account/AccountProvider';
+import { isYearKey } from '../../lib/day';
 import { MergeColumn, type MBlock } from './MergeColumn';
 import { ColumnHeader, LockNote, NoColumns, PlanHeader, PopHead, Popover, RowLabel, SubgoalPicker, TableFrame, useSelection, useTableGoals } from './shared';
 
@@ -14,7 +15,8 @@ export default function YearPlan() {
   const today = useToday();
   const [params, setParams] = useSearchParams();
   const thisYear = Number(today.slice(0, 4));
-  const year = Number(params.get('y')) || thisYear;
+  const asked = params.get('y');
+  const year = isYearKey(asked) ? Number(asked) : thisYear;
   // 이 해에 계획이 있는 목표는 숨겼어도 열로
   const planned = new Set(yearCells.filter(c => c.start_month.startsWith(String(year))).map(c => c.goal_id));
   const { cols, toneOf, catOf, subsOf, pinned } = useTableGoals(planned);

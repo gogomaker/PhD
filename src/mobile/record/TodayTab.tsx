@@ -3,9 +3,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../../Icon';
 import { useAccount, useToday } from '../../account/AccountProvider';
-import { addDays, dayLabel, diffDays, DEFAULT_DAY_START_HOUR, type DayKey } from '../../lib/day';
+import { addDays, dayLabel, diffDays, DEFAULT_DAY_START_HOUR, DEFAULT_TIMEZONE, isDayKey, type DayKey } from '../../lib/day';
 import { PALETTE } from '../../lib/palette';
-import { fmtMinutes, relOf, segments, SLOTS, timedSlots, timeOf, type DayItem, type TaskRow } from '../../lib/today';
+import { fmtMinutes, nowSlot, relOf, segments, SLOTS, timedSlots, timeOf, type DayItem, type TaskRow } from '../../lib/today';
 import type { Tone } from '../../desktop/plan/shared';
 import { useDay } from '../useDay';
 import { TimeTable, type BandView, type Cells, type PlanBoxView } from '../TimeTable';
@@ -34,7 +34,7 @@ export default function TodayTab() {
   const navigate = useNavigate();
   // 보는 날은 주소에 (?d=날짜, 없으면 오늘)
   const asked = new URLSearchParams(loc.search).get('d');
-  const day = asked && /^\d{4}-\d{2}-\d{2}$/.test(asked) ? asked : today;
+  const day = isDayKey(asked) ? asked : today;
   const rel = relOf(day, today);
   const D = useDay(day, today);
   const [sheet, setSheet] = useState<SheetState>(null);
@@ -51,6 +51,16 @@ export default function TodayTab() {
   // 하루 기록은 불러온 뒤에 연다 (덜 불러온 채 열면 빈 기록으로 보이므로)
   const canJournal = rel <= 0 && D.loaded;
   const effMode = canAct ? mode : 'plan';
+  // 실제 시간은 지금 칸까지만 (2026-10-03 UT). 30초마다 다시 본다
+  const tz = profile?.timezone ?? DEFAULT_TIMEZONE;
+  const [slotNow, setSlotNow] = useState(() => nowSlot(new Date(), tz, dayStart));
+  useEffect(() => {
+    const tick = () => setSlotNow(nowSlot(new Date(), tz, dayStart));
+    tick();
+    const t = setInterval(tick, 30_000);
+    return () => clearInterval(t);
+  }, [tz, dayStart]);
+  const actualUntil = rel === 0 ? slotNow : SLOTS - 1;
 
   const go = (d: DayKey) => {
     setSheet(null);
@@ -138,8 +148,11 @@ export default function TodayTab() {
   };
   const savePlan = (cells: Cells, info: Record<string, PlanInfo>) =>
     enqueue(() => D.saveLayer('plan', segments(cells).map(s => ({ start: s.start, end: s.end, key: s.value, ...info[s.value] }))));
-  const saveActual = (cells: Cells) =>
-    enqueue(() => D.saveLayer('actual', segments(cells).map(s => (s.value.startsWith('task:') ? { start: s.start, end: s.end, task_id: s.value.slice(5) } : { start: s.start, end: s.end, keyword_id: s.value.slice(3) }))));
+  // 아직 오지 않은 칸은 저장하지 않는다 (예전에 칠해 둔 것도 이때 빠진다)
+  const saveActual = (all: Cells) => {
+    const cells = all.map((v, i) => (i > actualUntil ? null : v));
+    return enqueue(() => D.saveLayer('actual', segments(cells).map(s => (s.value.startsWith('task:') ? { start: s.start, end: s.end, task_id: s.value.slice(5) } : { start: s.start, end: s.end, keyword_id: s.value.slice(3) }))));
+  };
 
   // R-S10: 계획 시간 / 실제 시간 (가장 가까운 목표 기한은 탭 줄 오른쪽)
   const plannedMin = plan.cells.filter((v, i) => v || reserved[i]).length * 10;
@@ -286,6 +299,17 @@ export default function TodayTab() {
         )}
         {rel !== 0 && <button onClick={() => go(today)} className="btn btn-secondary" style={{ height: 28, padding: '0 10px', marginLeft: 4, ...BODY, fontSize: 12 }}>오늘</button>}
         <div style={{ flex: 1 }} />
+        {/* 연결이 끊겨 못 보낸 시간표가 있으면 (자리는 늘 잡아 두어 레이아웃이 변하지 않게) */}
+        <button
+          data-testid="save-pending"
+          aria-hidden={!D.pending || undefined}
+          tabIndex={D.pending ? 0 : -1}
+          onClick={() => toast('연결이 끊겨 이 기기에 두었어요. 연결되면 자동으로 저장해요')}
+          className="tag tag-neutral"
+          style={{ visibility: D.pending ? 'visible' : 'hidden', border: 0, cursor: 'pointer', fontWeight: 700, fontSize: 11, whiteSpace: 'nowrap', marginRight: 6 }}
+        >
+          저장 대기
+        </button>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, fontSize: 11.5, color: 'var(--color-neutral-700)', whiteSpace: 'nowrap' }}>
           <span>계획 <b data-testid="planned" style={{ color: 'var(--color-text)' }}>{fmtMinutes(plannedMin)}</b></span>
           <span>실제 <b data-testid="actual" style={{ color: 'var(--color-accent-700)' }}>{fmtMinutes(actualMin)}</b></span>
@@ -352,6 +376,7 @@ export default function TodayTab() {
             mode={effMode}
             canPlan={canPlan}
             canAct={canAct}
+            actualUntil={actualUntil}
             brush={brush}
             plan={plan.cells}
             actual={actual}

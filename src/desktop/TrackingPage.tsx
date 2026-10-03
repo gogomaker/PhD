@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { errorText } from '../lib/errors';
 import { useAccount, useToday, type Goal } from '../account/AccountProvider';
 import { PALETTE } from '../lib/palette';
-import { addDays, dayLabel, userDayKey, type DayKey } from '../lib/day';
+import { addDays, dayLabel, isDayKey, isYearMonth, userDayKey, type DayKey } from '../lib/day';
 import { isClosed, sortGoals, STATUS_LABEL } from '../lib/goals';
 import { hours, periodFromKey, periodLabel, periodOf, periodTitle, rate, shiftPeriod, type Period, type Range } from '../lib/tracking';
 import { ICONS, Svg } from './plan/shared';
@@ -29,7 +29,7 @@ export default function TrackingPage() {
   const [params, setParams] = useSearchParams();
   const range: Range = params.get('r') === 'month' ? 'month' : 'week';
   const key = params.get('k');
-  const period = key ? periodFromKey(range, key) : periodOf(range, today);
+  const period = (range === 'week' ? isDayKey(key) : isYearMonth(key)) ? periodFromKey(range, key!) : periodOf(range, today);
   const isCurrent = period.key === periodOf(range, today).key;
   const go = (p: Period) => setParams({ r: p.range, k: p.key }, { replace: true });
 

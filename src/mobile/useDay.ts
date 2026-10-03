@@ -4,6 +4,7 @@ import { errorText } from '../lib/errors';
 import { useAccount } from '../account/AccountProvider';
 import { userDayKey, type DayKey } from '../lib/day';
 import { computeDay, type DayItem, type TaskRow } from '../lib/today';
+import { dropPending, isNetworkError, pendingOf, putPending, type BlockInput, type Pending } from './pendingBlocks';
 
 export type BlockRow = { id: string; date: string; layer: 'plan' | 'actual'; start_slot: number; end_slot: number; task_id: string | null; daily_keyword_id: string | null; label: string | null; block_key: string | null };
 export type Journal = { id?: string; date: string; score: number | null; reason: string; thanks: string[]; memo: string };
@@ -15,6 +16,11 @@ export function useDay(day: DayKey, today: DayKey) {
   const [blocks, setBlocks] = useState<BlockRow[]>([]);
   const [journal, setJournal] = useState<Journal | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const user = profile?.id ?? '';
+  // 연결이 끊겨 못 보낸 시간표 (이 기기에 보관, 2026-10-03 UT)
+  const [pendingVer, setPendingVer] = useState(0);
+  const bump = useCallback(() => setPendingVer(v => v + 1), []);
+  const warned = useRef(false);
 
   const loadTasks = useCallback(async () => {
     const { data, error } = await supabase.from('tasks').select('*').order('created_at');
@@ -33,9 +39,9 @@ export function useDay(day: DayKey, today: DayKey) {
       supabase.from('day_journals').select('id, date, score, reason, thanks, memo').eq('date', day).maybeSingle(),
     ]);
     if (b.error || j.error) return toast(errorText(b.error ?? j.error));
-    if (edits.current === v) setBlocks(b.data as BlockRow[]);
+    if (edits.current === v) setBlocks(withPending(b.data as BlockRow[], user ? pendingOf(user, day) : []));
     setJournal(j.data as Journal | null);
-  }, [day, toast]);
+  }, [day, toast, user]);
 
   useEffect(() => {
     setLoaded(false);
@@ -101,16 +107,76 @@ export function useDay(day: DayKey, today: DayKey) {
 
   const removeTask = (id: string) => mutate(supabase.from('tasks').delete().eq('id', id), 'both');
 
-  const saveLayer = async (layer: 'plan' | 'actual', rows: { start: number; end: number; task_id?: string | null; keyword_id?: string | null; label?: string | null; key?: string }[]) => {
-    // 화면의 칸 상태가 기준. 성공하면 다시 읽지 않는다(이어서 그린 것을 옛 상태로 덮어쓰지 않도록), 실패하면 서버 상태로 되돌린다
-    const { error } = await supabase.rpc('save_day_blocks', { p_date: day, p_layer: layer, p_blocks: rows });
-    if (error) {
-      toast(errorText(error));
-      edits.current++; // 실패하면 서버 상태로 되돌린다 (이 다시 읽기는 반영)
-      await loadDay();
-    }
-    return !error;
+  // 시간표 저장과 보관분 보내기는 한 줄로 (늦게 끝난 옛 상태가 새 상태를 덮지 않게)
+  const chain = useRef<Promise<unknown>>(Promise.resolve());
+  const serial = <T,>(fn: () => Promise<T>): Promise<T> => {
+    const run = chain.current.then(fn, fn);
+    chain.current = run.catch(() => undefined);
+    return run;
   };
+
+  const saveLayer = (layer: 'plan' | 'actual', rows: BlockInput[]) =>
+    serial(async () => {
+      // 화면의 칸 상태가 기준. 성공하면 다시 읽지 않는다(이어서 그린 것을 옛 상태로 덮어쓰지 않도록)
+      const { error } = await supabase.rpc('save_day_blocks', { p_date: day, p_layer: layer, p_blocks: rows });
+      if (!error) {
+        if (user && pendingOf(user, day).some(p => p.layer === layer)) {
+          dropPending(user, day, layer);
+          bump();
+        }
+        return true;
+      }
+      if (user && isNetworkError(error)) {
+        // 닿지 못했으면 화면은 그대로 두고 이 기기에 보관 → 연결되면 보낸다
+        putPending({ user, day, layer, rows, at: Date.now() });
+        bump();
+        if (!warned.current) toast('연결이 끊겼어요. 칠한 시간은 이 기기에 두었다가 연결되면 저장해요');
+        warned.current = true;
+        return false;
+      }
+      // 서버가 거절하면 서버 상태로 되돌린다 (이 다시 읽기는 반영)
+      toast(errorText(error));
+      edits.current++;
+      await loadDay();
+      return false;
+    });
+
+  /** 보관해 둔 시간표를 보낸다. 지난 날이 되어 거절되면 버리고 알린다 */
+  const flush = useCallback(
+    () =>
+      serial(async () => {
+        if (!user) return;
+        let changed = false;
+        for (const p of pendingOf(user)) {
+          const { error } = await supabase.rpc('save_day_blocks', { p_date: p.day, p_layer: p.layer, p_blocks: p.rows });
+          if (error && isNetworkError(error)) break;
+          dropPending(user, p.day, p.layer, p.at);
+          changed = true;
+          if (error) toast(`${p.day.slice(5).replace('-', '.')} 시간표를 저장하지 못했어요 · ${errorText(error)}`);
+          else if (!pendingOf(user).length) toast('연결됐어요. 기다리던 시간표를 저장했어요');
+        }
+        if (changed) {
+          warned.current = false;
+          bump();
+          edits.current++;
+          await loadDay();
+        }
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user, loadDay, toast, bump],
+  );
+
+  // 열 때, 연결이 돌아올 때, 보관분이 있으면 20초마다
+  const hasPending = !!user && pendingOf(user).length > 0;
+  useEffect(() => {
+    if (!user) return;
+    if (pendingOf(user).length) flush();
+    const on = () => flush();
+    window.addEventListener('online', on);
+    const t = hasPending ? setInterval(on, 20_000) : undefined;
+    return () => { window.removeEventListener('online', on); if (t) clearInterval(t); };
+  }, [user, flush, hasPending]);
+  const pending = !!user && pendingVer >= 0 && pendingOf(user, day).length > 0;
 
   const saveJournal = async (j: Journal) => {
     const body = { score: j.score, reason: j.reason, thanks: j.thanks, memo: j.memo };
@@ -125,5 +191,17 @@ export function useDay(day: DayKey, today: DayKey) {
     return true;
   };
 
-  return { loaded, tasks, blocks, journal, list, ensureRow, toggleDone, addDirect, removeTask, saveLayer, saveJournal, noteEdit };
+  return { loaded, tasks, blocks, journal, list, ensureRow, toggleDone, addDirect, removeTask, saveLayer, saveJournal, noteEdit, pending };
+}
+
+/** 서버에서 읽은 블록 위에, 보관 중인 층을 덮어 보여 준다 */
+function withPending(rows: BlockRow[], pend: Pending[]): BlockRow[] {
+  if (!pend.length) return rows;
+  const layers = new Set(pend.map(p => p.layer));
+  return [
+    ...rows.filter(r => !layers.has(r.layer)),
+    ...pend.flatMap(p =>
+      p.rows.map((r, i) => ({ id: `pending-${p.layer}-${i}`, date: p.day, layer: p.layer, start_slot: r.start, end_slot: r.end, task_id: r.task_id ?? null, daily_keyword_id: r.keyword_id ?? null, label: r.label ?? null, block_key: r.key ?? null })),
+    ),
+  ];
 }

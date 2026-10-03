@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAccount, useToday, type Goal, type Practice } from '../../account/AccountProvider';
-import { addDays, dayLabel, type DayKey } from '../../lib/day';
+import { addDays, dayLabel, isDayKey, type DayKey } from '../../lib/day';
 import { dayLocked, fmtDays, isoDow, md, monthOfWeek, monthWeeks, outside, practiceDates, weekDays, weekStartOf, WEEK_START } from '../../lib/plan';
 import { MergeColumn, type MBlock } from './MergeColumn';
 import { Chip, ColumnHeader, ICONS, LockNote, NOTE, NoColumns, OutTag, PlanHeader, PopHead, Popover, RefRow, RowLabel, SubgoalPicker, Svg, TableFrame, useSelection, useTableGoals, type RefCell, type Tone } from './shared';
@@ -20,7 +20,7 @@ export default function WeekPlan() {
   const [params, setParams] = useSearchParams();
   const thisWeek = weekStartOf(today, ws);
   const asked = params.get('w');
-  const week = asked && /^\d{4}-\d{2}-\d{2}$/.test(asked) ? weekStartOf(asked, ws) : thisWeek;
+  const week = isDayKey(asked) ? weekStartOf(asked, ws) : thisWeek;
   const days = weekDays(week);
   const labels = days.map(d => dayLabel(d).dow);
   const { ym, index } = monthOfWeek(week);
