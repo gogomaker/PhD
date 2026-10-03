@@ -90,12 +90,12 @@ export async function buildExport(): Promise<{ name: string; data: Uint8Array }[
   }
   files.push(['계획표.csv', ['표', '기간', '목표', '세부목표', '내용', '요일', '시간'], planRows]);
 
-  files.push(['할일.csv', ['날짜', '구분', '목표', '세부목표', '할 일', '키워드', '시작', '끝', '완료 시각', '처음 날짜(넘어온 일)'],
+  files.push(['할일.csv', ['날짜', '구분', '목표', '세부목표', '할 일', '키워드', '시작', '끝', '완료 시각', '취소 시각', '처음 날짜(넘어온 일)'],
     [...tasks].sort((a, b) => a.date.localeCompare(b.date) || String(a.created_at).localeCompare(String(b.created_at))).map(t => {
       const i = taskInfo(t);
       // 시간을 정한 실천이면 그 시각
       const pr = t.practice_id ? prac.get(t.practice_id) : null;
-      return [t.date, SOURCE[t.source], i.goal, i.sub, i.name, i.kw, hm(t.start_time ?? pr?.start_time), hm(t.end_time ?? pr?.end_time), at(t.done_at), t.carried_from_date];
+      return [t.date, SOURCE[t.source], i.goal, i.sub, i.name, i.kw, hm(t.start_time ?? pr?.start_time), hm(t.end_time ?? pr?.end_time), at(t.done_at), at(t.canceled_at), t.carried_from_date];
     })]);
 
   files.push(['시간기록.csv', ['날짜', '구분', '시작', '끝', '분', '목표', '할 일', '키워드', '이름'],

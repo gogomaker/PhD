@@ -22,7 +22,7 @@ export default function TodayPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span className="tag tag-accent" style={{ alignSelf: 'flex-start', fontWeight: 700 }}>기록 · 오늘</span>
           <h1 style={{ margin: 0, fontSize: 42 }}>오늘의 10분</h1>
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>10분 칸을 끌어 칠하면 무엇을 했는지 골라요. ← → 키로 날짜를 넘겨요. 휴대폰 '기록 › 오늘'과 같은 기록이에요.</p>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>10분 칸을 끌어 칠하면 무엇을 했는지 골라요. ← → 키로 날짜를 넘겨요. 할 일을 길게 누르면 취소·삭제할 수 있어요. 휴대폰 '기록 › 오늘'과 같은 기록이에요.</p>
         </div>
         <div style={{ width: 240 }}><SideDday /></div>
       </div>

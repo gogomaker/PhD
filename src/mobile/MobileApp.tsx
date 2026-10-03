@@ -88,7 +88,7 @@ function Shell() {
   const pageOpen = !!page;
 
   return (
-    <div className="m-clip" style={{ position: 'relative', height: '100dvh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', paddingTop: 'env(safe-area-inset-top)', boxSizing: 'border-box' }}>
+    <div className="m-clip" style={{ position: 'relative', height: '100dvh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', paddingTop: 'calc(env(safe-area-inset-top) + var(--offline-h, 0px))', boxSizing: 'border-box' }}>
       {/* 앱바: 로고 · 계획/기록 · 내 이니셜 */}
       <header style={{ flex: 'none', height: 56, display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px 0 16px' }}>
         <Logo height={38} />

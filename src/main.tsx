@@ -9,6 +9,7 @@ import App from './App';
 import { AccountProvider } from './account/AccountProvider';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 import { RotateCover } from './ui/RotateCover';
+import { OfflineBar } from './ui/OfflineBar';
 import { registerServiceWorker } from './mobile/push';
 import { watchSystemTheme } from './lib/theme';
 
@@ -22,6 +23,7 @@ createRoot(document.getElementById('root')!).render(
         <AccountProvider>
           <App />
           <RotateCover />
+          <OfflineBar />
         </AccountProvider>
       </ErrorBoundary>
     </BrowserRouter>

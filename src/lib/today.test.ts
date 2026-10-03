@@ -171,3 +171,24 @@ describe('하루 시작 시각 기준 시각 (2026-10-03 UT 3차)', () => {
     expect(timedSlots({ start_time: '23:00:00', end_time: '01:00:00' }, 5)).toEqual([108, 120]);
   });
 });
+
+describe('할 일 취소 (2026-10-03 UT 4차)', () => {
+  const base = { practice_id: null, daily_keyword_id: 'k', subgoal_id: null, is_timed: false, start_time: null, end_time: null, alarm: false, done_at: null, canceled_at: null, created_at: '2026-09-30T00:00:00Z' };
+  const origin: TaskRow = { ...base, id: 'o', date: '2026-09-30', source: 'direct', name: '은행 서류', carried_from_date: null, carried_task_id: null };
+  it('취소한 날은 줄을 그어 남고, 다음 날부터 넘어오지 않음', () => {
+    const row: TaskRow = { ...base, id: 'c', date: '2026-10-02', source: 'direct', name: null, carried_from_date: '2026-09-30', carried_task_id: 'o', canceled_at: '2026-10-02T10:00:00Z' };
+    const d2 = computeDay('2026-10-02', '2026-10-02', [], [origin, row]).day;
+    expect(d2.map(i => [i.key, i.canceled, i.done])).toEqual([['cdir:o', true, false]]);
+    expect(computeDay('2026-10-03', '2026-10-03', [], [origin, row]).day).toEqual([]);
+  });
+  it('처음 날 취소하면 다음 날부터 안 넘어옴', () => {
+    const o2 = { ...origin, canceled_at: '2026-09-30T10:00:00Z' };
+    expect(computeDay('2026-09-30', '2026-09-30', [], [o2]).day[0].canceled).toBe(true);
+    expect(computeDay('2026-10-01', '2026-10-01', [], [o2]).day).toEqual([]);
+  });
+  it('단발 실천도 취소하면 넘어오지 않음', () => {
+    const ps: PracticeLite[] = [{ id: 'w', goal_id: 'g', subgoal_id: 's', week_start_date: '2026-09-27', name: '수요일 일', kind: 'once', weekdays: [3] }];
+    const r: TaskRow = { ...base, id: 'a', date: '2026-09-30', source: 'auto', practice_id: 'w', name: null, daily_keyword_id: null, carried_from_date: null, carried_task_id: null, canceled_at: '2026-09-30T10:00:00Z' };
+    expect(computeDay('2026-10-01', '2026-10-01', ps, [r]).day).toEqual([]);
+  });
+});

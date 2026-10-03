@@ -22,6 +22,8 @@ export type TaskRow = {
   carried_from_date: string | null;
   carried_task_id: string | null;
   done_at: string | null;
+  /** 더 안 하기로 함 (완료와 따로, 2026-10-03 UT 4차) — 다음 날부터 넘어오지 않는다 */
+  canceled_at?: string | null;
   created_at: string;
 };
 
@@ -43,6 +45,7 @@ export type DayItem = {
   originDate: DayKey;
   carried: boolean;
   done: boolean;
+  canceled: boolean;
   /** 1부터. 반복 섹션부터 이어서 (R-S8) */
   num: number;
 };
@@ -62,7 +65,9 @@ export function computeDay(day: DayKey, today: DayKey, allPractices: PracticeLit
   const practices = closedOn?.size ? allPractices.filter(p => { const f = closedOn.get(p.goal_id); return !f || day <= f; }) : allPractices;
   const dates = new Map(practices.map(p => [p.id, practiceDates(p.week_start_date, p.weekdays)]));
   const rowOf = (pred: (t: TaskRow) => boolean) => tasks.find(pred);
-  const item = (x: Omit<DayItem, 'done' | 'num'>): DayItem => ({ ...x, done: !!x.row?.done_at, num: 0 });
+  const item = (x: Omit<DayItem, 'done' | 'canceled' | 'num'>): DayItem => ({ ...x, done: !!x.row?.done_at, canceled: !!x.row?.canceled_at, num: 0 });
+  // 끝낸 일(완료·취소)은 그 다음 날부터 넘어오지 않는다
+  const ended = (t: TaskRow) => !!(t.done_at || t.canceled_at);
 
   // 반복: 반복 실천 중 오늘 요일이 포함된 것 — 넘어가지 않는다
   const repeat = practices
@@ -99,7 +104,7 @@ export function computeDay(day: DayKey, today: DayKey, allPractices: PracticeLit
     for (const p of practices.filter(once1)) {
       const origin = dates.get(p.id)![0];
       if (origin >= day) continue;
-      const doneRow = tasks.find(t => t.source === 'auto' && t.practice_id === p.id && t.done_at);
+      const doneRow = tasks.find(t => t.source === 'auto' && t.practice_id === p.id && ended(t));
       if (doneRow && doneRow.date < day) continue;
       const row = rowOf(t => t.source === 'auto' && t.practice_id === p.id && t.date === day);
       carried.push(item({ key: 'cauto:' + p.id, section: 'day', source: 'auto', practice: p, row, insert: row ? undefined : { date: day, source: 'auto', practice_id: p.id, carried_from_date: origin }, originDate: origin, carried: true }));
@@ -111,8 +116,8 @@ export function computeDay(day: DayKey, today: DayKey, allPractices: PracticeLit
       return !!f && day > f;
     };
     for (const o of tasks.filter(t => t.source === 'direct' && !t.carried_task_id && !t.is_timed && t.date < day)) {
-      if (o.done_at || closedLink(o)) continue;
-      const doneRow = tasks.find(t => t.carried_task_id === o.id && t.done_at);
+      if (ended(o) || closedLink(o)) continue;
+      const doneRow = tasks.find(t => t.carried_task_id === o.id && ended(t));
       if (doneRow && doneRow.date < day) continue;
       const row = rowOf(t => t.carried_task_id === o.id && t.date === day);
       carried.push(item({ key: 'cdir:' + o.id, section: 'day', source: 'direct', direct: o, row, insert: row ? undefined : { date: day, source: 'direct', carried_task_id: o.id, carried_from_date: o.date }, originDate: o.date, carried: true }));
