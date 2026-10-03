@@ -11,6 +11,8 @@ import { BODY, Dot, H, ICON, Svg } from '../ui';
 import { useMobile } from '../store';
 import { NewGoalSheet, ReviewSheet } from './goalSheets';
 import { tutorialDone } from '../pages/TutorialPage';
+import { DdayRow } from './Dday';
+import { useToday } from '../../account/AccountProvider';
 
 export default function GoalsTab() {
   const { profile, goalCategories, goals, subgoals } = useAccount();
@@ -18,6 +20,7 @@ export default function GoalsTab() {
   const navigate = useNavigate();
   const [sheet, setSheet] = useState<null | { k: 'new' } | { k: 'review'; goal: Goal }>(null);
   const loc = useLocation();
+  const today = useToday();
   // 체험 모드 끝 → '내 목표 쓰러 가기': 새 목표 시트를 바로 연다 (기록 칸을 비워서 뒤로 가도 다시 안 열리게)
   useEffect(() => {
     if ((loc.state as { newGoal?: boolean } | null)?.newGoal) {
@@ -44,6 +47,8 @@ export default function GoalsTab() {
           <span style={{ position: 'relative', fontSize: 14.5, fontWeight: 700, lineHeight: 1.4 }}>아직 꿈을 적지 않았어요 · 쓰기</span>
         )}
       </button>
+
+      <DdayRow today={today} />
 
       <button onClick={() => setSheet({ k: 'new' })} className="btn btn-primary" style={{ flex: 'none', height: 48, gap: 8, fontSize: 15, marginTop: -8 }}>
         <Svg d={ICON.plus} size={15} width={3} />목표 추가

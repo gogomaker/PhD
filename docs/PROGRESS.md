@@ -13,7 +13,7 @@
 | M5 기록과 회고 | **승인 완료 (2026-10-01)** | main에 합침 |
 | (추가) 다크 모드 | **승인 완료 (2026-10-01)** | main에 합침 |
 | M6 빈 상태와 마무리 손질 | **승인 완료 (2026-10-01)** | main에 합침 (gogomaker/PhD#1) |
-| MV 모바일 통합 | **검수 중 — 계획 탭 피드백 반영 (2026-10-03), 기록 탭 피드백 대기** | 브랜치 `claude/zealous-noether-nnc20w`. 계획·결정은 `docs/MOBILE.md` |
+| MV 모바일 통합 | **검수 중 — 계획·기록 탭 피드백 반영 (2026-10-03)** | 브랜치 `claude/zealous-noether-nnc20w`. 계획·결정은 `docs/MOBILE.md` |
 
 ## 결정된 것 (기획자 승인)
 - 프레임워크: Vite + React + TypeScript (react-router-dom)
@@ -43,6 +43,7 @@
 - (MV) 모바일 통합: 폭 768px 미만은 새 모바일 앱(계획 + 기록), 넓은 화면은 데스크톱 그대로. 생김새는 목업 `PhD only for Mobile v2`, 기능은 기존. 시작하기는 목업의 5단계. 중간 보고 없이 끝까지 만든 뒤 한 번에 검수 (2026-10-02)
 - (MV 추가) 앱 색을 차분한 뉴트럴 팔레트로: 아이보리(바탕)·차콜(글자)·어스 브라운(주 버튼, 기록)·슬레이트(보조, 계획)·포그 그레이(선). 다크도 같은 팔레트로 다시 맞춤, 로고·앱 아이콘 색도 바꿈 (2026-10-02)
 - (MV 피드백 2026-10-03) 위에서 고르기 기본(R-P14), 한 칸 하나 유지 + 체험 모드에서 강조, 달·해를 넘는 계획은 자동으로 나눠 저장(R-P15), 체험 모드(저장 안 됨), 가입 템플릿(R-C5), 목표 편집 '작성 완료', 빈 칸 눌러 추가 없앰, 여러 기간 칸은 걸친 줄마다
+- (MV 기록 탭 피드백 2026-10-03) 계획/실제 전환 때 시간표 높이 고정(키워드 줄 자리 늘 확보), '다음 날로 넘어가지 않아요' 삭제, D-day는 계획 › 목표에서 하나(profiles.dday_name·dday_date)
 - (M3 수정) 지난 기간 계획은 무조건 잠금 (R-P12, DB 정책 + 화면). 한 주 시작은 일요일 고정 (R-P13, 계정 설정에서 뺌)
 
 ## 접속 정보
@@ -54,7 +55,7 @@
 
 ## DB 작업 방법
 - 마이그레이션: `supabase/migrations/*.sql` 에 파일을 추가하고 `scripts/db.sh <파일>` 로 적용 (관리 API 사용, CLI 없음)
-  - 적용 완료: `20261001000001_m1_accounts.sql`, `20261001000002_m1_color_by_order.sql`, `20261001000003_m2_goals.sql`, `20261001000004_m3_plans.sql`, `20261001000005_m3_lock_past.sql`, `20261001000006_m4_day.sql`, `20261001000007_m4_alarms.sql`, `20261001000008_practice_kind_auto.sql`, `20261001000009_m5_records.sql`
+  - 적용 완료: `20261001000001_m1_accounts.sql`, `20261001000002_m1_color_by_order.sql`, `20261001000003_m2_goals.sql`, `20261001000004_m3_plans.sql`, `20261001000005_m3_lock_past.sql`, `20261001000006_m4_day.sql`, `20261001000007_m4_alarms.sql`, `20261001000008_practice_kind_auto.sql`, `20261001000009_m5_records.sql`, `20261003000010_mv_dday.sql`
 - DB 테스트: `supabase/tests/m1_accounts.sql`, `m2_goals.sql`, `m3_plans.sql`, `m4_day.sql`, `m5_records.sql`
 - DB 규칙 테스트: `scripts/db.sh supabase/tests/m1_accounts.sql` → `M1 DB 테스트 통과`. 한 트랜잭션 안에서 가짜 사용자 2명으로 돌리고 되돌림(흔적 없음)
 - Auth 설정(관리 API `config/auth`로 바꿈): site_url = https://phd-ashy.vercel.app, 비밀번호 8자 이상, 이메일 인증 끔,

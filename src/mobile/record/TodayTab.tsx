@@ -297,7 +297,6 @@ export default function TodayTab() {
           <div ref={listRef} onScroll={measure} style={{ position: 'absolute', inset: 0, padding: '8px 6px', display: 'flex', flexDirection: 'column', gap: 3, overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', padding: '2px 8px 4px', gap: 6 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-neutral-700)' }}>반복</span>
-              <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--color-neutral-600)', whiteSpace: 'nowrap' }}>다음 날로 넘어가지 않아요</span>
             </div>
             {D.list.repeat.map(row)}
             {D.list.repeat.length === 0 && <span style={{ fontSize: 12, color: 'var(--color-neutral-600)', padding: '4px 8px 6px' }}>반복 실천이 없어요</span>}
@@ -336,8 +335,9 @@ export default function TodayTab() {
               );
             })}
           </div>
-          {canAct && effMode === 'actual' && (
-            <div style={{ display: 'flex', gap: 3, paddingLeft: 2 }}>
+          {/* 키워드 붓 줄은 늘 자리를 차지한다 — 계획/실제를 바꿔도 시간표 칸 높이가 그대로 (2026-10-03 기획 피드백) */}
+          {(() => { const show = canAct && effMode === 'actual'; return (
+            <div data-testid="brush-row" aria-hidden={!show || undefined} inert={!show || undefined} style={{ flex: 'none', height: 22, display: 'flex', gap: 3, paddingLeft: 2, visibility: show ? 'visible' : 'hidden' }}>
               {keywords.map(k => {
                 const on = brush === 'kw:' + k.id;
                 return (
@@ -345,7 +345,7 @@ export default function TodayTab() {
                 );
               })}
             </div>
-          )}
+          ); })()}
           <TimeTable
             dayStart={dayStart}
             mode={effMode}

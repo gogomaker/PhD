@@ -1,9 +1,7 @@
 // 모바일 앱 (폭 768px 미만). 생김새 = 'PhD only for Mobile v2' 목업, 기능 = 지금까지의 데스크톱·모바일 (docs/MOBILE.md)
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useToday } from '../account/AccountProvider';
-import { diffDays } from '../lib/day';
-import { isClosed } from '../lib/goals';
 import { initials } from '../lib/initials';
 import { Logo } from '../ui/Logo';
 import { BODY, ICON, PageBar, Svg, TabTitles } from './ui';
@@ -20,6 +18,7 @@ import DreamPage from './pages/DreamPage';
 import SettingsPage from './pages/SettingsPage';
 import TutorialPage from './pages/TutorialPage';
 import { AccountSheet } from './AccountSheet';
+import { ddayText } from './plan/Dday';
 
 export default function MobileApp() {
   return (
@@ -181,30 +180,18 @@ function GoalStatusTag({ id }: { id: string }) {
   return <span className={cls} style={{ fontWeight: 700 }}>{label}</span>;
 }
 
-/** R-S10: 보는 날 기준 가장 가까운 목표 기한 */
+/** D-day: 계획 › 목표에서 정한 하나를 보는 날 기준으로 (2026-10-03 기획 결정, 예전엔 가장 가까운 목표 기한) */
 function DdayChip() {
-  const { goals } = useAccount();
+  const { profile } = useAccount();
   const today = useToday();
   const loc = useLocation();
   const asked = new URLSearchParams(loc.search).get('d');
   const day = asked && /^\d{4}-\d{2}-\d{2}$/.test(asked) ? asked : today;
-  const dday = useMemo(() => {
-    const cand = goals
-      .filter(g => !isClosed(g))
-      .map(g => {
-        const [y, m] = g.due_month.split('-').map(Number);
-        const end = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
-        return { g, n: diffDays(day, end) };
-      })
-      .filter(x => x.n >= 0)
-      .sort((a, b) => a.n - b.n)[0];
-    return cand ? { n: 'D-' + cand.n, goal: cand.g.name } : null;
-  }, [goals, day]);
-  if (!dday) return null;
+  if (!profile?.dday_name || !profile.dday_date) return null;
   return (
     <span data-testid="dday" className="tag" style={{ maxWidth: '100%', background: 'var(--color-text)', color: 'var(--color-bg)', fontWeight: 700, fontSize: 11.5, gap: 5, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
-      <span style={{ flex: 'none' }}>{dday.n}</span>
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{dday.goal}</span>
+      <span style={{ flex: 'none' }}>{ddayText(profile.dday_date, day)}</span>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile.dday_name}</span>
     </span>
   );
 }
