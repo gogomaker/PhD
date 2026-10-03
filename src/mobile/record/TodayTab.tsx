@@ -435,7 +435,12 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
       {/* 하루 기록 (R-J1) */}
       <button
         data-testid="journal-button"
-        onClick={() => canJournal && setSheet({ k: 'journal' })}
+        onClick={async () => {
+          if (!canJournal) return;
+          // 다른 기기에서 쓴 기록이 있으면 그걸로 연다 (오래 걸리면 기다리지 않음, 2026-10-03 UT 3차)
+          await Promise.race([D.reload(), new Promise(res => setTimeout(res, 1500))]);
+          setSheet({ k: 'journal' });
+        }}
         disabled={!canJournal}
         style={{ flex: 'none', height: 46, border: 0, borderRadius: 999, background: 'var(--color-surface)', cursor: canJournal ? 'pointer' : 'default', font: 'inherit', color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px 0 18px', opacity: canJournal ? 1 : 0.55 }}
       >

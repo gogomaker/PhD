@@ -8,6 +8,7 @@ import './styles/theme.css';
 import App from './App';
 import { AccountProvider } from './account/AccountProvider';
 import { ErrorBoundary } from './ui/ErrorBoundary';
+import { RotateCover } from './ui/RotateCover';
 import { registerServiceWorker } from './mobile/push';
 import { watchSystemTheme } from './lib/theme';
 
@@ -20,6 +21,7 @@ createRoot(document.getElementById('root')!).render(
       <ErrorBoundary>
         <AccountProvider>
           <App />
+          <RotateCover />
         </AccountProvider>
       </ErrorBoundary>
     </BrowserRouter>

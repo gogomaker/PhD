@@ -171,6 +171,14 @@
 - PC: 화면을 옮기면 되돌리기 비움(`clearUndo`), PC 오늘 ←·→ 키
 - E2E: scratchpad `e2e-ut4.mjs`(14개), 단위 테스트 `errors.test.ts`·`today.test.ts` 추가
 
+## UT 3차(2026-10-03)에서 고친 것
+- 휴대폰 세로로만: `public/manifest.webmanifest` `orientation: portrait`(설치 앱), 그 밖에는 `ui/RotateCover.tsx`(`usePhoneLandscape` — 기기 방향 `screen.orientation`으로 보아 글쇠판이 올라와도 안 뜸). 2차의 가로 화면용 CSS는 낮은 PC 창에서도 쓸모 있어 남김
+- 두 기기 덮어쓰기: DB `20261003000015` `save_day_blocks(..., p_base)` — 마지막으로 본 서버 상태와 다르면 `stale_day`. `useDay`가 `base`를 들고 저장, 못 보낸 보관분도 기준을 함께(`pendingBlocks`). 창 포커스·보이기·1분마다 다시 읽기(같으면 그대로), 하루 기록은 열 때 새로 읽고, 다른 기기가 먼저 만들었으면 그걸 고침
+- 하루 시작 시각: 바꾸면 DB 트리거가 칸을 옮겨 실제 시각 유지(하루 밖은 앞날·다음 날로), '오늘'이 뒤로 가는 변경은 `day_start_back`으로 거절
+- 자정을 넘는 시간: 표 제약 대신 `time_order_guard` 트리거(하루 시작 기준), 트래킹 길이 `time_span_slots`. 화면: `timeOrderOk`·`badTime(t, dayStart)`, 시각 목록은 하루 시작부터, 정렬 `byTime(.., dayStart)`
+- 내보내기: 목표에 연결한 직접 추가의 목표·세부목표, 계획표 '시간' 열, 시간을 정한 실천 할 일의 시각
+- DB 테스트 `supabase/tests/ut3_sync_daystart.sql`, E2E scratchpad `e2e-ut5.mjs`(18개)·`e2e-rot.mjs`(9개)
+
 ## 남은 일 / 알려진 제약
 - 이메일 변경: Supabase 기본 메일은 기획자 계정 이메일에만 보내져서 지금은 이메일을 읽기 전용으로 둠. 메일 서비스(SMTP) 붙일 때 같이 연다
 - 비밀번호 찾기 메일도 같은 제약(기획자 본인 이메일로는 옴)

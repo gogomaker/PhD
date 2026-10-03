@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeDay, nowSlot, paint, segments, slotOf, timeOf, timedSlots, type PracticeLite, type TaskRow } from './today';
+import { byTime, computeDay, nowSlot, paint, segments, slotOf, timeOf, timedSlots, timeOrderOk, type PracticeLite, type TaskRow } from './today';
 
 // 2026-09-27(일) 주. 목 = 10-01
 const W = '2026-09-27';
@@ -151,5 +151,23 @@ describe('2026-10-03 UT 2차', () => {
     expect(computeDay(D, D, [], [t], new Map([['g', '2026-10-02']]), sg).day.length).toBe(0);
     expect(computeDay(D, D, [], [t], new Map([['g', '2026-10-03']]), sg).day.length).toBe(1);
     expect(computeDay(D, D, [], [t], new Map(), sg).day.length).toBe(1);
+  });
+});
+
+describe('하루 시작 시각 기준 시각 (2026-10-03 UT 3차)', () => {
+  it('자정을 넘어도 하루 안이면 앞뒤가 맞음 (5시 시작)', () => {
+    expect(timeOrderOk('23:00', '01:00', 5)).toBe(true);
+    expect(timeOrderOk('02:00', '05:00', 5)).toBe(true); // 끝 = 하루의 끝
+    expect(timeOrderOk('04:00', '06:00', 5)).toBe(false); // 하루를 넘음
+    expect(timeOrderOk('20:00', '19:00', 5)).toBe(false);
+    expect(timeOrderOk('20:00', '20:00', 5)).toBe(false);
+    expect(timeOrderOk('04:30', '05:30', 4)).toBe(true);
+  });
+  it('새벽 시각은 밤보다 뒤', () => {
+    const xs = [{ start_time: '02:00:00' }, { start_time: null }, { start_time: '23:00:00' }, { start_time: '06:00:00' }];
+    expect([...xs].sort((a, b) => byTime(a, b, 5)).map(x => x.start_time)).toEqual(['06:00:00', '23:00:00', '02:00:00', null]);
+  });
+  it('자정을 넘는 예약은 그만큼 칸을 차지', () => {
+    expect(timedSlots({ start_time: '23:00:00', end_time: '01:00:00' }, 5)).toEqual([108, 120]);
   });
 });

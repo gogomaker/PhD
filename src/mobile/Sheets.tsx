@@ -4,6 +4,8 @@ import { Count } from '../ui/Count';
 import { dayLabel, toDayKey, type DayKey } from '../lib/day';
 import type { Tone } from '../desktop/plan/shared';
 import type { Journal } from './useDay';
+import { useAccount } from '../account/AccountProvider';
+import { timeOrderOk } from '../lib/today';
 
 const pill = (on: boolean, tone: Tone) => ({ background: on ? tone.bg : 'var(--color-surface)', color: on ? tone.ink : 'var(--color-text)', boxShadow: on ? 'inset 0 0 0 2px ' + tone.dot : 'none' });
 const H = { fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 22 } as const;
@@ -48,6 +50,7 @@ export function CalendarSheet({ day, today, onPick, onClose }: { day: DayKey; to
 export type AddGoal = { id: string; name: string; tone: Tone; subs: { id: string; name: string }[] };
 export type DirectInput = { name: string; keywordId: string | null; subgoalId: string | null; timed: null | { start: string; end: string } };
 export function AddSheet({ keywords, tone, goals, onSubmit, onClose }: { keywords: { id: string; name: string }[]; tone: Tone; goals: AddGoal[]; onSubmit: (x: DirectInput) => Promise<boolean>; onClose: () => void }) {
+  const dayStart = useAccount().profile?.day_start_hour ?? 5;
   const [name, setName] = useState('');
   const [kind, setKind] = useState<'daily' | 'goal'>('daily');
   const [kw, setKw] = useState(keywords.find(k => k.name === '생활')?.id ?? keywords[0]?.id ?? '');
@@ -58,7 +61,7 @@ export function AddSheet({ keywords, tone, goals, onSubmit, onClose }: { keyword
   const [time, setTime] = useState<TimeValue>({ on: false, start: '18:00', end: '18:30' });
   const [busy, setBusy] = useState(false);
   const target = kind === 'daily' ? !!kw : !!goal && goal.subs.some(x => x.id === subId);
-  const off = !name.trim() || !target || badTime(time) || busy;
+  const off = !name.trim() || !target || badTime(time, dayStart) || busy;
   return (
     <Sheet onClose={onClose} label="직접 추가">
       <span style={H}>직접 추가</span>
@@ -124,9 +127,11 @@ export function AddSheet({ keywords, tone, goals, onSubmit, onClose }: { keyword
 
 // 시간 지정: 켜기 + 시작·끝 (10분 단위). 직접 추가·실천 추가가 같이 쓴다
 export type TimeValue = { on: boolean; start: string; end: string };
-export const badTime = (t: TimeValue) => t.on && !(t.start && t.end && t.end > t.start);
+// 끝이 시작보다 뒤인지는 하루 시작 시각 기준 — 5시 시작이면 23:00~01:00도 된다 (2026-10-03 UT 3차)
+export const badTime = (t: TimeValue, dayStart = 5) => t.on && !(t.start && t.end && timeOrderOk(t.start, t.end, dayStart));
 export function TimeToggle({ value: t, onChange, sub, note, label = '시간 지정' }: { value: TimeValue; onChange: (t: TimeValue) => void; sub: string; note?: string; label?: string }) {
-  const bad = badTime(t);
+  const dayStart = useAccount().profile?.day_start_hour ?? 5;
+  const bad = badTime(t, dayStart);
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -141,10 +146,10 @@ export function TimeToggle({ value: t, onChange, sub, note, label = '시간 지�
       {t.on && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-            <div className="field"><label htmlFor="time-start">시작</label><TimeSelect id="time-start" value={t.start} onChange={v => onChange({ ...t, start: v })} /></div>
-            <div className="field"><label htmlFor="time-end">끝</label><TimeSelect id="time-end" value={t.end} onChange={v => onChange({ ...t, end: v })} /></div>
+            <div className="field"><label htmlFor="time-start">시작</label><TimeSelect id="time-start" dayStart={dayStart} value={t.start} onChange={v => onChange({ ...t, start: v })} /></div>
+            <div className="field"><label htmlFor="time-end">끝</label><TimeSelect id="time-end" dayStart={dayStart} value={t.end} onChange={v => onChange({ ...t, end: v })} /></div>
           </div>
-          <span style={{ fontSize: 12, color: bad ? 'var(--color-accent-700)' : 'var(--color-neutral-700)', marginTop: -6 }}>{bad ? '끝 시각이 시작보다 늦어야 해요.' : note}</span>
+          <span style={{ fontSize: 12, color: bad ? 'var(--color-accent-700)' : 'var(--color-neutral-700)', marginTop: -6 }}>{bad ? `끝 시각이 시작보다 늦어야 해요. (하루는 ${dayStart}시에 시작해요)` : note}</span>
         </>
       )}
     </>
@@ -152,9 +157,10 @@ export function TimeToggle({ value: t, onChange, sub, note, label = '시간 지�
 }
 
 // 10분 단위 시각 고르기 (휴대폰 기본 시각 입력은 10분 단위를 지키지 않아서 직접 만든다)
-function TimeSelect({ id, value, onChange }: { id: string; value: string; onChange: (v: string) => void }) {
+// 목록은 하루 시작 시각부터 (5시 시작이면 05:00 … 23:50, 00:00 … 04:50)
+function TimeSelect({ id, value, onChange, dayStart }: { id: string; value: string; onChange: (v: string) => void; dayStart: number }) {
   const opts: string[] = [];
-  for (let h = 0; h < 24; h++) for (let m = 0; m < 60; m += 10) opts.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+  for (let i = 0; i < 24; i++) for (let m = 0; m < 60; m += 10) opts.push(`${String((dayStart + i) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
   return (
     <select id={id} className="input" value={value} onChange={e => onChange(e.target.value)} style={{ height: 44, fontWeight: 700, cursor: 'pointer' }}>
       {opts.map(o => <option key={o} value={o}>{o}</option>)}
