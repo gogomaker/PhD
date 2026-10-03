@@ -4,6 +4,7 @@ import { isMobileNow, useIsMobile } from './useIsMobile';
 import { useAccount } from './account/AccountProvider';
 import { ForgotPassword, Landing, Login, Onboarding, ResetPassword, SignupAccount } from './auth/AuthScreen';
 import { Logo } from './ui/Logo';
+import { useOnline } from './ui/OfflineBar';
 
 // 휴대폰은 모바일 앱만, 넓은 화면은 데스크톱만 내려받는다
 const loadDesktop = () => import('./desktop/DesktopShell');
@@ -47,9 +48,12 @@ export default function App() {
 }
 
 function Splash() {
+  // 연결 없이 처음 열어 이 기기에 둔 내용도 없을 때 (2026-10-03 UT 4차)
+  const online = useOnline();
   return (
-    <div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center' }}>
+    <div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', alignContent: 'center', gap: 14 }}>
       <span style={{ opacity: 0.6 }}><Logo height={64} /></span>
+      {!online && <span style={{ fontSize: 13, color: 'var(--color-neutral-700)' }}>연결되면 열려요</span>}
     </div>
   );
 }

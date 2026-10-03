@@ -10,12 +10,12 @@ import type { Tone } from '../../desktop/plan/shared';
 import { useDay, type Journal } from '../useDay';
 import { useSwipe } from '../useSwipe';
 import { DRAFT, TimeTable, type BandView, type Cells, type PlanBoxView } from '../TimeTable';
-import { AddSheet, CalendarSheet, ConfirmSheet, JournalSheet, PickSheet, PlanSheet } from '../Sheets';
+import { AddSheet, CalendarSheet, ConfirmSheet, JournalSheet, PickSheet, PlanSheet, TaskMenuSheet } from '../Sheets';
 import { ensurePush } from '../push';
 import { BODY, ICON as MI, Svg } from '../ui';
 
 type PlanInfo = { task_id?: string | null; keyword_id?: string | null; label?: string | null };
-type SheetState = null | { k: 'cal' } | { k: 'add' } | { k: 'journal' } | { k: 'plan'; key: string; isNew: boolean } | { k: 'del'; task: TaskRow; name: string } | { k: 'pick'; snap: Cells; from: number; to: number };
+type SheetState = null | { k: 'cal' } | { k: 'add' } | { k: 'journal' } | { k: 'plan'; key: string; isNew: boolean } | { k: 'del'; task: TaskRow; name: string } | { k: 'menu'; it: DayItem; name: string } | { k: 'pick'; snap: Cells; from: number; to: number };
 
 const ICON = {
   repeat: 'M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8M21 3v5h-5',
@@ -27,6 +27,13 @@ const ICON = {
 };
 // 저장하지 못한 하루 기록 — 다른 화면으로 옮겨 이 화면이 사라져도 남게 바깥에 둔다 (2026-10-03 UT 2차)
 let unsavedJournal: { day: DayKey; j: Journal } | null = null;
+
+// 길게 누르면 손을 떼기 전에 메뉴가 뜬다. 손을 뗄 때 오는 클릭 한 번이 메뉴 뒤 배경에 닿아 메뉴가 바로 닫히지 않게 먹는다 (2026-10-03 UT 4차)
+function swallowNextClick() {
+  const eat = (e: Event) => { e.stopPropagation(); e.preventDefault(); };
+  window.addEventListener('click', eat, { capture: true, once: true });
+  window.addEventListener('pointerup', () => window.setTimeout(() => window.removeEventListener('click', eat, { capture: true }), 400), { once: true });
+}
 
 const SRC: Record<DayItem['source'], string> = { repeat: '반복', auto: '자동 배정', picked: '담은 일', direct: '직접 추가' };
 
@@ -205,12 +212,14 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
   goRef.current = { prev: () => go(addDays(day, -1)), next: () => go(addDays(day, 1)) };
   useSwipe(rootRef, useCallback(() => goRef.current.prev(), []), useCallback(() => goRef.current.next(), []));
 
-  // 할 일 길게 누르기 → 삭제 (오늘·내일 직접 추가한 것, 기획 결정)
+  // 할 일 길게 누르기 → 메뉴: 취소(오늘, 완료와 따로 — 2026-10-03 UT 4차) · 삭제(오늘·내일 직접 추가한 것, 기획 결정)
   const press = useRef<{ t: number; fired: boolean } | null>(null);
+  const canDeleteItem = (it: DayItem) => it.source === 'direct' && !it.carried && canAdd && !!it.row;
+  const canCancelItem = (it: DayItem) => canCheck && !it.done;
   const startPress = (it: DayItem) => {
     press.current = null;
-    if (!(it.source === 'direct' && !it.carried && canAdd && it.row)) return;
-    const st = { t: window.setTimeout(() => { st.fired = true; setSheet({ k: 'del', task: it.row!, name: meta(it).name }); }, 600), fired: false };
+    if (!canDeleteItem(it) && !canCancelItem(it)) return;
+    const st = { t: window.setTimeout(() => { st.fired = true; swallowNextClick(); setSheet({ k: 'menu', it, name: meta(it).name }); }, 600), fired: false };
     press.current = st;
   };
   const endPress = () => {
@@ -259,8 +268,10 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round" aria-label={SRC[it.source]}><path d={ICON[it.source]} /></svg>
         </span>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
-            <span data-testid="todo-tag" style={{ flex: '0 1 auto', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 10.5, fontWeight: 700, lineHeight: 1.2, padding: '2px 7px', borderRadius: 999, background: m.tone.bg, color: m.tone.ink }}>{m.tag}</span>
+          {/* 자리가 모자라면 시각·'…에서'는 다음 줄로 (태그가 한 글자로 줄지 않게, 2026-10-03 UT 4차) */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '2px 4px', minWidth: 0 }}>
+            <span data-testid="todo-tag" style={{ flex: '0 1 auto', minWidth: 0, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 10.5, fontWeight: 700, lineHeight: 1.2, padding: '2px 7px', borderRadius: 999, background: m.tone.bg, color: m.tone.ink }}>{m.tag}</span>
+            {it.canceled && <span data-testid="canceled" style={{ flex: 'none', fontSize: 10, fontWeight: 700, color: 'var(--color-neutral-600)', whiteSpace: 'nowrap' }}>취소함</span>}
             {carriedLabel && <span data-testid="carried" style={{ flex: 'none', fontSize: 10, fontWeight: 700, color: 'var(--color-accent-700)', whiteSpace: 'nowrap' }}>{carriedLabel}</span>}
             {(() => {
               const tm = t?.is_timed ? t : it.practice?.start_time && !it.carried ? it.practice : null;
@@ -272,25 +283,29 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
               );
             })()}
           </div>
-          <span data-testid="todo-name" style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1.25, textDecoration: it.done ? 'line-through' : 'none', color: it.done ? 'var(--color-neutral-600)' : 'var(--color-text)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{m.name}</span>
+          <span data-testid="todo-name" style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1.25, textDecoration: it.done || it.canceled ? 'line-through' : 'none', color: it.canceled ? 'var(--color-neutral-500)' : it.done ? 'var(--color-neutral-600)' : 'var(--color-text)', wordBreak: 'keep-all', overflowWrap: 'anywhere', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{m.name}</span>
         </div>
         {rel <= 0 && (
           <button
-            aria-label={(it.done ? '완료 취소 ' : '완료 ') + m.name}
+            // 취소한 일은 ×로 (완료 ✓와 따로). 누르면 취소를 푼다
+            aria-label={(it.canceled ? '취소 풀기 ' : it.done ? '완료 풀기 ' : '완료 ') + m.name}
             aria-pressed={it.done}
             disabled={!canCheck}
-            onClick={e => { e.stopPropagation(); if (canCheck) D.toggleDone(it); }}
+            onClick={e => { e.stopPropagation(); if (canCheck) void (it.canceled ? D.toggleCancel(it) : D.toggleDone(it)); }}
             onPointerDown={e => e.stopPropagation()}
-            style={{ flex: 'none', width: 24, height: 24, borderRadius: '50%', border: '2px solid ' + m.tone.dot, background: it.done ? m.tone.dot : 'transparent', display: 'grid', placeItems: 'center', padding: 0, cursor: canCheck ? 'pointer' : 'default', color: 'var(--color-neutral-100)' }}
+            style={{ flex: 'none', width: 24, height: 24, borderRadius: '50%', border: it.canceled ? '2px dashed var(--color-neutral-500)' : '2px solid ' + m.tone.dot, background: it.done ? m.tone.dot : 'transparent', display: 'grid', placeItems: 'center', padding: 0, cursor: canCheck ? 'pointer' : 'default', color: it.canceled ? 'var(--color-neutral-600)' : 'var(--color-neutral-100)' }}
           >
             {it.done && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>}
+            {it.canceled && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>}
           </button>
         )}
       </div>
     );
   };
 
+  // 취소한 일은 세지 않는다 (완료 / 남은 일)
   const doneCount = D.list.day.filter(x => x.done).length;
+  const dayCount = D.list.day.filter(x => !x.canceled).length;
   const planSheet = sheet?.k === 'plan' ? sheet : null;
   const planRange = (() => {
     if (!planSheet) return '';
@@ -316,27 +331,28 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
         <button onClick={() => go(addDays(day, 1))} aria-label="다음 날" className="btn m-hover" style={{ width: 32, height: 32, padding: 0, color: 'var(--color-neutral-700)' }}><Svg d={MI.right} /></button>
         {/* 지난날·모레 이후 안내는 줄을 끼워 넣지 않고 배지에 담는다 — 날마다 레이아웃이 같게 (지류 다이어리처럼, 2026-10-03 기획 피드백) */}
         {banner ? (
-          <button data-testid="day-badge" className={badge[1]} title={banner} aria-label={badge[0] + ' · ' + banner} onClick={() => toast(banner)} style={{ border: 0, cursor: 'pointer', fontWeight: 700, fontSize: 11.5, whiteSpace: 'nowrap', gap: 4 }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICON.lock} /></svg>
-            <span data-testid="day-badge-text">{badge[0]}</span>
+          // 좁은 휴대폰(360px 이하)에서는 배지 글자가 먼저 줄어든다 — '오늘' 버튼·합계가 깨지지 않게 (2026-10-03 UT 4차)
+          <button data-testid="day-badge" className={badge[1]} title={banner} aria-label={badge[0] + ' · ' + banner} onClick={() => toast(banner)} style={{ border: 0, cursor: 'pointer', fontWeight: 700, fontSize: 11.5, whiteSpace: 'nowrap', gap: 4, flex: '0 1 auto', minWidth: 0, overflow: 'hidden' }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}><path d={ICON.lock} /></svg>
+            <span data-testid="day-badge-text" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{badge[0]}</span>
           </button>
         ) : (
           <span data-testid="day-badge" className={badge[1]} style={{ fontWeight: 700, fontSize: 11.5, whiteSpace: 'nowrap' }}>{badge[0]}</span>
         )}
-        {rel !== 0 && <button onClick={() => go(today)} className="btn btn-secondary" style={{ height: 28, padding: '0 10px', marginLeft: 4, ...BODY, fontSize: 12 }}>오늘</button>}
+        {rel !== 0 && <button onClick={() => go(today)} className="btn btn-secondary" style={{ flex: 'none', height: 28, padding: '0 10px', marginLeft: 4, ...BODY, fontSize: 12, whiteSpace: 'nowrap' }}>오늘</button>}
         <div style={{ flex: 1 }} />
-        {/* 연결이 끊겨 못 보낸 시간표가 있으면 (자리는 늘 잡아 두어 레이아웃이 변하지 않게) */}
+        {/* 연결이 끊겨 못 보낸 시간표가 있을 때만 (늘 자리를 잡아 두면 좁은 휴대폰에서 합계가 잘려서, 2026-10-03 UT 4차) */}
         <button
           data-testid="save-pending"
           aria-hidden={!D.pending || undefined}
           tabIndex={D.pending ? 0 : -1}
           onClick={() => toast('연결이 끊겨 이 기기에 두었어요. 연결되면 자동으로 저장해요')}
           className="tag tag-neutral"
-          style={{ visibility: D.pending ? 'visible' : 'hidden', border: 0, cursor: 'pointer', fontWeight: 700, fontSize: 11, whiteSpace: 'nowrap', marginRight: 6 }}
+          style={{ display: D.pending ? undefined : 'none', flex: 'none', border: 0, cursor: 'pointer', fontWeight: 700, fontSize: 11, whiteSpace: 'nowrap', marginRight: 6 }}
         >
           저장 대기
         </button>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, fontSize: 11.5, color: 'var(--color-neutral-700)', whiteSpace: 'nowrap' }}>
+        <div style={{ flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, fontSize: 11.5, color: 'var(--color-neutral-700)', whiteSpace: 'nowrap' }}>
           <span>계획 <b data-testid="planned" style={{ color: 'var(--color-text)' }}>{fmtMinutes(plannedMin)}</b></span>
           <span>실제 <b data-testid="actual" style={{ color: 'var(--color-accent-700)' }}>{fmtMinutes(actualMin)}</b></span>
         </div>
@@ -353,7 +369,7 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
             {D.list.repeat.length === 0 && <span style={{ fontSize: 12, color: 'var(--color-neutral-600)', padding: '4px 8px 6px' }}>반복 실천이 없어요</span>}
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', padding: '10px 8px 4px' }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-neutral-700)' }}>{rel === 0 ? '오늘 할 일' : '할 일'}</span>
-              {D.list.day.length > 0 && <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--color-neutral-600)', whiteSpace: 'nowrap' }}>{doneCount} / {D.list.day.length}</span>}
+              {D.list.day.length > 0 && <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--color-neutral-600)', whiteSpace: 'nowrap' }}>{doneCount} / {dayCount}</span>}
             </div>
             {D.list.day.map(row)}
             {D.list.day.length === 0 && (
@@ -365,6 +381,7 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5, padding: '8px 2px 2px' }}>
                 {D.loaded && items.length === 0 && rel <= 1 && <button onClick={() => navigate(weekPath)} className="btn btn-secondary" style={{ height: 36, ...BODY, fontSize: 12.5, borderRadius: 16, padding: '0 10px' }}>주간 실천 적으러 가기</button>}
                 {canAdd && <button onClick={() => setSheet({ k: 'add' })} className="btn add-dashed" style={{ height: 36, border: '2px dashed var(--color-neutral-400)', color: 'var(--color-neutral-800)', ...BODY, fontSize: 12.5, borderRadius: 16, padding: '0 10px' }}>+ 직접 추가</button>}
+                {rel === 0 && items.length > 0 && <span data-testid="press-hint" style={{ fontSize: 10.5, color: 'var(--color-neutral-600)', textAlign: 'center', padding: '2px 4px' }}>할 일을 길게 누르면 취소할 수 있어요</span>}
               </div>
             )}
           </div>
@@ -502,6 +519,21 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
             }
             return ok;
           }} onClose={() => setSheet(null)} />}
+      {sheet?.k === 'menu' && (
+        <TaskMenuSheet
+          name={sheet.name}
+          canceled={sheet.it.canceled}
+          canCancel={canCancelItem(sheet.it)}
+          canDelete={canDeleteItem(sheet.it)}
+          onCancel={async () => {
+            const it = sheet.it;
+            setSheet(null);
+            if (await D.toggleCancel(it)) toast(it.canceled ? '취소를 풀었어요' : `‘${sheet.name}’을(를) 취소했어요. 내일부터 넘어오지 않아요`);
+          }}
+          onDelete={() => setSheet({ k: 'del', task: sheet.it.row!, name: sheet.name })}
+          onClose={() => setSheet(null)}
+        />
+      )}
       {sheet?.k === 'del' && (
         <ConfirmSheet
           title="할 일을 지울까요?"

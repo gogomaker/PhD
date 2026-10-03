@@ -25,10 +25,13 @@ export function useDay(day: DayKey, today: DayKey) {
   // quiet: 뒤에서 다시 읽을 때는 연결 오류를 알리지 않는다
   const loadTasks = useCallback(async (quiet = false) => {
     const { data, error } = await supabase.from('tasks').select('*').order('created_at');
-    if (error) { if (!quiet) toast(errorText(error)); }
+    if (error) { if (!quiet && !offlineErr(error)) toast(errorText(error)); }
     // 다시 읽어도 같으면 그대로 (화면이 괜히 다시 그려지지 않게)
-    else setTasks(ts => (sameJson(ts, data) ? ts : (data as TaskRow[])));
-  }, [toast]);
+    else {
+      setTasks(ts => (sameJson(ts, data) ? ts : (data as TaskRow[])));
+      if (user) writeCache(TASKS + user, data);
+    }
+  }, [toast, user]);
 
   // 시간표를 고친 횟수. 고치기 전에 시작한 다시 읽기가 늦게 와서 방금 칠한 것을 덮지 않게 한다
   const edits = useRef(0);
@@ -44,7 +47,9 @@ export function useDay(day: DayKey, today: DayKey) {
       supabase.from('time_blocks').select('id, date, layer, start_slot, end_slot, task_id, daily_keyword_id, label, block_key').eq('date', day).order('start_slot'),
       supabase.from('day_journals').select('id, date, score, reason, thanks, memo').eq('date', day).maybeSingle(),
     ]);
-    if (b.error || j.error) return quiet ? undefined : toast(errorText(b.error ?? j.error));
+    const err = b.error ?? j.error;
+    if (err) return quiet || offlineErr(err) ? undefined : toast(errorText(err));
+    if (user) writeDayCache(user, day, { blocks: b.data, journal: j.data });
     if (edits.current === v) {
       const rows = b.data as BlockRow[];
       base.current = { plan: rows.filter(x => x.layer === 'plan').map(toInput), actual: rows.filter(x => x.layer === 'actual').map(toInput) };
@@ -55,12 +60,23 @@ export function useDay(day: DayKey, today: DayKey) {
   }, [day, toast, user, dayStart]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    setLoaded(false);
-    setJournal(null);
-    setBlocks([]);
-    base.current = { plan: null, actual: null };
+    // 이 기기에 둔 마지막 내용을 먼저 보이고(연결이 없어도 열리게, 2026-10-03 UT 4차) 뒤에서 새로 읽는다
+    const ct = user ? readCache<TaskRow[]>(TASKS + user) : undefined;
+    const cd = user ? readCache<{ blocks: BlockRow[]; journal: Journal | null }>(DAY + user + ':' + day) : undefined;
+    if (ct) setTasks(ct);
+    if (cd) {
+      base.current = { plan: cd.blocks.filter(x => x.layer === 'plan').map(toInput), actual: cd.blocks.filter(x => x.layer === 'actual').map(toInput) };
+      setBlocks(withPending(cd.blocks, user ? pendingOf(user, day) : []));
+      setJournal(cd.journal);
+      setLoaded(true);
+    } else {
+      setLoaded(false);
+      setJournal(null);
+      setBlocks([]);
+      base.current = { plan: null, actual: null };
+    }
     Promise.all([loadTasks(), loadDay()]).then(() => setLoaded(true));
-  }, [loadTasks, loadDay]);
+  }, [loadTasks, loadDay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 다른 기기에서 고친 것: 창으로 돌아오거나 화면이 다시 보이면, 그리고 보이는 동안 1분마다 다시 읽는다 (2026-10-03 UT 3차)
   const reload = useCallback(() => Promise.all([loadTasks(true), loadDay(true)]).then(() => undefined, () => undefined), [loadTasks, loadDay]);
@@ -108,10 +124,17 @@ export function useDay(day: DayKey, today: DayKey) {
     [loadTasks, loadDay, toast],
   );
 
+  // 완료와 취소는 함께일 수 없어서, 하나를 켜면 다른 하나는 끈다 (2026-10-03 UT 4차)
   const toggleDone = async (it: DayItem) => {
     const id = await ensureRow(it);
     if (!id) return;
-    await mutate(supabase.from('tasks').update({ done_at: it.done ? null : new Date().toISOString() }).eq('id', id));
+    await mutate(supabase.from('tasks').update({ done_at: it.done ? null : new Date().toISOString(), canceled_at: null }).eq('id', id));
+  };
+  /** 취소: 더 안 하기로 함. 줄을 그어 남기고 다음 날부터 넘어오지 않는다 */
+  const toggleCancel = async (it: DayItem) => {
+    const id = await ensureRow(it);
+    if (!id) return false;
+    return mutate(supabase.from('tasks').update({ canceled_at: it.canceled ? null : new Date().toISOString(), done_at: null }).eq('id', id));
   };
 
   const addDirect = (x: { name: string; keywordId: string | null; subgoalId?: string | null; timed: null | { start: string; end: string } }) =>
@@ -143,6 +166,13 @@ export function useDay(day: DayKey, today: DayKey) {
     serial(async () => {
       // 화면의 칸 상태가 기준. 성공하면 다시 읽지 않는다(이어서 그린 것을 옛 상태로 덮어쓰지 않도록)
       const known = base.current[layer];
+      // 이 날을 한 번도 못 불러왔으면(연결 없이 처음 연 날) 서버 기록을 덮을 수 있어 칠하지 않는다
+      if (!known && !navigator.onLine) {
+        toast('이 날 기록을 아직 불러오지 못했어요. 연결되면 칠할 수 있어요');
+        edits.current++;
+        setBlocks(bs => [...bs]);
+        return false;
+      }
       const { error } = await supabase.rpc('save_day_blocks', { p_date: day, p_layer: layer, p_blocks: rows, p_base: known });
       // 저장 전에 시작한 다시 읽기가 늦게 와서 덮지 않게
       edits.current++;
@@ -224,10 +254,29 @@ export function useDay(day: DayKey, today: DayKey) {
     return true;
   };
 
-  return { loaded, tasks, blocks, journal, list, ensureRow, toggleDone, addDirect, removeTask, saveLayer, saveJournal, noteEdit, pending, reload };
+  return { loaded, tasks, blocks, journal, list, ensureRow, toggleDone, toggleCancel, addDirect, removeTask, saveLayer, saveJournal, noteEdit, pending, reload };
 }
 
 /** 서버에서 읽은 블록 위에, 보관 중인 층을 덮어 보여 준다 */
+// 이 기기에 둔 할 일·하루 내용 (로그아웃하면 AccountProvider가 지운다)
+export const TASKS = 'phd-tasks:';
+export const DAY = 'phd-day:';
+function readCache<T>(key: string): T | undefined {
+  try { return JSON.parse(localStorage.getItem(key) ?? 'null') ?? undefined; } catch { return undefined; }
+}
+function writeCache(key: string, v: unknown) {
+  try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* 저장 공간이 없으면 다음엔 그냥 읽는다 */ }
+}
+/** 하루 내용은 최근 것만 (8일 넘게 지난 날은 지운다) */
+function writeDayCache(user: string, day: string, v: unknown) {
+  writeCache(DAY + user + ':' + day, v);
+  try {
+    const old = new Date(Date.now() - 8 * 86400_000).toISOString().slice(0, 10);
+    for (const k of Object.keys(localStorage)) if (k.startsWith(DAY + user + ':') && k.slice(-10) < old) localStorage.removeItem(k);
+  } catch { /* 없음 */ }
+}
+const offlineErr = (e: unknown) => isNetworkError(e);
+
 const toInput = (b: BlockRow): BlockInput => ({ start: b.start_slot, end: b.end_slot, task_id: b.task_id, keyword_id: b.daily_keyword_id, label: b.label, key: b.block_key ?? undefined });
 const sameJson = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const isStale = (e: unknown) => /stale_day/.test(String((e as { message?: string } | null)?.message ?? ''));

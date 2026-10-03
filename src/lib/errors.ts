@@ -40,6 +40,9 @@ export function errorText(e: unknown): string {
   if (code === '23505' && msg.includes('color')) return '이미 다른 카테고리가 쓰는 색이에요';
   if (code === '23505') return '이미 있는 이름이에요';
   if (code === '23514') return '입력한 내용을 확인해 주세요';
-  if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Load failed')) return '연결이 불안정해요. 다시 시도해 주세요';
+  if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Load failed')) {
+    // 연결이 아예 없으면: 시간표 칠하기 말고는 연결이 있어야 저장돼요 (2026-10-03 UT 4차)
+    return typeof navigator !== 'undefined' && navigator.onLine === false ? '연결이 없어 저장하지 못했어요. 연결되면 다시 해 주세요' : '연결이 불안정해요. 다시 시도해 주세요';
+  }
   return '문제가 생겼어요. 다시 시도해 주세요';
 }

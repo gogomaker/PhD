@@ -44,7 +44,7 @@ export default function DesktopShell() {
     return () => window.removeEventListener('keydown', key);
   }, []);
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', paddingTop: 'var(--offline-h, 0px)', boxSizing: 'border-box' }}>
       <Sidebar />
       <main className="desk-main" style={{ flex: 1, minWidth: 0, padding: '36px 44px 56px', display: 'flex', flexDirection: 'column', gap: 28 }}>
         <Routes>
@@ -72,7 +72,7 @@ function Sidebar() {
   const dream = profile?.dream?.trim();
   const name = profile?.name ?? '';
   return (
-    <aside className="side" style={{ flex: 'none', width: 236, position: 'sticky', top: 0, height: '100vh', padding: 14, boxSizing: 'border-box' }}>
+    <aside className="side" style={{ flex: 'none', width: 236, position: 'sticky', top: 'var(--offline-h, 0px)', height: 'calc(100vh - var(--offline-h, 0px))', padding: 14, boxSizing: 'border-box' }}>
       <ScrollArea className="side-inner" fade="var(--color-surface)" radius={32} style={{ height: '100%', background: 'var(--color-surface)', borderRadius: 32 }} innerStyle={{ padding: '24px 14px 14px', display: 'flex', flexDirection: 'column', gap: 22, boxSizing: 'border-box' }}>
         <div className="side-logo" style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 12px' }}>
           <Logo height={50} />

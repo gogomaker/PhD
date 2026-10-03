@@ -312,6 +312,25 @@ export function JournalSheet({ day, journal, readOnly, onSave, onClose }: { day:
   );
 }
 
+/** 할 일 길게 누르기 메뉴: 취소(완료와 따로) · 지우기 (2026-10-03 UT 4차) */
+export function TaskMenuSheet({ name, canceled, canCancel, canDelete, onCancel, onDelete, onClose }: { name: string; canceled: boolean; canCancel: boolean; canDelete: boolean; onCancel: () => void; onDelete: () => void; onClose: () => void }) {
+  return (
+    <Sheet onClose={onClose} label="할 일 메뉴">
+      <span style={H}>{name}</span>
+      {canCancel && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <button className="btn btn-secondary" onClick={onCancel} style={{ height: 46, fontFamily: 'var(--font-body)', fontWeight: 700 }}>{canceled ? '취소 풀기' : '할 일 취소'}</button>
+          <span style={{ fontSize: 12.5, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>
+            {canceled ? '다시 할 일로 되돌려요.' : '더 안 하기로 한 일이에요. 오늘 목록에 줄을 그어 남기고, 내일부터는 넘어오지 않아요.'}
+          </span>
+        </div>
+      )}
+      {canDelete && <button className="btn btn-ghost" onClick={onDelete} style={{ height: 44, fontFamily: 'var(--font-body)', fontWeight: 700, color: 'var(--color-accent-700)' }}>지우기</button>}
+      <button className="btn btn-ghost" onClick={onClose} style={{ height: 40, fontFamily: 'var(--font-body)', fontWeight: 600 }}>닫기</button>
+    </Sheet>
+  );
+}
+
 export function ConfirmSheet({ title, body, confirmLabel, onConfirm, onClose }: { title: string; body: string; confirmLabel: string; onConfirm: () => void; onClose: () => void }) {
   return (
     <Sheet onClose={onClose} label={title}>

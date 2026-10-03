@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { errorText } from '../lib/errors';
+import { isNetworkError } from '../mobile/pendingBlocks';
 import type { CategoryColor } from '../lib/palette';
 import { DEFAULT_DAY_START_HOUR, DEFAULT_TIMEZONE, userDayKey } from '../lib/day';
 
@@ -121,8 +122,9 @@ function readCache(userId: string): Data | undefined {
 function writeCache(userId: string, d: Data) {
   try { localStorage.setItem(CACHE + userId, JSON.stringify(d)); } catch { /* 저장 공간이 없으면 다음엔 그냥 읽는다 */ }
 }
+// 기기에 둔 것 모두: 계정 데이터 + 할 일·하루 내용(useDay, 2026-10-03 UT 4차)
 function clearCache() {
-  try { for (const k of Object.keys(localStorage)) if (k.startsWith(CACHE)) localStorage.removeItem(k); } catch { /* 없음 */ }
+  try { for (const k of Object.keys(localStorage)) if (k.startsWith(CACHE) || k.startsWith('phd-tasks:') || k.startsWith('phd-day:')) localStorage.removeItem(k); } catch { /* 없음 */ }
 }
 
 export function AccountProvider({ children }: { children: ReactNode }) {
@@ -159,8 +161,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     ]);
     const err = p.error ?? c.error ?? k.error ?? g.error ?? sg.error ?? yc.error ?? mc.error ?? nt.error ?? pr.error;
     if (err) {
-      toast(errorText(err));
-      setData(d => d ?? EMPTY);
+      // 연결이 없으면 위쪽 '오프라인' 표시로 알리고, 이 기기에 둔 내용으로 연다 (2026-10-03 UT 4차).
+      // 둔 내용도 없으면 빈 계정으로 보지 않는다(가입 화면으로 보내지 않게) — 연결되면 다시 읽는다
+      const net = isNetworkError(err);
+      if (!net) toast(errorText(err));
+      setData(d => d ?? (net ? undefined : EMPTY));
       return;
     }
     const next: Data = {
@@ -197,10 +202,12 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       last = Date.now();
       reload();
     };
+    const back = () => { last = Date.now(); reload(); };
     window.addEventListener('focus', again);
+    window.addEventListener('online', back);
     document.addEventListener('visibilitychange', again);
     const t = window.setInterval(again, 60_000);
-    return () => { window.removeEventListener('focus', again); document.removeEventListener('visibilitychange', again); window.clearInterval(t); };
+    return () => { window.removeEventListener('focus', again); window.removeEventListener('online', back); document.removeEventListener('visibilitychange', again); window.clearInterval(t); };
   }, [userId, reload]);
 
   const run = useCallback(

@@ -109,8 +109,9 @@ function GoalTimes({ sum, goals, toneOf }: { sum: Summary | null; goals: Goal[];
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
         <h3 style={{ margin: 0, fontSize: 19 }}>목표별 시간</h3>
         <div style={{ display: 'flex', gap: 10, fontSize: 11, color: 'var(--color-neutral-700)' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 14, height: 7, borderRadius: 99, border: '2px solid var(--color-neutral-500)' }} />계획</span>
+          {/* 숫자(실제 / 계획)와 같은 순서로 (2026-10-03 UT 4차) */}
           <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 14, height: 7, borderRadius: 99, background: 'var(--color-neutral-700)' }} />실제</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 14, height: 7, borderRadius: 99, border: '2px solid var(--color-neutral-500)' }} />계획</span>
         </div>
       </div>
       {empty || rows.length === 0 ? (
@@ -122,8 +123,8 @@ function GoalTimes({ sum, goals, toneOf }: { sum: Summary | null; goals: Goal[];
             <div key={g.id} data-testid="vs-row" style={{ display: 'grid', gridTemplateColumns: '88px minmax(0,1fr) 62px', alignItems: 'center', gap: 10 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 700, minWidth: 0 }}><Dot color={tone.dot} /><span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: isClosed(g) ? 0.6 : 1 }}>{g.name}</span></span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <div style={{ height: 8, width: (planned / max) * 100 + '%', borderRadius: 99, border: planned ? '2px solid var(--color-neutral-500)' : 0, boxSizing: 'border-box' }} />
                 <div style={{ height: 8, width: (actual / max) * 100 + '%', borderRadius: 99, background: tone.dot }} />
+                <div style={{ height: 8, width: (planned / max) * 100 + '%', borderRadius: 99, border: planned ? '2px solid var(--color-neutral-500)' : 0, boxSizing: 'border-box' }} />
               </div>
               <span data-testid="vs-hours" style={{ textAlign: 'right', fontSize: 12, color: 'var(--color-neutral-700)', whiteSpace: 'nowrap' }}>{hours(actual)} / {hours(planned)}h</span>
             </div>
@@ -174,7 +175,7 @@ function Scores({ period, today, scores, isCurrent }: { period: Period; today: D
               aria-pressed={on}
               aria-label={`${l.md} ${s ? s + '점' : '점수 없음'}`}
               onClick={() => setSel(d)}
-              style={{ height: 38, border: 0, borderRadius: 12, cursor: future ? 'default' : 'pointer', ...BODY, fontSize: 12, background: s ? SCORE_BG[s - 1] : future ? 'transparent' : 'var(--color-bg)', color: s ? (s >= 4 ? 'var(--score-fg-hi)' : 'var(--color-accent-900)') : 'var(--color-neutral-500)', boxShadow: on ? '0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-text)' : d === today ? 'inset 0 0 0 2px var(--color-accent)' : 'none', opacity: future ? 0.5 : 1 }}
+              style={{ height: 38, minWidth: 0, padding: 0, whiteSpace: 'nowrap', letterSpacing: -0.2, border: 0, borderRadius: 12, cursor: future ? 'default' : 'pointer', ...BODY, fontSize: 11.5, background: s ? SCORE_BG[s - 1] : future ? 'transparent' : 'var(--color-bg)', color: s ? (s >= 4 ? 'var(--score-fg-hi)' : 'var(--color-accent-900)') : 'var(--color-neutral-500)', boxShadow: on ? '0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-text)' : d === today ? 'inset 0 0 0 2px var(--color-accent)' : 'none', opacity: future ? 0.5 : 1 }}
             >
               {period.range === 'week' || Number(d.slice(8)) === 1 ? l.md : Number(d.slice(8))}
             </button>

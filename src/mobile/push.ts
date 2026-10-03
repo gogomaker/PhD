@@ -4,7 +4,10 @@ import { supabase } from '../lib/supabase';
 const VAPID_PUBLIC = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
 
 export function registerServiceWorker() {
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  // 열릴 때마다 새 배포의 화면 파일을 받아 두게 한다 → 연결 없이도 열린다 (2026-10-03 UT 4차)
+  if (navigator.onLine) navigator.serviceWorker.ready.then(r => r.active?.postMessage({ type: 'precache' })).catch(() => {});
 }
 
 function keyBytes(base64: string) {

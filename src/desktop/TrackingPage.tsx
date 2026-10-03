@@ -159,8 +159,9 @@ function VsCard({ sum, goals, toneOf }: { sum: Summary | null; goals: Goal[]; to
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <h3 style={{ margin: 0, fontSize: 22 }}>목표별 계획 대비 실제</h3>
         <div style={{ display: 'flex', gap: 14, fontSize: 12, color: 'var(--color-neutral-700)' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 16, height: 8, borderRadius: 99, border: '2px solid var(--color-neutral-500)' }} />계획</span>
+          {/* 숫자(실제 / 계획)와 같은 순서로 (2026-10-03 UT 4차) */}
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 16, height: 8, borderRadius: 99, background: 'var(--color-neutral-700)' }} />실제</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 16, height: 8, borderRadius: 99, border: '2px solid var(--color-neutral-500)' }} />계획</span>
         </div>
       </div>
       {rows.length === 0 && <span style={{ fontSize: 13.5, color: 'var(--color-neutral-700)' }}>진행 중인 목표가 없어요.</span>}
@@ -171,8 +172,8 @@ function VsCard({ sum, goals, toneOf }: { sum: Summary | null; goals: Goal[]; to
           <div key={g.id} data-testid="vs-row" style={{ display: 'grid', gridTemplateColumns: '120px minmax(0,1fr) 104px', alignItems: 'center', gap: 14 }}>
             <GoalName g={g} tone={tone} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <div style={{ height: 10, width: (planned / max) * 100 + '%', borderRadius: 99, border: planned ? '2px solid var(--color-neutral-500)' : 0, boxSizing: 'border-box' }} />
               <div style={{ height: 10, width: (actual / max) * 100 + '%', borderRadius: 99, background: tone.dot }} />
+              <div style={{ height: 10, width: (planned / max) * 100 + '%', borderRadius: 99, border: planned ? '2px solid var(--color-neutral-500)' : 0, boxSizing: 'border-box' }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
               <span style={{ fontSize: 12.5, color: 'var(--color-neutral-700)', whiteSpace: 'nowrap' }} data-testid="vs-hours">{hours(actual)}/{hours(planned)}h</span>
