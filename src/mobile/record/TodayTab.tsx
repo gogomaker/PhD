@@ -27,7 +27,7 @@ const ICON = {
 const SRC: Record<DayItem['source'], string> = { repeat: '반복', auto: '자동 배정', picked: '담은 일', direct: '직접 추가' };
 
 export default function TodayTab() {
-  const { profile, subgoals, goals, goalCategories, dailyCategory, keywords, allKeywords, practices } = useAccount();
+  const { profile, subgoals, goals, goalCategories, dailyCategory, keywords, allKeywords, practices, toast } = useAccount();
   const dayStart = profile?.day_start_hour ?? DEFAULT_DAY_START_HOUR;
   const today = useToday();
   const loc = useLocation();
@@ -275,7 +275,15 @@ export default function TodayTab() {
           <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 15, color: 'var(--color-accent-700)' }}>{dow}</span>
         </button>
         <button onClick={() => go(addDays(day, 1))} aria-label="다음 날" className="btn m-hover" style={{ width: 32, height: 32, padding: 0, color: 'var(--color-neutral-700)' }}><Svg d={MI.right} /></button>
-        <span data-testid="day-badge" className={badge[1]} style={{ fontWeight: 700, fontSize: 11.5, whiteSpace: 'nowrap' }}>{badge[0]}</span>
+        {/* 지난날·모레 이후 안내는 줄을 끼워 넣지 않고 배지에 담는다 — 날마다 레이아웃이 같게 (지류 다이어리처럼, 2026-10-03 기획 피드백) */}
+        {banner ? (
+          <button data-testid="day-badge" className={badge[1]} title={banner} aria-label={badge[0] + ' · ' + banner} onClick={() => toast(banner)} style={{ border: 0, cursor: 'pointer', fontWeight: 700, fontSize: 11.5, whiteSpace: 'nowrap', gap: 4 }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICON.lock} /></svg>
+            <span data-testid="day-badge-text">{badge[0]}</span>
+          </button>
+        ) : (
+          <span data-testid="day-badge" className={badge[1]} style={{ fontWeight: 700, fontSize: 11.5, whiteSpace: 'nowrap' }}>{badge[0]}</span>
+        )}
         {rel !== 0 && <button onClick={() => go(today)} className="btn btn-secondary" style={{ height: 28, padding: '0 10px', marginLeft: 4, ...BODY, fontSize: 12 }}>오늘</button>}
         <div style={{ flex: 1 }} />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, fontSize: 11.5, color: 'var(--color-neutral-700)', whiteSpace: 'nowrap' }}>
@@ -283,13 +291,6 @@ export default function TodayTab() {
           <span>실제 <b data-testid="actual" style={{ color: 'var(--color-accent-700)' }}>{fmtMinutes(actualMin)}</b></span>
         </div>
       </div>
-
-      {banner && (
-        <div data-testid="day-banner" style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 999, background: 'var(--color-neutral-200)', color: 'var(--color-neutral-800)', fontSize: 12.5, fontWeight: 600 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }} aria-hidden="true"><path d={ICON.lock} /></svg>
-          {banner}
-        </div>
-      )}
 
       {/* 할 일 | 시간표 — 폭 비율 고정 (SPEC 5장 알려진 문제) */}
       <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 166px', gap: 8 }}>
