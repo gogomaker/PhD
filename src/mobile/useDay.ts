@@ -16,6 +16,8 @@ export function useDay(day: DayKey, today: DayKey) {
   const [blocks, setBlocks] = useState<BlockRow[]>([]);
   const [journal, setJournal] = useState<Journal | null>(null);
   const [loaded, setLoaded] = useState(false);
+  // 이 날 서버 시간표를 안다(서버에서 읽었거나 기기에 둔 내용). 모르면 칠하지 않는다 — 빈 화면에 칠한 게 서버 기록을 덮지 않게 (2026-10-04)
+  const [ready, setReady] = useState(false);
   const user = profile?.id ?? '';
   // 연결이 끊겨 못 보낸 시간표 (이 기기에 보관, 2026-10-03 UT)
   const [pendingVer, setPendingVer] = useState(0);
@@ -49,10 +51,12 @@ export function useDay(day: DayKey, today: DayKey) {
     ]);
     const err = b.error ?? j.error;
     if (err) return quiet || offlineErr(err) ? undefined : toast(errorText(err));
-    if (user) writeDayCache(user, day, { blocks: b.data, journal: j.data });
     if (edits.current === v) {
+      // 기기에 둔 내용도 서버 그대로 (이 사이 칠한 게 있으면 그 저장이 따로 고친다)
+      if (user) writeDayCache(dayKey(user, dayStart ?? 5, day), { blocks: b.data, journal: j.data });
       const rows = b.data as BlockRow[];
       base.current = { plan: rows.filter(x => x.layer === 'plan').map(toInput), actual: rows.filter(x => x.layer === 'actual').map(toInput) };
+      setReady(true);
       const next = withPending(rows, user ? pendingOf(user, day) : []);
       setBlocks(old => (sameJson(old, next) ? old : next));
     }
@@ -62,10 +66,11 @@ export function useDay(day: DayKey, today: DayKey) {
   useEffect(() => {
     // 이 기기에 둔 마지막 내용을 먼저 보이고(연결이 없어도 열리게, 2026-10-03 UT 4차) 뒤에서 새로 읽는다
     const ct = user ? readCache<TaskRow[]>(TASKS + user) : undefined;
-    const cd = user ? readCache<{ blocks: BlockRow[]; journal: Journal | null }>(DAY + user + ':' + day) : undefined;
+    const cd = user ? readCache<DayCache>(dayKey(user, dayStart ?? 5, day)) : undefined;
     if (ct) setTasks(ct);
     if (cd) {
       base.current = { plan: cd.blocks.filter(x => x.layer === 'plan').map(toInput), actual: cd.blocks.filter(x => x.layer === 'actual').map(toInput) };
+      setReady(true);
       setBlocks(withPending(cd.blocks, user ? pendingOf(user, day) : []));
       setJournal(cd.journal);
       setLoaded(true);
@@ -74,6 +79,7 @@ export function useDay(day: DayKey, today: DayKey) {
       setJournal(null);
       setBlocks([]);
       base.current = { plan: null, actual: null };
+      setReady(false);
     }
     Promise.all([loadTasks(), loadDay()]).then(() => setLoaded(true));
   }, [loadTasks, loadDay]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -166,9 +172,9 @@ export function useDay(day: DayKey, today: DayKey) {
     serial(async () => {
       // 화면의 칸 상태가 기준. 성공하면 다시 읽지 않는다(이어서 그린 것을 옛 상태로 덮어쓰지 않도록)
       const known = base.current[layer];
-      // 이 날을 한 번도 못 불러왔으면(연결 없이 처음 연 날) 서버 기록을 덮을 수 있어 칠하지 않는다
-      if (!known && !navigator.onLine) {
-        toast('이 날 기록을 아직 불러오지 못했어요. 연결되면 칠할 수 있어요');
+      // 이 날 서버 시간표를 아직 모르면(불러오는 중, 연결 없이 처음 연 날) 서버 기록을 덮을 수 있어 칠하지 않는다
+      if (!known) {
+        toast(navigator.onLine ? '이 날 기록을 불러오는 중이에요. 잠시 뒤 다시 칠해 주세요' : '이 날 기록을 아직 불러오지 못했어요. 연결되면 칠할 수 있어요');
         edits.current++;
         setBlocks(bs => [...bs]);
         return false;
@@ -178,6 +184,8 @@ export function useDay(day: DayKey, today: DayKey) {
       edits.current++;
       if (!error) {
         base.current[layer] = rows;
+        // 기기에 둔 내용도 방금 저장한 것으로 — 다시 열었을 때 옛 내용이 보이거나, 바로 칠한 게 '다른 기기에서 바뀜'으로 거절되지 않게 (2026-10-03 UT 4차 후속)
+        if (user) patchDayCache(dayKey(user, dayStart ?? 5, day), day, layer, rows);
         if (user && pendingOf(user, day).some(p => p.layer === layer)) {
           dropPending(user, day, layer);
           bump();
@@ -210,6 +218,7 @@ export function useDay(day: DayKey, today: DayKey) {
           if (error && isNetworkError(error)) break;
           dropPending(user, p.day, p.layer, p.at);
           changed = true;
+          if (!error) patchDayCache(dayKey(user, dayStart ?? 5, p.day), p.day, p.layer, p.rows);
           if (error) toast(`${p.day.slice(5).replace('-', '.')} 시간표를 저장하지 못했어요 · ${isStale(error) ? '그 사이 다른 기기에서 바뀌었어요' : errorText(error)}`);
           else if (!pendingOf(user).length) toast('연결됐어요. 기다리던 시간표를 저장했어요');
         }
@@ -251,10 +260,15 @@ export function useDay(day: DayKey, today: DayKey) {
       return false;
     }
     setJournal(data as Journal);
+    if (user) {
+      const k = dayKey(user, dayStart ?? 5, day);
+      const c = readCache<DayCache>(k);
+      if (c) writeCache(k, { ...c, journal: data });
+    }
     return true;
   };
 
-  return { loaded, tasks, blocks, journal, list, ensureRow, toggleDone, toggleCancel, addDirect, removeTask, saveLayer, saveJournal, noteEdit, pending, reload };
+  return { loaded, ready, tasks, blocks, journal, list, ensureRow, toggleDone, toggleCancel, addDirect, removeTask, saveLayer, saveJournal, noteEdit, pending, reload };
 }
 
 /** 서버에서 읽은 블록 위에, 보관 중인 층을 덮어 보여 준다 */
@@ -268,8 +282,19 @@ function writeCache(key: string, v: unknown) {
   try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* 저장 공간이 없으면 다음엔 그냥 읽는다 */ }
 }
 /** 하루 내용은 최근 것만 (8일 넘게 지난 날은 지운다) */
-function writeDayCache(user: string, day: string, v: unknown) {
-  writeCache(DAY + user + ':' + day, v);
+type DayCache = { blocks: BlockRow[]; journal: Journal | null };
+// 칸 번호는 하루 시작 시각 기준이라 키에 넣는다 (바꾸면 옛 내용을 쓰지 않게)
+const dayKey = (user: string, dayStart: number, day: string) => `${DAY}${user}:${dayStart}:${day}`;
+/** 저장에 성공한 층을 기기에 둔 내용에 반영 */
+function patchDayCache(key: string, day: string, layer: 'plan' | 'actual', rows: BlockInput[]) {
+  const c = readCache<DayCache>(key);
+  if (!c) return;
+  const mine: BlockRow[] = rows.map((x, i) => ({ id: `saved-${layer}-${i}`, date: day, layer, start_slot: x.start, end_slot: x.end, task_id: x.task_id ?? null, daily_keyword_id: x.keyword_id ?? null, label: x.label?.trim() || null, block_key: x.key ?? null }));
+  writeCache(key, { ...c, blocks: [...c.blocks.filter(b => b.layer !== layer), ...mine].sort((a, b) => a.start_slot - b.start_slot) });
+}
+function writeDayCache(key: string, v: unknown) {
+  writeCache(key, v);
+  const user = key.slice(DAY.length).split(':')[0];
   try {
     const old = new Date(Date.now() - 8 * 86400_000).toISOString().slice(0, 10);
     for (const k of Object.keys(localStorage)) if (k.startsWith(DAY + user + ':') && k.slice(-10) < old) localStorage.removeItem(k);
