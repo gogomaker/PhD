@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { removeAllPhotos } from '../lib/photos';
+import { Link } from 'react-router-dom';
+import { CONTACT_EMAIL, CONTACT_MAILTO, useIsAdmin } from '../ui/Contact';
 import { ensurePush } from '../mobile/push';
 import { THEME_OPTIONS, useThemePref } from '../lib/theme';
 import { downloadExport } from '../lib/exportData';
@@ -40,6 +42,7 @@ function timeLabel(t: string) {
 
 export default function AccountPage() {
   const { profile, session, run } = useAccount();
+  const admin = useIsAdmin();
   const [name, setName] = useState(profile?.name ?? '');
   const [dialog, setDialog] = useState<'password' | 'delete' | null>(null);
   useEffect(() => setName(profile?.name ?? ''), [profile?.name]);
@@ -124,6 +127,18 @@ export default function AccountPage() {
             </button>
           </div>
         </Row>
+      </Card>
+
+      {/* 수정사항·문의 받는 곳 (2026-10-04 기획 요청) */}
+      <Card title="문의">
+        <Row title="수정사항·문의사항" sub={`${CONTACT_EMAIL} 으로 보내 주세요.`}>
+          <a className="btn btn-secondary" href={CONTACT_MAILTO} style={{ ...PILL_STYLE, textDecoration: 'none' }}>메일 보내기</a>
+        </Row>
+        {admin && (
+          <Row title="관리 페이지" sub="가입자 수, DAU·WAU (관리자만 보여요)">
+            <Link className="btn btn-secondary" to="/admin" style={{ ...PILL_STYLE, textDecoration: 'none' }}>열기</Link>
+          </Row>
+        )}
       </Card>
 
       <Card title="로그인과 데이터">

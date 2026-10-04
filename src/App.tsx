@@ -11,6 +11,8 @@ const loadDesktop = () => import('./desktop/DesktopShell');
 const loadMobile = () => import('./mobile/MobileApp');
 const DesktopShell = lazy(loadDesktop);
 const MobileApp = lazy(loadMobile);
+// 서비스 관리 페이지 (관리자만, 2026-10-04)
+const AdminPage = lazy(() => import('./admin/AdminPage'));
 // 로그인 확인과 동시에 이 기기의 화면 코드를 받아 둔다 (2026-10-03 UT 13)
 (isMobileNow() ? loadMobile : loadDesktop)().catch(() => {});
 
@@ -44,6 +46,7 @@ export default function App() {
   // 가입을 마치면 목표 설정으로, 로그인하면 꿈 보드로 (목업 흐름). 휴대폰은 계획 › 목표 / 첫 화면으로 (docs/MOBILE.md)
   if (pathname === '/signup') return <Navigate to={mobile ? '/plan' : '/goals'} replace />;
   if (pathname === '/login' || pathname === '/forgot-password') return <Navigate to={mobile ? '/' : '/board'} replace />;
+  if (pathname === '/admin') return <Suspense fallback={<Splash />}><AdminPage /></Suspense>;
   return <Suspense fallback={<Splash />}>{mobile ? <MobileApp /> : <DesktopShell />}</Suspense>;
 }
 
