@@ -59,11 +59,12 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
   // 4.4 날짜별 권한
   const canCheck = rel === 0;
   const canAdd = rel === 0 || rel === 1;
-  const canPlan = canAdd;
-  const canAct = rel === 0;
+  // 이 날 기록을 불러오기 전에는 칠하지 않는다 (빈 화면에 칠한 게 서버 기록을 덮지 않게, 2026-10-04)
+  const canPlan = canAdd && D.ready;
+  const canAct = rel === 0 && D.ready;
   // 하루 기록은 불러온 뒤에 연다 (덜 불러온 채 열면 빈 기록으로 보이므로)
   const canJournal = rel <= 0 && D.loaded;
-  const effMode = canAct ? mode : 'plan';
+  const effMode = rel === 0 ? mode : 'plan';
   // 실제 시간은 지금 칸까지만 (2026-10-03 UT). 30초마다 다시 본다
   const tz = profile?.timezone ?? DEFAULT_TIMEZONE;
   const [slotNow, setSlotNow] = useState(() => nowSlot(new Date(), tz, dayStart));
@@ -200,7 +201,7 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
 
   const brushItem = brush?.startsWith('task:') ? itemByRow(brush.slice(5)) : undefined;
   const brushKw = brush?.startsWith('kw:') ? allKeywords.find(k => k.id === brush.slice(3)) : undefined;
-  const hint = !canPlan ? (rel < 0 ? '지난 기록 · 보기만 할 수 있어요' : '보기 전용') : effMode === 'plan' ? '드래그해서 계획을 회색으로' : brushItem ? '칠하는 중 · ' + meta(brushItem).name : brushKw ? '칠하는 중 · 일상 · ' + brushKw.name : '칠하면 무엇을 했는지 골라요';
+  const hint = rel <= 1 && !D.ready ? (navigator.onLine ? '불러오는 중이에요…' : '연결되면 칠할 수 있어요') : !canPlan ? (rel < 0 ? '지난 기록 · 보기만 할 수 있어요' : '보기 전용') : effMode === 'plan' ? '드래그해서 계획을 회색으로' : brushItem ? '칠하는 중 · ' + meta(brushItem).name : brushKw ? '칠하는 중 · 일상 · ' + brushKw.name : '칠하면 무엇을 했는지 골라요';
 
   const j = D.journal;
   const nThanks = j ? j.thanks.filter(x => x.trim()).length : 0;
@@ -228,7 +229,8 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
 
   const pickBrush = async (it: DayItem) => {
     if (press.current?.fired) return (press.current = null);
-    if (!canAct) return;
+    // 붓 고르기는 시간표를 바꾸지 않아서 불러오는 중에도 된다 (칠하기만 불러온 뒤에)
+    if (rel !== 0) return;
     const id = await D.ensureRow(it);
     if (id) {
       setBrush('task:' + id);
@@ -247,7 +249,7 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
 
   const row = (it: DayItem) => {
     const m = meta(it);
-    const sel = canAct && !!it.row && brush === 'task:' + it.row.id;
+    const sel = rel === 0 && !!it.row && brush === 'task:' + it.row.id;
     const t = it.direct;
     const carriedLabel = it.carried ? (diffDays(it.originDate, day) === 1 ? '어제에서' : md0(it.originDate) + '에서') : '';
     return (
@@ -261,7 +263,7 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
         onPointerUp={endPress}
         onPointerLeave={endPress}
         onContextMenu={e => e.preventDefault()}
-        style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 5, padding: '6px 6px 6px 3px', borderRadius: 16, background: sel ? 'var(--color-neutral-100)' : 'transparent', boxShadow: sel ? 'inset 0 0 0 2px ' + m.tone.dot : 'none', cursor: canAct ? 'pointer' : 'default', opacity: rel > 1 ? 0.5 : 1, WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
+        style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 5, padding: '6px 6px 6px 3px', borderRadius: 16, background: sel ? 'var(--color-neutral-100)' : 'transparent', boxShadow: sel ? 'inset 0 0 0 2px ' + m.tone.dot : 'none', cursor: rel === 0 ? 'pointer' : 'default', opacity: rel > 1 ? 0.5 : 1, WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
       >
         <span style={{ flex: 'none', width: 12, textAlign: 'right', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 12, lineHeight: 1, color: 'var(--color-neutral-700)' }}>{it.num}</span>
         <span title={SRC[it.source] + (it.carried ? ' · ' + carriedLabel : '')} style={{ flex: 'none', width: 14, display: 'grid', placeItems: 'center', color: 'var(--color-neutral-600)' }}>
@@ -394,7 +396,7 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
             {(
               [
                 ['plan', '계획 그리기', canPlan],
-                ['actual', '실제 칠하기', canAct],
+                ['actual', '실제 칠하기', rel === 0],
               ] as const
             ).map(([k, label, ok]) => {
               const on = ok && effMode === k;
@@ -404,7 +406,7 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
             })}
           </div>
           {/* 키워드 붓 줄은 늘 자리를 차지한다 — 계획/실제를 바꿔도 시간표 칸 높이가 그대로 (2026-10-03 기획 피드백) */}
-          {(() => { const show = canAct && effMode === 'actual'; return (
+          {(() => { const show = rel === 0 && effMode === 'actual'; return (
             <div data-testid="brush-row" aria-hidden={!show || undefined} inert={!show || undefined} style={{ flex: 'none', height: 22, display: 'flex', gap: 3, paddingLeft: 2, visibility: show ? 'visible' : 'hidden' }}>
               {keywords.map(k => {
                 const on = brush === 'kw:' + k.id;
