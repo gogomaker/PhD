@@ -32,7 +32,7 @@ function fmtLen(n: number) {
  */
 export const DRAFT = 'draft';
 
-export function TimeTable({ dayStart, mode, canPlan, canAct, actualUntil = SLOTS - 1, brush, plan, actual, reserved, planView, bandView, hint, onPreview, onPlanTap, onPlanDrawn, onCommit, onDraft }: {
+export function TimeTable({ dayStart, mode, canPlan, canAct, actualUntil = SLOTS - 1, brush, plan, actual, reserved, planView, bandView, hint, onPreview, onPlanTap, onPlanDrawn, onCommit, onDraft, onFuture }: {
   dayStart: number;
   mode: 'plan' | 'actual';
   canPlan: boolean;
@@ -53,6 +53,8 @@ export function TimeTable({ dayStart, mode, canPlan, canAct, actualUntil = SLOTS
   onCommit: (layer: 'plan' | 'actual', cells: Cells) => void;
   /** 고른 것 없이 칠한 구간 (먼저 칠하고 나중에 고르기, 2026-10-03 UT 10). snap = 칠하기 전 칸 */
   onDraft?: (snap: Cells, from: number, to: number) => void;
+  /** 실제 칠하기에서 아직 오지 않은 칸을 눌렀을 때 (안내, 2026-10-04 기획 요청) */
+  onFuture?: () => void;
 }) {
   const drag = useRef<{ layer: 'plan' | 'actual'; start: number; cur: number; value: string | null; snap: Cells; tap: string | null } | null>(null);
   const [range, setRange] = useState<[number, number] | null>(null);
@@ -87,6 +89,7 @@ export function TimeTable({ dayStart, mode, canPlan, canAct, actualUntil = SLOTS
       // 아직 오지 않은 시간에서는 칠하기를 시작하지 않는다 (칠해 둔 칸 지우기는 된다)
       if (future[i] && actual[i] !== brush) {
         setNote('아직 오지 않은 시간은 칠할 수 없어요');
+        onFuture?.();
         return;
       }
       // 같은 것으로 이미 칠한 칸에서 시작하면 지우기, 아니면 덮어 칠하기 (R-S5, R-S7)
