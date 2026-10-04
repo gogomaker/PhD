@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>PhD 관리</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; font-size: 15px; background: #fff; color: #222; }
+  @media (prefers-color-scheme: dark) { body { background: #1c1c1c; color: #e6e6e6; } td, th { border-color: #555 !important; } .muted { color: #aaa !important; } }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 24px 0 8px; }
+  .muted { color: #666; font-size: 13px; }
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #bbb; padding: 6px 8px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  #daily { width: 100%; }
+  label { display: block; margin: 10px 0 4px; }
+  input { font: inherit; padding: 6px 8px; width: 100%; max-width: 320px; box-sizing: border-box; }
+  button { font: inherit; padding: 4px 12px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>PhD 관리</h1>
+  <p class="muted">가입자 수와 DAU·WAU. 관리자 계정으로만 볼 수 있어요.</p>
+
+  <form id="login" hidden>
+    <label for="email">이메일</label>
+    <input id="email" type="email" autocomplete="username" required>
+    <label for="password">비밀번호</label>
+    <input id="password" type="password" autocomplete="current-password" required>
+    <p><button type="submit">로그인</button></p>
+  </form>
+
+  <section id="view" hidden>
+    <p class="muted"><span id="who"></span> · <span id="at"></span> 기준 · <button id="refresh" type="button">새로고침</button> <button id="logout" type="button">로그아웃</button></p>
+    <table id="summary"><tbody></tbody></table>
+    <p class="muted">'앱을 연 사람' = 그날 로그인한 채 앱을 한 번 이상 연 사람 (한국 날짜). 2026.10.4 이전은 그날 남긴 기록(할 일·시간표·하루 기록)으로 셌어요. 시험 계정은 빼요.</p>
+    <h2>최근 14일</h2>
+    <table id="daily">
+      <thead><tr><th>날짜</th><th>DAU</th><th>WAU</th><th>신규</th><th>누적</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <p id="msg" role="alert"></p>
+</main>
+<script>
+// PhD 관리 페이지 (2026-10-04 기획 요청): 앱과 따로 띄우는 정적 페이지. 같은 DB(Supabase)에서 숫자만 읽는다.
+// 공개 키(anon)는 앱에도 들어 있는 공개 값이고, 숫자는 서버의 admin_stats가 관리자 계정에만 준다.
+const SUPABASE_URL = 'https://vvhpabbqiguuobpivdbf.supabase.co';
+const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2aHBhYmJxaWd1dW9icGl2ZGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4Mjk2MDIsImV4cCI6MjEwNjQwNTYwMn0.pa4PjbgpyA4H3zPTPXHyHLxgix5mytZ1QNZKg_DOj5Q';
+const KEY = 'phd-control-session';
+const $ = id => document.getElementById(id);
+const msg = t => { $('msg').textContent = t || ''; };
+
+function saveSession(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {} }
+function loadSession() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { return null; } }
+function clearSession() { try { localStorage.removeItem(KEY); } catch {} }
+
+async function auth(body, grant) {
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=${grant}`, {
+    method: 'POST', headers: { apikey: ANON, 'content-type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error_code === 'invalid_credentials' ? '이메일 또는 비밀번호가 맞지 않아요' : (j.msg || j.error_description || '로그인하지 못했어요'));
+  const s = { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: Date.now() + (j.expires_in || 3600) * 1000, email: j.user && j.user.email };
+  saveSession(s);
+  return s;
+}
+
+async function session() {
+  const s = loadSession();
+  if (!s) return null;
+  if (s.expires_at - Date.now() > 60_000) return s;
+  try { return await auth({ refresh_token: s.refresh_token }, 'refresh_token'); } catch { clearSession(); return null; }
+}
+
+async function stats(s) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_stats`, {
+    method: 'POST', headers: { apikey: ANON, authorization: 'Bearer ' + s.access_token, 'content-type': 'application/json' }, body: JSON.stringify({ p_days: 14 }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(String(j.message || '').includes('not_admin') ? '관리자 계정만 볼 수 있어요.' : '숫자를 불러오지 못했어요');
+  return j;
+}
+
+const DOW = '일월화수목금토';
+const md = d => d.slice(5).replace('-', '.');
+function row(cells) { const tr = document.createElement('tr'); for (const [tag, text] of cells) { const el = document.createElement(tag); el.textContent = text; tr.appendChild(el); } return tr; }
+
+function render(s, j) {
+  $('who').textContent = s.email || '';
+  $('at').textContent = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  const sum = $('summary').tBodies[0]; sum.replaceChildren();
+  for (const [k, v, note] of [
+    ['가입자 수', j.users, '전체'],
+    ['오늘 가입', j.joined_today, ''],
+    ['시작 설정 마침', j.onboarded, '가입 4단계를 끝낸 사람'],
+    ['DAU', j.dau, `오늘(${md(j.today)}) 앱을 연 사람`],
+    ['WAU', j.wau, '최근 7일'],
+    ['MAU', j.mau, '최근 30일'],
+  ]) sum.appendChild(row([['th', k], ['td', String(v)], ['td', note]]));
+  const daily = $('daily').tBodies[0]; daily.replaceChildren();
+  for (const d of j.daily) daily.appendChild(row([['td', `${md(d.day)} ${DOW[new Date(d.day + 'T00:00:00').getDay()]}`], ['td', String(d.dau)], ['td', String(d.wau)], ['td', String(d.joined)], ['td', String(d.users)]]));
+}
+
+async function show() {
+  msg('');
+  const s = await session();
+  if (!s) { $('view').hidden = true; $('login').hidden = false; return; }
+  $('login').hidden = true;
+  try { render(s, await stats(s)); $('view').hidden = false; }
+  catch (e) { $('view').hidden = true; msg(e.message); if (e.message.includes('관리자')) { $('login').hidden = false; clearSession(); } }
+}
+
+$('login').addEventListener('submit', async e => {
+  e.preventDefault();
+  msg('');
+  try { await auth({ email: $('email').value.trim(), password: $('password').value }, 'password'); $('password').value = ''; await show(); }
+  catch (err) { msg(err.message); }
+});
+$('refresh').addEventListener('click', show);
+$('logout').addEventListener('click', () => { clearSession(); show(); });
+show();
+</script>
+</body>
+</html>
