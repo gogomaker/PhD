@@ -438,6 +438,8 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
               setSheet({ k: 'plan', key, isNew: true });
             }}
             onDraft={(snap, from, to) => setSheet({ k: 'pick', snap, from, to })}
+            // 실제는 지금까지 한 일만 — 앞으로 할 일은 계획으로 안내하고 바로 바꿀 수 있게 (2026-10-04 기획 요청)
+            onFuture={() => toast("아직 오지 않은 시간은 칠할 수 없어요. 앞으로 할 일은 '계획 그리기'로 그려요", { label: '계획 그리기', run: () => setMode('plan') })}
             onCommit={(layer, cells) => {
               if (layer === 'plan') {
                 setPlan(p => ({ ...p, cells }));
