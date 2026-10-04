@@ -8,8 +8,7 @@ import { THEME_OPTIONS, useThemePref } from '../../lib/theme';
 import { downloadExport } from '../../lib/exportData';
 import { removeAllPhotos } from '../../lib/photos';
 import { ScrollArea } from '../../ui/ScrollArea';
-import { Link } from 'react-router-dom';
-import { CONTACT_EMAIL, CONTACT_MAILTO, useIsAdmin } from '../../ui/Contact';
+import { CONTACT_EMAIL, CONTACT_MAILTO } from '../../ui/Contact';
 import { ensurePush } from '../push';
 import { BODY, Field, H, Sheet, SheetHead, Switch } from '../ui';
 
@@ -43,7 +42,6 @@ const TIMES = Array.from({ length: 144 }, (_, i) => `${String(Math.floor(i / 6))
 
 export default function SettingsPage() {
   const { profile, session, run, toast } = useAccount();
-  const admin = useIsAdmin();
   const today = useToday();
   const [pref, setPref] = useThemePref();
   const [name, setName] = useState(profile?.name ?? '');
@@ -135,11 +133,6 @@ export default function SettingsPage() {
         <Line title="수정사항·문의사항" sub={`${CONTACT_EMAIL} 으로 보내 주세요.`}>
           <a className="btn btn-secondary" href={CONTACT_MAILTO} style={{ ...PILL, alignSelf: 'flex-start', textDecoration: 'none' }}>메일 보내기</a>
         </Line>
-        {admin && (
-          <Line title="관리 페이지" sub="가입자 수, DAU·WAU (관리자만 보여요)">
-            <Link className="btn btn-secondary" to="/admin" style={{ ...PILL, alignSelf: 'flex-start', textDecoration: 'none' }}>열기</Link>
-          </Line>
-        )}
       </Card>
 
       <Card title="로그인과 데이터">

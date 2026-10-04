@@ -194,8 +194,9 @@
 
 ## 관리 페이지 + 문의 (2026-10-04)
 - DB `20261004000017`: `daily_active`(사용자·한국 날짜, 앱이 하루 한 번 `touch_active()`), `admins`(기획자 계정), `is_admin()`, `admin_stats(p_days)` — 관리자만, 숫자만, `@phd-test.dev` 제외. 지난 활동은 할 일·시간표·하루 기록 남긴 날로 채움
-- 화면: `src/admin/AdminPage.tsx`(`/admin`, App에서 셸 밖으로), `ui/Contact.tsx`(문의 메일, `useIsAdmin`). 설정·계정 관리에 '문의' 카드
-- DB 테스트 `supabase/tests/admin_stats.sql`, E2E scratchpad `e2e-admin.mjs`(13개)
+- 관리 페이지는 앱과 따로(기획 요청): 저장소 `control/index.html` 정적 페이지 하나(빌드 없음, Supabase REST·Auth를 fetch로, 공개 키만). `.github/workflows/control-pages.yml`이 main에 `control/`이 바뀌면 GitHub Pages로 배포. 사용자 도메인 phdcontrol.yong-yong.com 은 저장소 Settings › Pages + DNS CNAME(→ gogomaker.github.io)
+- 앱: `ui/Contact.tsx`(문의 메일). 설정·계정 관리에 '문의' 카드. 앱 안 /admin·관리 링크는 없앰
+- DB 테스트 `supabase/tests/admin_stats.sql`, E2E scratchpad `e2e-control.mjs`(13개)
 
 ## 남은 일 / 알려진 제약
 - 이메일 변경: Supabase 기본 메일은 기획자 계정 이메일에만 보내져서 지금은 이메일을 읽기 전용으로 둠. 메일 서비스(SMTP) 붙일 때 같이 연다

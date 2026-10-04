@@ -1,0 +1,33 @@
+# PhD 관리 페이지(control/)를 앱과 따로 GitHub Pages로 띄운다 (2026-10-04 기획 요청).
+# 주소: phdcontrol.yong-yong.com (저장소 Settings › Pages에서 사용자 도메인 연결)
+name: 관리 페이지 배포
+
+on:
+  push:
+    branches: [main]
+    paths: ['control/**', '.github/workflows/control-pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: control-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: control
+      - id: deploy
+        uses: actions/deploy-pages@v4
