@@ -188,6 +188,25 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     setData(userId ? readCache(userId) : undefined);
     if (userId) reload();
   }, [userId, reload]);
+  // 오늘 앱을 열었음을 하루 한 번 남긴다 — 관리 페이지의 DAU·WAU (2026-10-04, 한국 날짜 기준)
+  useEffect(() => {
+    if (!userId) return;
+    const key = 'phd-active:' + userId;
+    const touch = () => {
+      const day = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(new Date());
+      let last: string | null = null;
+      try { last = localStorage.getItem(key); } catch { /* 없음 */ }
+      if (last === day || document.visibilityState !== 'visible') return;
+      supabase.rpc('touch_active').then(({ error }) => {
+        if (!error) try { localStorage.setItem(key, day); } catch { /* 다음에 다시 */ }
+      }, () => {});
+    };
+    touch();
+    window.addEventListener('focus', touch);
+    document.addEventListener('visibilitychange', touch);
+    return () => { window.removeEventListener('focus', touch); document.removeEventListener('visibilitychange', touch); };
+  }, [userId]);
+
   // 로그아웃했으면 이 기기에 둔 데이터도 지운다 (로그인 확인 전에는 지우지 않는다)
   useEffect(() => {
     if (session === null) clearCache();

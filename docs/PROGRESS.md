@@ -192,6 +192,11 @@
 - E2E scratchpad `e2e-paint.mjs`(9개: 기본 칠하기·지우기·연타, 느린 연결 다시 열기, 새 기기)
 - 미래 칸 안내(기획 요청): 실제 칠하기에서 지금 이후 칸을 누르면 안내 + '계획 그리기'로 바로 바꾸는 버튼 (`TimeTable`의 `onFuture`). E2E `e2e-future.mjs`(4개)
 
+## 관리 페이지 + 문의 (2026-10-04)
+- DB `20261004000017`: `daily_active`(사용자·한국 날짜, 앱이 하루 한 번 `touch_active()`), `admins`(기획자 계정), `is_admin()`, `admin_stats(p_days)` — 관리자만, 숫자만, `@phd-test.dev` 제외. 지난 활동은 할 일·시간표·하루 기록 남긴 날로 채움
+- 화면: `src/admin/AdminPage.tsx`(`/admin`, App에서 셸 밖으로), `ui/Contact.tsx`(문의 메일, `useIsAdmin`). 설정·계정 관리에 '문의' 카드
+- DB 테스트 `supabase/tests/admin_stats.sql`, E2E scratchpad `e2e-admin.mjs`(13개)
+
 ## 남은 일 / 알려진 제약
 - 이메일 변경: Supabase 기본 메일은 기획자 계정 이메일에만 보내져서 지금은 이메일을 읽기 전용으로 둠. 메일 서비스(SMTP) 붙일 때 같이 연다
 - 비밀번호 찾기 메일도 같은 제약(기획자 본인 이메일로는 옴)
