@@ -4,7 +4,7 @@ import { useAccount, type Category } from '../account/AccountProvider';
 import { Swatches } from '../account/Swatches';
 import { PALETTE } from '../lib/palette';
 import { lifeStageOf } from '../lib/lifeStage';
-import { MAX_CATEGORY_NAME, MAX_GOAL_CATEGORIES, MAX_KEYWORD_NAME } from '../lib/categories';
+import { MAX_CATEGORY_NAME, MAX_GOAL_CATEGORIES, MAX_KEYWORD_NAME, MAX_KEYWORDS } from '../lib/categories';
 
 const chevronUp = 'm18 15-6-6-6 6';
 const chevronDown = 'm6 9 6 6 6-6';
@@ -146,6 +146,9 @@ export default function CategoriesPage() {
                   </button>
                 </span>
               ))}
+              {keywords.length >= MAX_KEYWORDS ? (
+                <span data-testid="keyword-limit" style={{ fontSize: 12.5, color: 'var(--color-neutral-700)' }}>최대 {MAX_KEYWORDS}개예요. 하나를 지우면 새로 추가할 수 있어요</span>
+              ) : (
               <input
                 placeholder="+ 키워드 입력 후 Enter"
                 aria-label="키워드 추가"
@@ -164,6 +167,7 @@ export default function CategoriesPage() {
                 }}
                 style={{ height: 36, width: 180, borderRadius: 999, border: '2px dashed var(--color-neutral-400)', background: 'transparent', padding: '0 14px', font: 'inherit', fontSize: 13, color: 'var(--color-text)', outline: 'none', boxSizing: 'border-box' }}
               />
+              )}
             </div>
           </div>
         </div>
