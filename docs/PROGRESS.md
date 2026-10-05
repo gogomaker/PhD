@@ -198,6 +198,9 @@
 - 앱: `ui/Contact.tsx`(문의 메일). 설정·계정 관리에 '문의' 카드. 앱 안 /admin·관리 링크는 없앰
 - DB 테스트 `supabase/tests/admin_stats.sql`, E2E scratchpad `e2e-control.mjs`(13개)
 
+## 일상 키워드 최대 6개 (2026-10-05, R-C6)
+- DB `20261005000018` 트리거 `daily_keywords_limit`(추가·되살리기), `lib/categories.ts` `MAX_KEYWORDS`, 휴대폰·PC 카테고리 편집에서 6개면 추가 칸 대신 안내. DB 테스트 `supabase/tests/keyword_limit.sql`, E2E scratchpad `e2e-kw.mjs`(6개)
+
 ## 남은 일 / 알려진 제약
 - 이메일 변경: Supabase 기본 메일은 기획자 계정 이메일에만 보내져서 지금은 이메일을 읽기 전용으로 둠. 메일 서비스(SMTP) 붙일 때 같이 연다
 - 비밀번호 찾기 메일도 같은 제약(기획자 본인 이메일로는 옴)

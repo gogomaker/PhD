@@ -5,7 +5,7 @@ import { useAccount, type Category } from '../../account/AccountProvider';
 import { Swatches } from '../../account/Swatches';
 import { PALETTE } from '../../lib/palette';
 import { lifeStageOf } from '../../lib/lifeStage';
-import { MAX_CATEGORY_NAME, MAX_GOAL_CATEGORIES, MAX_KEYWORD_NAME } from '../../lib/categories';
+import { MAX_CATEGORY_NAME, MAX_GOAL_CATEGORIES, MAX_KEYWORD_NAME, MAX_KEYWORDS } from '../../lib/categories';
 import { BlurInput } from '../../ui/BlurInput';
 import { ScrollArea } from '../../ui/ScrollArea';
 import { BODY, H, ICON, Svg } from '../ui';
@@ -43,6 +43,7 @@ export default function CategoriesPage() {
     if (!v || !daily) return;
     setKw('');
     if (keywords.some(k => k.name === v)) return;
+    if (keywords.length >= MAX_KEYWORDS) return toast(`일상 키워드는 최대 ${MAX_KEYWORDS}개예요`);
     const position = allKeywords.length ? Math.max(...allKeywords.map(k => k.position)) + 1 : 0;
     // 지운(보관한) 키워드를 다시 적으면 되살린다 — 지난 기록이 그 키워드를 가리키므로 실제로 지우지 않는다
     const old = allKeywords.find(k => k.name === v);
@@ -110,10 +111,14 @@ export default function CategoriesPage() {
                 <button onClick={() => run(() => supabase.from('daily_keywords').update({ archived: true }).eq('id', k.id))} aria-label={k.name + ' 삭제'} style={{ width: 28, height: 28, borderRadius: '50%', border: 0, background: 'transparent', color: 'inherit', cursor: 'pointer', display: 'grid', placeItems: 'center', padding: 0 }}><Svg d={ICON.x} size={12} /></button>
               </span>
             ))}
+            {keywords.length >= MAX_KEYWORDS ? (
+              <span data-testid="keyword-limit" style={{ fontSize: 12, color: 'var(--color-neutral-700)' }}>최대 {MAX_KEYWORDS}개예요. 하나를 지우면 새로 추가할 수 있어요</span>
+            ) : (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <input aria-label="키워드 추가" value={kw} maxLength={MAX_KEYWORD_NAME} onChange={e => setKw(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && addKeyword()} placeholder="+ 키워드" style={{ height: 34, width: 110, borderRadius: 999, border: '2px dashed var(--color-neutral-400)', background: 'transparent', padding: '0 12px', ...BODY, fontWeight: 500, fontSize: 13, color: 'var(--color-text)', outline: 'none', boxSizing: 'border-box' }} />
               {kw.trim() && <button className="btn btn-primary" onClick={addKeyword} style={{ height: 34, padding: '0 12px', fontSize: 12.5 }}>추가</button>}
             </span>
+            )}
           </div>
         </div>
       )}

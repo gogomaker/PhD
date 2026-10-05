@@ -4,6 +4,8 @@ import { CATEGORY_COLORS, type CategoryColor } from './palette';
 export const MAX_GOAL_CATEGORIES = 6;
 export const MAX_CATEGORY_NAME = 20;
 export const MAX_KEYWORD_NAME = 10;
+/** 일상 키워드는 최대 6개 — 시간표 위 붓 줄이 한 줄에 들어가게 (2026-10-05 기획 요청, DB도 막음) */
+export const MAX_KEYWORDS = 6;
 
 /**
  * 목표 카테고리 색은 순서로 정해진다: 빨강 → 주황 → … → 분홍에서 일상 색을 건너뛰고 차례로.
