@@ -11,6 +11,7 @@ import { ScrollArea } from '../../ui/ScrollArea';
 import { BODY, Field, H, ICON, Svg } from '../ui';
 import { useMobile } from '../store';
 import { ConfirmSheet, ReviewSheet, WrapSheet, useGoalTone, useGoalTotals } from '../plan/goalSheets';
+import { cellSubs } from '../../lib/plan';
 
 export default function GoalPage({ id, active, onGone }: { id: string; active: boolean; onGone: () => void }) {
   const { goals, status } = useAccount();
@@ -34,7 +35,7 @@ function GoalEditor({ g, onDone }: { g: Goal; onDone: () => void }) {
   const totals = useGoalTotals(g.status)?.[g.id];
   const subs = subgoals.filter(s => s.goal_id === g.id);
   // R-G9: 계획에 배치된 세부 목표는 지울 수 없다
-  const placed = new Set([...yearCells, ...monthCells, ...practices].map(c => c.subgoal_id));
+  const placed = new Set([...[...yearCells, ...monthCells].flatMap(cellSubs), ...practices.map(c => c.subgoal_id)]);
   // 직접 추가 할 일에 연결된 세부 목표도 지울 수 없다 (R-T5)
   const usedByTasks = useTaskSubgoals(subs.map(s => s.id));
   const closed = isClosed(g);

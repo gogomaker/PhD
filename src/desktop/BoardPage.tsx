@@ -10,6 +10,7 @@ import { useDeleteGoal } from './goalActions';
 import { useTaskSubgoals } from '../lib/useTaskSubgoals';
 import { WrapDialog } from './WrapDialog';
 import { ScrollArea } from '../ui/ScrollArea';
+import { cellSubs } from '../lib/plan';
 
 const pill = (on: boolean) => (on ? 'btn btn-primary' : 'btn btn-secondary');
 
@@ -96,7 +97,7 @@ function EditPanel({ goal: g, subs, onClose }: { goal: Goal; subs: Subgoal[]; on
   const { goalCategories, goals, yearCells, monthCells, practices, run } = useAccount();
   const [wrapOpen, setWrapOpen] = useState(false);
   // R-G9: 계획 표에 배치된 세부목표는 삭제 불가
-  const planned = new Set([...yearCells, ...monthCells, ...practices].map(c => c.subgoal_id));
+  const planned = new Set([...[...yearCells, ...monthCells].flatMap(cellSubs), ...practices.map(c => c.subgoal_id)]);
   // 직접 추가 할 일에 연결된 세부목표도 지울 수 없다 (R-T5)
   const usedByTasks = useTaskSubgoals(subs.map(s => s.id));
   const placed = new Set([...planned, ...usedByTasks]);

@@ -1,6 +1,6 @@
 // 체험 모드 · 데스크톱 (2026-10-03 기획 결정): 예시 목표 하나로 목표 → 세부목표 → 연간 → 월간 → 주간 표 → 마무리까지.
 // 진짜 계획 표와 같은 방식(빈 칸 클릭 → 세부목표 고르기, ↓로 늘리기)으로 해 보되, 화면 안에서만 움직이고 계정에는 저장하지 않는다.
-// 기록은 휴대폰에서만 하므로 안내만. '한 기간에는 목표마다 세부목표 하나'(R-P1)와 '위 계획에서 고르기'(R-P14)를 강조한다
+// 기록은 휴대폰에서만 하므로 안내만. '한 기간에는 목표마다 칸 하나(세부목표는 여러 개 가능)'(R-P1, 2026-10-05)와 '위 계획에서 고르기'(R-P14)를 강조한다
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToday } from '../account/AccountProvider';
@@ -49,7 +49,7 @@ export default function TutorialPage() {
   // 위 계획 (R-P14): 월간 ← 연간의 첫 달, 주간 ← 월간의 이번 주
   const yearUp = year.find(b => b.start <= 0 && 0 <= b.end);
   const monthUp = month.find(b => b.start <= weekIdx && weekIdx <= b.end);
-  const toM = (b: Block, up?: Block): MBlock => ({ id: b.id, start: b.start, end: b.end, chip: subs[b.sub], text: b.text, out: !!up && up.sub !== b.sub });
+  const toM = (b: Block, up?: Block): MBlock => ({ id: b.id, start: b.start, end: b.end, subs: [{ id: String(b.sub), name: subs[b.sub], out: !!up && up.sub !== b.sub }], text: b.text });
   const edit = (list: Block[], set: (l: Block[]) => void) => ({
     onRange: (b: MBlock, start: number, end: number) => set(list.map(x => (x.id === b.id ? { ...x, start, end } : x))),
     onText: (b: MBlock, text: string) => set(list.map(x => (x.id === b.id ? { ...x, text } : x))),
@@ -135,7 +135,7 @@ export default function TutorialPage() {
           <TableFrame columns="96px minmax(200px, 1fr)" minWidth={300} rowHeight={56}>
             <Corner>기간</Corner>
             <ColumnHeader col={2} name={goal} sub="성장" dot={TONE.dot} />
-            <RefRow label={`연간 · ${mNum(ym0)}월`} cells={[yearUp ? { col: 2, chip: subs[yearUp.sub], text: yearUp.text, tone: TONE } : { col: 2, empty: true }]} emptyText="연간 표의 이번 달 칸이 여기로 내려와요" lastCol={2} />
+            <RefRow label={`연간 · ${mNum(ym0)}월`} cells={[yearUp ? { col: 2, chips: [subs[yearUp.sub]], text: yearUp.text, tone: TONE } : { col: 2, empty: true }]} emptyText="연간 표의 이번 달 칸이 여기로 내려와요" lastCol={2} />
             {weeks.map((w, i) => <RowLabel key={w} row={i + 3} label={`${i + 1}주차`} sub={md(w)} today={i === weekIdx} />)}
             <MergeColumn col={2} firstRow={3} rowCount={weeks.length} label={goal} blocks={month.map(b => toM(b, yearUp))} tone={TONE} placeholder="코멘트" sel={sel} setSel={setSel} focusId={null} popRow={pop?.kind === 'month' ? pop.row : null} onEmpty={(row, anchor) => { setSel(null); setPop({ kind: 'month', row, anchor }); }} {...edit(month, setMonth)} />
           </TableFrame>
@@ -151,7 +151,7 @@ export default function TutorialPage() {
           <TableFrame columns="96px minmax(220px, 1fr)" minWidth={320} rowHeight={52}>
             <Corner>요일</Corner>
             <ColumnHeader col={2} name={goal} sub="성장" dot={TONE.dot} />
-            <RefRow label={`월간 · ${weekIdx + 1}주차`} cells={[monthUp ? { col: 2, chip: subs[monthUp.sub], text: monthUp.text, tone: TONE } : { col: 2, empty: true }]} emptyText="월간 표의 이번 주 칸이 여기로 내려와요" lastCol={2} />
+            <RefRow label={`월간 · ${weekIdx + 1}주차`} cells={[monthUp ? { col: 2, chips: [subs[monthUp.sub]], text: monthUp.text, tone: TONE } : { col: 2, empty: true }]} emptyText="월간 표의 이번 주 칸이 여기로 내려와요" lastCol={2} />
             <RowLabel row={3} label="이번 주" sub="여러 날에 걸친 실천" tone="week" />
             {days.map((d, i) => <RowLabel key={d} row={i + 4} label={labels[i]} sub={md(d)} />)}
             {[-1, 0, 1, 2, 3, 4, 5, 6].map(row => {
@@ -225,7 +225,7 @@ export default function TutorialPage() {
         <Card>
           <p style={P}>꿈 → 목표 → <b>연간 → 월간 → 주간</b>으로 내려오고, 휴대폰으로 매일 기록해서 다시 목표로 올라가요.</p>
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.8 }}>
-            <li>한 기간에는 목표마다 <b>세부목표 하나</b></li>
+            <li>한 기간에는 목표마다 <b>칸 하나</b> — 세부목표는 한 칸에 여러 개</li>
             <li>아래 계획은 <b>위 계획에서 골라</b> 세워요</li>
             <li>지난 기간은 고칠 수 없어요</li>
           </ul>
@@ -276,7 +276,7 @@ export default function TutorialPage() {
           <PopHead dot={TONE.dot} title={`${goal} · ${pop.kind === 'year' ? mNum(months[pop.row]) + '월' : pop.row + 1 + '주차'}`} hint={pop.kind === 'year' ? '세부목표를 골라 넣어요' : '세부목표를 골라 넣고 코멘트를 적어요'} />
           <SubgoalPicker
             subs={subList}
-            highlight={pop.kind === 'month' && yearUp ? String(yearUp.sub) : null}
+            highlight={pop.kind === 'month' && yearUp ? [String(yearUp.sub)] : null}
             badge="이번 달 계획"
             upperOn={pop.kind === 'month' && !!yearUp}
             upperName={`연간 계획의 ${mNum(ym0)}월`}
@@ -294,7 +294,7 @@ export default function TutorialPage() {
         <Popover anchor={pop.anchor} width={300} height={520} onClose={close}>
           <PopHead dot={TONE.dot} title={`${goal} · ${pop.row === -1 ? '이번 주' : labels[pop.row] + ' ' + md(days[pop.row])}`} hint="세부목표를 고르고 실천을 적어요" />
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-neutral-700)', padding: '2px 12px 4px' }}>1. 세부목표</span>
-          <SubgoalPicker subs={subList} highlight={monthUp ? String(monthUp.sub) : null} badge="이번 주 계획" upperOn={!!monthUp} upperName={`월간 계획의 ${weekIdx + 1}주차`} selected={pop.sub === null ? null : String(pop.sub)} tone={TONE} onPick={id => setPop({ ...pop, sub: Number(id) })} />
+          <SubgoalPicker subs={subList} highlight={monthUp ? [String(monthUp.sub)] : null} badge="이번 주 계획" upperOn={!!monthUp} upperName={`월간 계획의 ${weekIdx + 1}주차`} selected={pop.sub === null ? null : String(pop.sub)} tone={TONE} onPick={id => setPop({ ...pop, sub: Number(id) })} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '10px 6px 4px' }}>
             <div className="field">
               <label htmlFor="tut-act">2. 실천 이름</label>
@@ -321,10 +321,10 @@ export default function TutorialPage() {
 function Rule({ warn }: { warn: boolean }) {
   return (
     <div data-testid="tutorial-rule" style={{ padding: '14px 18px', borderRadius: 22, background: warn ? 'var(--color-accent-200)' : 'var(--color-accent-2-100)', color: warn ? 'var(--color-accent-900)' : 'var(--color-accent-2-900)', fontSize: 14, lineHeight: 1.6, textWrap: 'pretty' }}>
-      <b>한 기간에는 목표마다 세부목표 하나만 넣어요.</b>
+      <b>한 기간에는 목표마다 칸 하나예요.</b>
       {warn
-        ? ' 빈 달이 없어서 다른 세부목표를 넣을 수 없어요. 칸을 눌러 ↑로 줄이거나 ×로 지워 자리를 만들어 보세요.'
-        : ' 그래서 칸이 찬 달에는 더 넣을 수 없어요. 한 번에 하나에 집중하게 하려는 규칙이에요. 같은 시기에 둘 다 하고 싶다면 주간 계획에서 실천을 여러 개 적으면 돼요.'}
+        ? ' 빈 달이 없어서 새 칸을 넣을 수 없어요. 칸을 눌러 ↑로 줄이거나 ×로 지워 자리를 만들어 보세요. 같은 시기에 함께 하려면, 실제 계획에서 칸을 고른 뒤 \'+ 세부목표\'로 더하면 돼요.'
+        : ' 그래서 칸이 찬 달에는 새 칸을 넣을 수 없어요. 같은 시기에 여러 세부목표를 함께 하고 싶다면, 실제 계획 표에서 칸을 고른 뒤 \'+ 세부목표\'로 한 칸에 여러 개 넣을 수 있어요 (예: 기도 · 성경 · 묵상).'}
     </div>
   );
 }

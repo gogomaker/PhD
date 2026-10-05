@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAccount, useToday } from '../../account/AccountProvider';
 import { addDays, isYearMonth } from '../../lib/day';
-import { addMonths, md, monthOfWeek, monthWeeks, outside, weekLocked, weekStartOf, WEEK_START } from '../../lib/plan';
+import { addMonths, cellSubs, md, monthOfWeek, monthWeeks, outside, picksOf, subsRow, weekLocked, weekStartOf, WEEK_START } from '../../lib/plan';
 import { MergeColumn, type MBlock } from './MergeColumn';
 import { offerUndo } from './undo';
 import { ColumnHeader, LockNote, NOTE, NoColumns, PlanHeader, PopHead, Popover, RefRow, RowLabel, SubgoalPicker, TableFrame, useSelection, useTableGoals, type RefCell } from './shared';
@@ -26,10 +26,12 @@ export default function MonthPlan() {
   const planned = new Set(monthCells.filter(c => c.year_month === ymKey).map(c => c.goal_id));
   const { cols, toneOf, catOf, subsOf, pinned } = useTableGoals(planned);
   // R-P14: 이 달의 연간 계획 (어느 목표든)
-  const ups = yearCells.filter(c => c.start_month <= ymKey && ymKey <= c.end_month).map(c => ({ goalId: c.goal_id, subId: c.subgoal_id }));
+  const ups = picksOf(yearCells.filter(c => c.start_month <= ymKey && ymKey <= c.end_month));
   const [sel, setSel] = useSelection();
   const [focusId, setFocusId] = useState<string | null>(null);
   const [pop, setPop] = useState<{ goalId: string; row: number; end: number; anchor: DOMRect } | null>(null);
+  // 칸에 세부목표 더하기 (2026-10-05)
+  const [subPop, setSubPop] = useState<{ cellId: string; goalId: string; anchor: DOMRect } | null>(null);
   const [y, m] = ym.split('-').map(Number);
 
   const go = (next: string) => { setSel(null); setParams(next === thisYm ? {} : { m: next }); };
@@ -38,7 +40,13 @@ export default function MonthPlan() {
   const upper = (goalId: string) => yearCells.find(c => c.goal_id === goalId && c.start_month <= ymKey && ymKey <= c.end_month);
 
   const goalBlocks = (goalId: string): MBlock[] =>
-    monthCells.filter(c => c.goal_id === goalId && c.year_month === ymKey).map(c => ({ id: c.id, start: c.start_week, end: c.end_week, chip: subName(goalId, c.subgoal_id), text: c.comment, out: outside(ups, goalId, c.subgoal_id) }));
+    monthCells.filter(c => c.goal_id === goalId && c.year_month === ymKey).map(c => {
+      const ids = cellSubs(c);
+      return { id: c.id, start: c.start_week, end: c.end_week, subs: ids.map(sid => ({ id: sid, name: subName(goalId, sid), out: outside(ups, goalId, sid) })), more: subsOf(goalId).some(s => !ids.includes(s.id)), text: c.comment };
+    });
+  const setSubs = (cellId: string, ids: string[]) => run(() => supabase.from('month_cells').update(subsRow(ids)).eq('id', cellId));
+  const subCell = subPop && monthCells.find(c => c.id === subPop.cellId);
+  const upperSubs = (goalId: string) => { const u = upper(goalId); return u ? cellSubs(u) : null; };
   const noteBlocks: MBlock[] = notes.filter(n => n.scope === 'month' && n.period_key === ymKey).map(n => ({ id: n.id, start: n.start_index, end: n.end_index, text: n.text }));
 
   const place = async (goalId: string, row: number, end: number, subgoalId: string) => {
@@ -53,7 +61,7 @@ export default function MonthPlan() {
 
   const refs: RefCell[] = [{ col: 2, empty: true }, ...cols.map((g, i): RefCell => {
     const u = upper(g.id);
-    return u ? { col: i + 3, chip: subName(g.id, u.subgoal_id), text: u.memo, tone: toneOf(g) } : { col: i + 3, empty: true };
+    return u ? { col: i + 3, chips: cellSubs(u).map(sid => subName(g.id, sid)), text: u.memo, tone: toneOf(g) } : { col: i + 3, empty: true };
   })];
   const popGoal = pop && cols.find(g => g.id === pop.goalId);
 
@@ -121,10 +129,12 @@ export default function MonthPlan() {
               onEmpty={(row, anchor, end) => { setSel(null); setPop({ goalId: g.id, row, end, anchor }); }}
               onRange={(b, s, e) => run(() => supabase.from('month_cells').update({ start_week: s, end_week: e }).eq('id', b.id))}
               onText={(b, comment) => run(() => supabase.from('month_cells').update({ comment }).eq('id', b.id))}
+              onSubAdd={(b, anchor) => setSubPop({ cellId: b.id, goalId: g.id, anchor })}
+              onSubRemove={(b, sid) => { const c = monthCells.find(x => x.id === b.id); if (c) setSubs(c.id, cellSubs(c).filter(x => x !== sid)); }}
               onDelete={async b => {
                 const c = monthCells.find(x => x.id === b.id);
                 if (!c || !(await run(() => supabase.from('month_cells').delete().eq('id', b.id)))) return;
-                offerUndo(toast, '칸을 지웠어요', () => run(() => supabase.from('month_cells').insert({ goal_id: c.goal_id, subgoal_id: c.subgoal_id, year_month: c.year_month, start_week: c.start_week, end_week: c.end_week, comment: c.comment })));
+                offerUndo(toast, '칸을 지웠어요', () => run(() => supabase.from('month_cells').insert({ goal_id: c.goal_id, ...subsRow(cellSubs(c)), year_month: c.year_month, start_week: c.start_week, end_week: c.end_week, comment: c.comment })));
               }}
             />
           ))}
@@ -136,9 +146,19 @@ export default function MonthPlan() {
       {pop && popGoal && (
         <Popover anchor={pop.anchor} width={260} height={300} onClose={() => setPop(null)}>
           <PopHead dot={toneOf(popGoal).dot} title={`${popGoal.name} · ${pop.row + 1}주차${pop.end > pop.row ? `–${pop.end + 1}주차` : ''}`} hint="세부목표를 골라 넣고 코멘트를 적어요" />
-          <SubgoalPicker subs={subsOf(popGoal.id)} highlight={upper(popGoal.id)?.subgoal_id} badge="이번 달 계획" upperOn={ups.length > 0} upperName={`연간 계획의 ${m}월`} tone={toneOf(popGoal)} onPick={sid => place(popGoal.id, pop.row, pop.end, sid)} />
+          <SubgoalPicker subs={subsOf(popGoal.id)} highlight={upperSubs(popGoal.id)} badge="이번 달 계획" upperOn={ups.length > 0} upperName={`연간 계획의 ${m}월`} tone={toneOf(popGoal)} onPick={sid => place(popGoal.id, pop.row, pop.end, sid)} />
         </Popover>
       )}
+      {subPop && subCell && (() => {
+        const g = cols.find(x => x.id === subPop.goalId);
+        if (!g) return null;
+        return (
+          <Popover anchor={subPop.anchor} width={260} height={300} onClose={() => setSubPop(null)}>
+            <PopHead dot={toneOf(g).dot} title={`${g.name} · ${subCell.start_week + 1}주차${subCell.end_week > subCell.start_week ? `–${subCell.end_week + 1}주차` : ''}`} hint="이 칸에 함께 할 세부목표를 더해요" />
+            <SubgoalPicker subs={subsOf(g.id).filter(x => !cellSubs(subCell).includes(x.id))} highlight={upperSubs(g.id)} badge="이번 달 계획" upperOn={ups.length > 0} upperName={`연간 계획의 ${m}월`} tone={toneOf(g)} onPick={sid => { setSubPop(null); setSubs(subCell.id, [...cellSubs(subCell), sid]); }} />
+          </Popover>
+        );
+      })()}
     </div>
   );
 }

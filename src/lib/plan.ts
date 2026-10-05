@@ -106,3 +106,13 @@ export function dayLocked(day: DayKey, today: DayKey) {
 export type UpperPick = { goalId: string; subId: string };
 /** 위 단계에 계획이 있는데 이 (목표, 세부 목표)는 없으면 '계획 밖' */
 export const outside = (upper: UpperPick[], goalId: string, subId: string) => upper.length > 0 && !upper.some(u => u.goalId === goalId && u.subId === subId);
+
+/** 연간·월간 칸 하나에 세부목표 여러 개 (2026-10-05): subgoal_id = 첫 것, extra_subgoal_ids = 나머지 */
+export type CellSubs = { goal_id: string; subgoal_id: string; extra_subgoal_ids?: string[] | null };
+export const cellSubs = (c: CellSubs) => [c.subgoal_id, ...(c.extra_subgoal_ids ?? [])];
+/** 칸들 → 위 계획 고르기 (칸의 세부목표 전부) */
+export const picksOf = (cells: CellSubs[]): UpperPick[] => cells.flatMap(c => cellSubs(c).map(subId => ({ goalId: c.goal_id, subId })));
+/** 칸에 위 계획에 없는 세부목표가 하나라도 있으면 '계획 밖' */
+export const cellOutside = (upper: UpperPick[], c: CellSubs) => cellSubs(c).some(s => outside(upper, c.goal_id, s));
+/** 세부목표 목록 → 저장할 모양 (첫 것 + 나머지) */
+export const subsRow = (ids: string[]) => ({ subgoal_id: ids[0], extra_subgoal_ids: ids.slice(1) });

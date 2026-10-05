@@ -1,5 +1,5 @@
 // 체험 모드 (2026-10-03 기획 결정): 예시 목표 하나로 목표 → 세부 목표 → 연간 → 월간 → 주간 → 오늘 기록 → 마무리까지.
-// 화면 안에서만 움직이고 내 계정에는 아무것도 저장하지 않는다. '한 기간에는 목표마다 세부 목표 하나'(R-P1)를 강조한다
+// 화면 안에서만 움직이고 내 계정에는 아무것도 저장하지 않는다. '한 기간에는 목표마다 칸 하나(세부 목표는 여러 개 가능)'(R-P1, 2026-10-05)를 강조한다
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToday } from '../../account/AccountProvider';
@@ -177,7 +177,7 @@ export default function TutorialPage() {
         <Card>
           <p style={P}>꿈 → 목표 → <b>연간 → 월간 → 주간</b>으로 내려오고, 매일 기록해서 다시 목표로 올라가요.</p>
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13.5, lineHeight: 1.7 }}>
-            <li>한 기간에는 목표마다 <b>세부 목표 하나</b></li>
+            <li>한 기간에는 목표마다 <b>칸 하나</b> — 세부 목표는 한 칸에 여러 개</li>
             <li>아래 계획은 <b>위 계획에서 골라</b> 세워요</li>
             <li>지난 기간은 고칠 수 없어요</li>
           </ul>
@@ -244,8 +244,8 @@ function YearStep({ subs, months, mLabel, year, setYear }: { subs: string[]; mon
       <button className="btn btn-primary" onClick={place} style={{ height: 42 }}>연간에 넣기</button>
       {(warn || year.length > 0) && (
         <div data-testid="tutorial-rule" style={{ padding: '14px 16px', borderRadius: 20, background: warn ? 'var(--color-accent-200)' : 'var(--color-accent-2-100)', color: warn ? 'var(--color-accent-900)' : 'var(--color-accent-2-900)', fontSize: 13.5, lineHeight: 1.55, textWrap: 'pretty' }}>
-          <b>한 기간에는 목표마다 세부 목표 하나만 넣어요.</b>
-          {warn ? ' 그 달에는 이미 다른 세부 목표가 있어요. 시작 달을 뒤로 옮겨 보세요.' : ' 한 번에 하나에 집중하게 하려는 규칙이에요. 같은 시기에 둘 다 하고 싶다면, 주간 계획에서 실천을 여러 개 적으면 돼요.'}
+          <b>한 기간에는 목표마다 칸 하나예요.</b>
+          {warn ? ' 그 달에는 이미 칸이 있어요. 시작 달을 뒤로 옮겨 보세요. 같은 시기에 함께 하려면, 실제 계획에서 그 칸에 세부 목표를 더하면 돼요.' : ' 같은 시기에 여러 세부 목표를 함께 하고 싶다면, 한 칸에 세부 목표를 여러 개 넣을 수 있어요 (예: 기도 · 성경 · 묵상).'}
         </div>
       )}
     </Card>

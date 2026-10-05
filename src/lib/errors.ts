@@ -29,6 +29,7 @@ export function errorText(e: unknown): string {
   if (msg.includes('mime type') || msg.includes('exceeded the maximum allowed size')) return '사진은 5MB 이하 JPG·PNG·WEBP만 올릴 수 있어요';
   if (code === '42501') return '이 날은 바꿀 수 없어요';
   if (msg.includes('keyword_limit')) return '일상 키워드는 최대 6개예요. 하나를 지우면 새로 추가할 수 있어요';
+  if (msg.includes('cell_subgoals')) return '같은 목표의 세부목표만, 겹치지 않게 넣을 수 있어요';
   if (msg.includes('goal_category_limit')) return '목표 카테고리는 최대 6개예요';
   if (msg.includes('need_goal_category')) return '목표 카테고리를 1개 이상 골라 주세요';
   // 외래키: 지우려는 것을 '어느 표'가 가리키는지 (on table "…")로 가른다
