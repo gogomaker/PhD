@@ -3,8 +3,11 @@ import { BlurInput } from '../../ui/BlurInput';
 import { Chip, ICONS, OutTag, Svg, type Tone } from './shared';
 import { typing } from './undo';
 
-/** out = 위 계획에 없는 세부목표 (R-P14, '계획 밖') */
-export type MBlock = { id: string; start: number; end: number; chip?: string; text: string; out?: boolean };
+/**
+ * subs = 칸의 세부목표 (한 칸에 여러 개, 2026-10-05). out = 위 계획에 없는 세부목표 (R-P14, '계획 밖')
+ * more = 이 칸에 더 넣을 수 있는 세부목표가 남음
+ */
+export type MBlock = { id: string; start: number; end: number; subs?: { id: string; name: string; out?: boolean }[]; more?: boolean; text: string };
 
 const AREA: CSSProperties = { width: '100%', background: 'transparent', border: 0, resize: 'none', font: 'inherit', fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: 'var(--color-text)', textAlign: 'center', outline: 'none', padding: 0, fieldSizing: 'content', overflow: 'hidden' } as CSSProperties;
 
@@ -14,7 +17,7 @@ const AREA: CSSProperties = { width: '100%', background: 'transparent', border: 
  * R-P2: 칸을 아래로 늘려 기간을 표현한다.
  * 2026-10-03 UT: 빈 칸을 끌어 여러 칸을 한 번에 넣고, 고른 칸은 Delete로 지운다. 늘리기·줄이기는 바로 화면에 (빠르게 여러 번 눌러도 빠지지 않게)
  */
-export function MergeColumn({ col, firstRow, rowCount, lockedBefore = 0, blocks: given, tone, placeholder, noteOnly, sel, setSel, focusId, popRow, popEnd, label, onEmpty, onRange, onText, onDelete }: {
+export function MergeColumn({ col, firstRow, rowCount, lockedBefore = 0, blocks: given, tone, placeholder, noteOnly, sel, setSel, focusId, popRow, popEnd, label, onEmpty, onRange, onText, onDelete, onSubAdd, onSubRemove }: {
   col: number;
   firstRow: number;
   rowCount: number;
@@ -36,6 +39,9 @@ export function MergeColumn({ col, firstRow, rowCount, lockedBefore = 0, blocks:
   onRange: (b: MBlock, start: number, end: number) => void;
   onText: (b: MBlock, text: string) => void;
   onDelete: (b: MBlock) => void;
+  /** 칸에 세부목표 더하기 (anchor = 누른 버튼) */
+  onSubAdd?: (b: MBlock, anchor: DOMRect) => void;
+  onSubRemove?: (b: MBlock, subId: string) => void;
 }) {
   const [drag, setDrag] = useState<MBlock | null>(null);
   // 늘리기·옮기기를 서버 답보다 먼저 화면에 (id → 기간). 서버 값이 따라오면 지운다
@@ -170,8 +176,20 @@ export function MergeColumn({ col, firstRow, rowCount, lockedBefore = 0, blocks:
           >
             {!noteOnly && (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginBottom: b.text || selected ? 4 : 0 }}>
-                {b.text || selected ? <Chip tone={tone} white>{b.chip}</Chip> : <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35, color: 'var(--color-text)', textAlign: 'center' }}>{b.chip}</span>}
-                {b.out && <OutTag />}
+                {b.text || selected
+                  ? (b.subs ?? []).map(s => (
+                      <Chip key={s.id} tone={tone} white>
+                        <span data-testid="block-sub">{s.name}</span>
+                        {selected && onSubRemove && (b.subs?.length ?? 0) > 1 && (
+                          <button type="button" className="btn" data-testid="sub-remove" title={`'${s.name}' 빼기`} aria-label={`'${s.name}' 빼기`} onClick={() => onSubRemove(b, s.id)} style={{ marginLeft: 4, padding: 0, width: 14, height: 14, display: 'inline-grid', placeItems: 'center', verticalAlign: 'middle', borderRadius: '50%', background: 'transparent', color: 'inherit', fontSize: 12, lineHeight: 1 }}>×</button>
+                        )}
+                      </Chip>
+                    ))
+                  : <span data-testid="block-sub" style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35, color: 'var(--color-text)', textAlign: 'center' }}>{(b.subs ?? []).map(s => s.name).join(' · ')}</span>}
+                {selected && onSubAdd && b.more && (
+                  <button type="button" className="btn" data-testid="sub-add" title="이 칸에 세부목표 더하기" onClick={e => onSubAdd(b, e.currentTarget.getBoundingClientRect())} style={{ flex: 'none', fontSize: 10.5, fontWeight: 700, lineHeight: 1.2, padding: '2px 8px', borderRadius: 999, border: '1.5px dashed ' + tone.ink, background: 'transparent', color: tone.ink }}>+ 세부목표</button>
+                )}
+                {b.subs?.some(s => s.out) && <OutTag />}
               </div>
             )}
             {locked && b.text && <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: 'var(--color-text)', textAlign: 'center', whiteSpace: 'pre-wrap' }}>{b.text}</span>}

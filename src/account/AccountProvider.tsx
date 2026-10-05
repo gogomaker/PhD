@@ -63,8 +63,9 @@ export type Goal = {
 
 export type Subgoal = { id: string; goal_id: string; name: string; position: number };
 
-export type YearCell = { id: string; goal_id: string; subgoal_id: string; start_month: string; end_month: string; memo: string };
-export type MonthCell = { id: string; goal_id: string; subgoal_id: string; year_month: string; start_week: number; end_week: number; comment: string };
+/** 칸의 세부목표 = subgoal_id(첫 것) + extra_subgoal_ids(나머지) — 한 칸에 여러 개 (2026-10-05) */
+export type YearCell = { id: string; goal_id: string; subgoal_id: string; extra_subgoal_ids: string[]; start_month: string; end_month: string; memo: string };
+export type MonthCell = { id: string; goal_id: string; subgoal_id: string; extra_subgoal_ids: string[]; year_month: string; start_week: number; end_week: number; comment: string };
 export type Note = { id: string; scope: 'month' | 'week'; period_key: string; start_index: number; end_index: number; text: string };
 export type Practice = { id: string; goal_id: string; subgoal_id: string; week_start_date: string; name: string; kind: 'repeat' | 'once'; weekdays: number[]; start_time: string | null; end_time: string | null; created_at: string };
 
@@ -154,8 +155,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       supabase.from('daily_keywords').select('id, category_id, name, position, archived').order('position').order('created_at'),
       supabase.from('goals').select('id, category_id, name, position, due_month, reason, importance, fallback, status, started_at, created_at, table_position, table_hidden, finished_at, finish_photo_path, retro_achieved, retro_regret, retro_next').order('position').order('created_at'),
       supabase.from('subgoals').select('id, goal_id, name, position').order('position').order('created_at'),
-      supabase.from('year_cells').select('id, goal_id, subgoal_id, start_month, end_month, memo'),
-      supabase.from('month_cells').select('id, goal_id, subgoal_id, year_month, start_week, end_week, comment'),
+      supabase.from('year_cells').select('id, goal_id, subgoal_id, extra_subgoal_ids, start_month, end_month, memo'),
+      supabase.from('month_cells').select('id, goal_id, subgoal_id, extra_subgoal_ids, year_month, start_week, end_week, comment'),
       supabase.from('notes').select('id, scope, period_key, start_index, end_index, text'),
       supabase.from('practices').select('id, goal_id, subgoal_id, week_start_date, name, kind, weekdays, start_time, end_time, created_at').order('created_at'),
     ]);

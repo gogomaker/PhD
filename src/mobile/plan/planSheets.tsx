@@ -1,5 +1,5 @@
 // 일정 시트: 계획 칸(연간·월간) · 실천(주간) · 참고사항 추가 / 고치기 / 보기
-// DB 규칙: 칸은 기간·메모만 고칠 수 있고(R-P2), 실천은 추가·삭제만(지난 날이 없을 때) 된다. 지난 기간은 잠금(R-P12)
+// DB 규칙: 칸은 기간·메모·세부목표만 고칠 수 있고(R-P2, 한 칸에 세부목표 여러 개 2026-10-05), 실천은 추가·삭제만(지난 날이 없을 때) 된다. 지난 기간은 잠금(R-P12)
 // 2026-10-03 기획 결정: 위 단계 계획에서 먼저 고르고(계획 밖은 한 번 더), 시작·끝은 드롭다운, 달·해를 넘으면 나눠 저장
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +8,7 @@ import { useAccount, useToday, type Goal, type MonthCell, type Note, type Practi
 import { addDays, dayLabel } from '../../lib/day';
 import { PALETTE } from '../../lib/palette';
 import { isClosed, sortGoals } from '../../lib/goals';
-import { dayLocked, fmtDays, isoDow, md, monthOfWeek, outside, practiceDates, weekDays } from '../../lib/plan';
+import { cellSubs, dayLocked, fmtDays, isoDow, md, monthOfWeek, outside, picksOf, practiceDates, subsRow, weekDays } from '../../lib/plan';
 import { NOTE, type Tone } from '../../desktop/plan/shared';
 import { BODY, Dot, Field, Notice, Sheet, SheetHead, chip } from '../ui';
 import { endsFrom, keysOf, splitRange, unitOf, unitsOf, type Unit, type Zoom } from './units';
@@ -49,11 +49,11 @@ export function useUpper() {
   return (zoom: Zoom, period: string): { goalId: string; subId: string }[] => {
     if (zoom === 'month') {
       const mk = period + '-01';
-      return yearCells.filter(c => c.start_month <= mk && mk <= c.end_month).map(c => ({ goalId: c.goal_id, subId: c.subgoal_id }));
+      return picksOf(yearCells.filter(c => c.start_month <= mk && mk <= c.end_month));
     }
     if (zoom === 'week') {
       const { ym, index } = monthOfWeek(period);
-      return monthCells.filter(c => c.year_month === ym + '-01' && c.start_week <= index && index <= c.end_week).map(c => ({ goalId: c.goal_id, subId: c.subgoal_id }));
+      return picksOf(monthCells.filter(c => c.year_month === ym + '-01' && c.start_week <= index && index <= c.end_week));
     }
     return [];
   };
@@ -135,15 +135,20 @@ function NoteChip({ on, onPick }: { on: boolean; onPick: () => void }) {
   );
 }
 
-function SubChips({ subs, cur, onPick, tone }: { subs: { id: string; name: string }[]; cur: string | null; onPick: (id: string) => void; tone: Tone }) {
+/** cur = 고른 세부 목표들 (실천은 하나, 계획 칸은 여러 개) */
+function SubChips({ subs, cur, onPick, tone }: { subs: { id: string; name: string }[]; cur: string[]; onPick: (id: string) => void; tone: Tone }) {
   return (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
       {subs.map(s => (
-        <button key={s.id} aria-pressed={cur === s.id} onClick={() => onPick(s.id)} style={{ height: 34, padding: '0 12px', border: 0, borderRadius: 999, cursor: 'pointer', ...BODY, fontSize: 12.5, ...chip(cur === s.id, tone) }}>{s.name}</button>
+        <button key={s.id} aria-pressed={cur.includes(s.id)} onClick={() => onPick(s.id)} style={{ height: 34, padding: '0 12px', border: 0, borderRadius: 999, cursor: 'pointer', ...BODY, fontSize: 12.5, ...chip(cur.includes(s.id), tone) }}>{s.name}</button>
       ))}
     </div>
   );
 }
+
+/** 계획 칸은 세부 목표를 여러 개 (하나는 남긴다), 실천은 하나 */
+const toggleSub = (cur: string[], id: string, multi: boolean) =>
+  !multi ? [id] : cur.includes(id) ? (cur.length > 1 ? cur.filter(x => x !== id) : cur) : [...cur, id];
 
 // ───────── + 계획 / + 실천 ─────────
 export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClose }: { zoom: Zoom; periodKey: string; initialGoal?: string | null; initialStart?: number; onClose: () => void }) {
@@ -161,7 +166,9 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
   const first = upper.find(u => !initialGoal || u.goalId === initialGoal);
   const g0 = mode === 'upper' && first ? first.goalId : initialGoal && list.some(g => g.id === initialGoal) ? initialGoal : list[0]?.id ?? null;
   const [goalId, setGoalId] = useState<string | null>(g0);
-  const [subId, setSubId] = useState<string | null>(mode === 'upper' && first ? first.subId : g0 ? subsOf(g0)[0]?.id ?? null : null);
+  // 고른 세부 목표: 실천은 하나, 연간·월간 칸은 여러 개 (2026-10-05)
+  const [subIds, setSubIds] = useState<string[]>(() => { const s = mode === 'upper' && first ? first.subId : g0 ? subsOf(g0)[0]?.id : undefined; return s ? [s] : []; });
+  const subId = subIds[0] ?? null;
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const isNote = goalId === 'note';
@@ -184,11 +191,19 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
   const subs = goal ? subsOf(goal.id) : [];
   const title = zoom === 'week' ? '실천 추가' : zoom === 'year' ? '연간 계획 추가' : '월간 계획 추가';
   const allLocked = units.every(u => u.locked);
-  const out = !isNote && goalId && subId ? outside(upper, goalId, subId) : false;
+  const multi = zoom !== 'week';
+  const out = !isNote && goalId ? subIds.some(s => outside(upper, goalId, s)) : false;
+  const pickSub = (id: string) => setSubIds(cur => toggleSub(cur, id, multi));
 
   const pickGoal = (id: string) => {
     setGoalId(id);
-    setSubId(id === 'note' ? null : subsOf(id)[0]?.id ?? null);
+    const s = id === 'note' ? undefined : subsOf(id)[0]?.id;
+    setSubIds(s ? [s] : []);
+  };
+  // 위 계획에서 고르기: 같은 목표면 세부 목표를 더하고(계획 칸), 다른 목표면 새로
+  const pickUpper = (u: { goalId: string; subId: string }) => {
+    if (goalId === u.goalId) pickSub(u.subId);
+    else { setGoalId(u.goalId); setSubIds([u.subId]); }
   };
 
   const submit = async () => {
@@ -208,9 +223,9 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
         const scope = zoom === 'month' ? 'month' : 'week';
         ok = await run(() => supabase.from('notes').insert(parts.map(p => ({ scope, period_key: scope === 'month' ? p.piece + '-01' : p.piece, start_index: p.s, end_index: p.e, text: text.trim() }))));
       } else if (zoom === 'year') {
-        ok = await run(() => supabase.from('year_cells').insert(parts.map(p => ({ goal_id: goalId, subgoal_id: subId, start_month: `${p.piece}-${pad(p.s + 1)}-01`, end_month: `${p.piece}-${pad(p.e + 1)}-01`, memo: text.trim() }))));
+        ok = await run(() => supabase.from('year_cells').insert(parts.map(p => ({ goal_id: goalId, ...subsRow(subIds), start_month: `${p.piece}-${pad(p.s + 1)}-01`, end_month: `${p.piece}-${pad(p.e + 1)}-01`, memo: text.trim() }))));
       } else {
-        ok = await run(() => supabase.from('month_cells').insert(parts.map(p => ({ goal_id: goalId, subgoal_id: subId, year_month: p.piece + '-01', start_week: p.s, end_week: p.e, comment: text.trim() }))));
+        ok = await run(() => supabase.from('month_cells').insert(parts.map(p => ({ goal_id: goalId, ...subsRow(subIds), year_month: p.piece + '-01', start_week: p.s, end_week: p.e, comment: text.trim() }))));
       }
     }
     setBusy(false);
@@ -239,15 +254,16 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
                 {upper.map(u => {
                   const g = list.find(x => x.id === u.goalId)!;
                   const t = toneOf(g);
-                  const on = goalId === u.goalId && subId === u.subId;
+                  const on = goalId === u.goalId && subIds.includes(u.subId);
                   return (
-                    <button key={u.goalId + u.subId} aria-pressed={on} onClick={() => { setGoalId(u.goalId); setSubId(u.subId); }} style={{ minHeight: 34, padding: '6px 12px', border: 0, borderRadius: 999, cursor: 'pointer', ...BODY, fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6, textAlign: 'left', ...chip(on, t) }}>
+                    <button key={u.goalId + u.subId} aria-pressed={on} onClick={() => pickUpper(u)} style={{ minHeight: 34, padding: '6px 12px', border: 0, borderRadius: 999, cursor: 'pointer', ...BODY, fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6, textAlign: 'left', ...chip(on, t) }}>
                       <Dot color={t.dot} />{g.name} · {subName(u.subId)}
                     </button>
                   );
                 })}
                 {zoom !== 'year' && <NoteChip on={isNote} onPick={() => pickGoal('note')} />}
               </div>
+              {multi && <span style={{ fontSize: 12, color: 'var(--color-neutral-700)', textWrap: 'pretty' }}>같은 목표의 세부 목표는 여러 개 골라 한 칸에 함께 넣을 수 있어요.</span>}
               <button onClick={() => setMode('all')} className="btn btn-ghost" style={{ alignSelf: 'flex-start', height: 32, padding: '0 6px', ...BODY, fontSize: 12.5 }}>{upperName} 밖에서 추가</button>
             </Field>
           ) : (
@@ -257,14 +273,14 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
                 <GoalChips goals={list} cur={goalId} onPick={pickGoal} withNote={zoom !== 'year'} toneOf={toneOf} />
               </Field>
               {!isNote && goal && (
-                <Field label="세부 목표" hint={out ? `${upperName}에 없는 세부 목표예요. 일정에 '계획 밖'으로 표시돼요.` : undefined}>
-                  <SubChips subs={subs} cur={subId} onPick={setSubId} tone={tone} />
+                <Field label="세부 목표" hint={out ? `${upperName}에 없는 세부 목표예요. 일정에 '계획 밖'으로 표시돼요.` : multi && subs.length > 1 ? '여러 개 골라 한 칸에 함께 넣을 수 있어요.' : undefined}>
+                  <SubChips subs={subs} cur={subIds} onPick={pickSub} tone={tone} />
                   {subs.length === 0 && (
                     <button onClick={() => { onClose(); navigate('/goal/' + goal.id, { replace: true }); }} className="btn btn-secondary" style={{ alignSelf: 'flex-start', height: 36, ...BODY, fontSize: 13 }}>이 목표에 세부 목표 추가하기</button>
                   )}
                 </Field>
               )}
-              {upper.length > 0 && <button onClick={() => { setMode('upper'); setGoalId(upper[0].goalId); setSubId(upper[0].subId); }} className="btn btn-ghost" style={{ alignSelf: 'flex-start', height: 32, padding: '0 6px', ...BODY, fontSize: 12.5, marginTop: -6 }}>← {upperName}에서 고르기</button>}
+              {upper.length > 0 && <button onClick={() => { setMode('upper'); setGoalId(upper[0].goalId); setSubIds([upper[0].subId]); }} className="btn btn-ghost" style={{ alignSelf: 'flex-start', height: 32, padding: '0 6px', ...BODY, fontSize: 12.5, marginTop: -6 }}>← {upperName}에서 고르기</button>}
             </>
           )}
           {practice ? (
@@ -291,7 +307,7 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
                 <input className="input" aria-label={isNote ? '참고사항' : zoom === 'year' ? '메모' : '코멘트'} maxLength={200} value={text} onChange={e => setText(e.target.value)} placeholder={isNote ? '예: 추석 연휴' : zoom === 'year' ? '예: 기출 5회' : '예: 시험 일정에 맞춰 당김'} />
               </Field>
               {!s0 || !e0 ? (
-                <Notice>이 기간에는 더 넣을 자리가 없어요. 한 기간에는 목표마다 세부 목표 하나만 들어가요.</Notice>
+                <Notice>이 기간에는 더 넣을 자리가 없어요. 한 기간에는 목표마다 칸이 하나예요 — 있는 칸을 눌러 세부 목표를 더해 주세요.</Notice>
               ) : (
                 <>
                   <RangeSelect zoom={zoom} starts={starts} endsOf={endsOf} start={s0} end={e0} onChange={(s, e) => setRange({ s, e })} />
@@ -307,11 +323,11 @@ export function AddPlanSheet({ zoom, periodKey, initialGoal, initialStart, onClo
   );
 }
 
-// ───────── 계획 칸 고치기 (기간·메모만, 그 해·그 달 안에서) ─────────
+// ───────── 계획 칸 고치기 (기간·메모·세부목표, 그 해·그 달 안에서) ─────────
 export function EditCellSheet({ zoom, cell, onClose }: { zoom: 'year' | 'month'; cell: YearCell | MonthCell; onClose: () => void }) {
   const { goals, run } = useAccount();
   const today = useToday();
-  const { toneOf, subName } = useOpenGoals();
+  const { toneOf, subName, subsOf } = useOpenGoals();
   const isYear = zoom === 'year';
   const piece = isYear ? (cell as YearCell).start_month.slice(0, 4) : (cell as MonthCell).year_month.slice(0, 7);
   const units = unitsOf(zoom, piece, today);
@@ -320,6 +336,8 @@ export function EditCellSheet({ zoom, cell, onClose }: { zoom: 'year' | 'month';
   const occupied = useOccupied(zoom, cell.goal_id, cell.id);
   const [range, setRange] = useState({ s: units[s0]?.key ?? '', e: units[e0]?.key ?? '' });
   const [text, setText] = useState(isYear ? (cell as YearCell).memo : (cell as MonthCell).comment);
+  // 한 칸에 세부목표 여러 개 (2026-10-05)
+  const [subIds, setSubIds] = useState(() => cellSubs(cell));
   const [busy, setBusy] = useState(false);
   const goal = goals.find(g => g.id === cell.goal_id);
   const tone = goal ? toneOf(goal) : NOTE;
@@ -334,8 +352,8 @@ export function EditCellSheet({ zoom, cell, onClose }: { zoom: 'year' | 'month';
     const s = unitOf(zoom, range.s, today).idx, e = unitOf(zoom, range.e, today).idx;
     const ok = await run(() =>
       isYear
-        ? supabase.from('year_cells').update({ start_month: `${piece}-${pad(s + 1)}-01`, end_month: `${piece}-${pad(e + 1)}-01`, memo: text.trim() }).eq('id', cell.id)
-        : supabase.from('month_cells').update({ start_week: s, end_week: e, comment: text.trim() }).eq('id', cell.id),
+        ? supabase.from('year_cells').update({ start_month: `${piece}-${pad(s + 1)}-01`, end_month: `${piece}-${pad(e + 1)}-01`, memo: text.trim(), ...subsRow(subIds) }).eq('id', cell.id)
+        : supabase.from('month_cells').update({ start_week: s, end_week: e, comment: text.trim(), ...subsRow(subIds) }).eq('id', cell.id),
     );
     setBusy(false);
     if (ok) onClose();
@@ -352,7 +370,7 @@ export function EditCellSheet({ zoom, cell, onClose }: { zoom: 'year' | 'month';
       <SheetHead title={locked ? '계획 보기' : '계획 수정'} sub={`${periodText(zoom, piece)} · ${span(s0, e0)}`} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 18, background: tone.bg, color: tone.ink, ...BODY, fontSize: 13.5 }}>
         <Dot color={tone.dot} />
-        <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{goal?.name} · {subName(cell.subgoal_id)}</span>
+        <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{goal?.name}{locked ? ' · ' + cellSubs(cell).map(subName).join(' · ') : ''}</span>
       </div>
       {locked ? (
         <>
@@ -362,11 +380,14 @@ export function EditCellSheet({ zoom, cell, onClose }: { zoom: 'year' | 'month';
         </>
       ) : (
         <>
+          <Field label="세부 목표" hint="여러 개 골라 한 칸에 함께 넣을 수 있어요.">
+            <SubChips subs={subsOf(cell.goal_id)} cur={subIds} onPick={id => setSubIds(cur => toggleSub(cur, id, true))} tone={tone} />
+          </Field>
           <Field label={label}>
             <input className="input" aria-label={label} maxLength={200} value={text} onChange={e => setText(e.target.value)} />
           </Field>
           <RangeSelect zoom={zoom} starts={starts} endsOf={endsOf} start={range.s} end={range.e} onChange={(s, e) => setRange({ s, e })} />
-          <span style={{ fontSize: 12, color: 'var(--color-neutral-700)', marginTop: -6, textWrap: 'pretty' }}>{isYear ? '이 해' : '이 달'} 안에서 고칠 수 있어요. 다른 세부 목표로 바꾸려면 지우고 새로 넣어 주세요.</span>
+          <span style={{ fontSize: 12, color: 'var(--color-neutral-700)', marginTop: -6, textWrap: 'pretty' }}>{isYear ? '이 해' : '이 달'} 안에서 고칠 수 있어요.</span>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-ghost" onClick={remove} disabled={busy} style={{ flex: 'none', height: 46, padding: '0 20px', ...BODY, color: 'var(--color-accent-700)' }}>삭제</button>
             <button className="btn btn-primary" onClick={save} disabled={busy} style={{ flex: 1, height: 46 }}>저장</button>

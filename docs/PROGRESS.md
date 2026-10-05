@@ -201,6 +201,12 @@
 ## 일상 키워드 최대 6개 (2026-10-05, R-C6)
 - DB `20261005000018` 트리거 `daily_keywords_limit`(추가·되살리기), `lib/categories.ts` `MAX_KEYWORDS`, 휴대폰·PC 카테고리 편집에서 6개면 추가 칸 대신 안내. DB 테스트 `supabase/tests/keyword_limit.sql`, E2E scratchpad `e2e-kw.mjs`(6개)
 
+## 칸 하나에 세부목표 여러 개 (2026-10-05, R-P17)
+- 기획 질문('신앙 매일 지키기'에 기도·성경·묵상을 함께)에서 ①안 선택. 열은 그대로 한 줄(R-P1), 칸 안 세부목표만 여러 개
+- DB `20261005000019`: `year_cells`·`month_cells.extra_subgoal_ids uuid[]`(첫 것은 그대로 `subgoal_id` — 예전 앱도 읽힘), 트리거 `cell_subgoals_ok`(같은 목표만·겹침 없음·최대 10개 더), `subgoals_placed_guard`(나머지 자리에 든 세부목표 삭제 막기, R-G9). 세부목표 고치기 권한 추가 — 지난 칸은 기존 정책이 막음
+- 화면: `lib/plan.ts` `cellSubs`·`picksOf`·`cellOutside`·`subsRow`. PC `MergeColumn` 칩마다 ×·'+ 세부목표', 상위 줄·팝오버 강조 여러 개. 휴대폰 `planSheets` 여러 개 고르기·칸 고치기에서 세부 목표 고치기, 일정은 '기도 · 성경 · 묵상'. 체험 모드 안내 문구도 '칸 하나, 세부목표 여러 개'로
+- DB 테스트 `supabase/tests/cell_multi_subgoals.sql`, E2E scratchpad `e2e-cell.mjs`(25개)
+
 ## 남은 일 / 알려진 제약
 - 이메일 변경: Supabase 기본 메일은 기획자 계정 이메일에만 보내져서 지금은 이메일을 읽기 전용으로 둠. 메일 서비스(SMTP) 붙일 때 같이 연다
 - 비밀번호 찾기 메일도 같은 제약(기획자 본인 이메일로는 옴)

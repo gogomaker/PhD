@@ -1,7 +1,7 @@
 // 데이터 내보내기 (2026-10-01 기획 결정): 압축 파일 하나에 엑셀용 CSV 여러 개
 import { supabase } from './supabase';
 import { addDays, userDayKey } from './day';
-import { md } from './plan';
+import { cellSubs, md, type CellSubs } from './plan';
 import { timeOf } from './today';
 import { makeZip, toCsv, type Cell } from './zip';
 
@@ -77,9 +77,9 @@ export async function buildExport(): Promise<{ name: string; data: Uint8Array }[
 
   const planRows: Cell[][] = [];
   for (const c of [...yearCells].sort((a, b) => a.start_month.localeCompare(b.start_month)))
-    planRows.push(['연간', `${c.start_month.slice(0, 7)} ~ ${c.end_month.slice(0, 7)}`, goalName(c.goal_id), subName(c.subgoal_id), c.memo, '', '']);
+    planRows.push(['연간', `${c.start_month.slice(0, 7)} ~ ${c.end_month.slice(0, 7)}`, goalName(c.goal_id), cellSubs(c as CellSubs).map(subName).join(' · '), c.memo, '', '']);
   for (const c of [...monthCells].sort((a, b) => a.year_month.localeCompare(b.year_month) || a.start_week - b.start_week))
-    planRows.push(['월간', `${c.year_month.slice(0, 7)} ${c.start_week + 1}~${c.end_week + 1}주차`, goalName(c.goal_id), subName(c.subgoal_id), c.comment, '', '']);
+    planRows.push(['월간', `${c.year_month.slice(0, 7)} ${c.start_week + 1}~${c.end_week + 1}주차`, goalName(c.goal_id), cellSubs(c as CellSubs).map(subName).join(' · '), c.comment, '', '']);
   for (const x of [...practices].sort((a, b) => a.week_start_date.localeCompare(b.week_start_date)))
     planRows.push(['주간 실천', `${x.week_start_date} 주`, goalName(x.goal_id), subName(x.subgoal_id), x.name, (x.weekdays as number[]).map(w => DOW[w]).join('·'), x.start_time ? `${hm(x.start_time)}~${hm(x.end_time)}` : '']);
   for (const n of [...notes].sort((a, b) => a.period_key.localeCompare(b.period_key) || a.start_index - b.start_index)) {

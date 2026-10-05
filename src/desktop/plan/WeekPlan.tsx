@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAccount, useToday, type Goal, type Practice } from '../../account/AccountProvider';
 import { addDays, dayLabel, isDayKey, type DayKey } from '../../lib/day';
-import { dayLocked, fmtDays, isoDow, md, monthOfWeek, monthWeeks, outside, practiceDates, weekDays, weekStartOf, WEEK_START } from '../../lib/plan';
+import { cellSubs, dayLocked, fmtDays, isoDow, md, monthOfWeek, monthWeeks, outside, picksOf, practiceDates, weekDays, weekStartOf, WEEK_START } from '../../lib/plan';
 import { MergeColumn, type MBlock } from './MergeColumn';
 import { offerUndo, typing } from './undo';
 import { byTime } from '../../lib/today';
@@ -53,7 +53,7 @@ export default function WeekPlan() {
   // 이번 주에 실천이 있는 목표는 숨겼어도 열로
   const { cols, toneOf, catOf, subsOf, pinned } = useTableGoals(new Set(inWeek.map(x => x.p.goal_id)));
   // R-P14: 이번 주의 월간 계획 (어느 목표든)
-  const ups = monthCells.filter(c => c.year_month === ym + '-01' && c.start_week <= index && index <= c.end_week).map(c => ({ goalId: c.goal_id, subId: c.subgoal_id }));
+  const ups = picksOf(monthCells.filter(c => c.year_month === ym + '-01' && c.start_week <= index && index <= c.end_week));
   const cellItems = (goalId: string, row: number) =>
     inWeek
       .filter(x => x.p.goal_id === goalId && (row === -1 ? x.p.weekdays.length > 1 : x.p.weekdays.length === 1 && x.pos[0] === row))
@@ -92,7 +92,7 @@ export default function WeekPlan() {
     upperNote ? { col: 2, text: upperNote.text || ' ', tone: NOTE } : { col: 2, empty: true },
     ...cols.map((g, i): RefCell => {
       const u = upper(g.id);
-      return u ? { col: i + 3, chip: subName(g.id, u.subgoal_id), text: u.comment, tone: toneOf(g) } : { col: i + 3, empty: true };
+      return u ? { col: i + 3, chips: cellSubs(u).map(sid => subName(g.id, sid)), text: u.comment, tone: toneOf(g) } : { col: i + 3, empty: true };
     }),
   ];
   const popGoal = pop && cols.find(g => g.id === pop.goalId);
@@ -190,7 +190,7 @@ export default function WeekPlan() {
             goal={popGoal}
             tone={toneOf(popGoal)}
             subs={subsOf(popGoal.id)}
-            highlight={upper(popGoal.id)?.subgoal_id}
+            highlight={(() => { const u = upper(popGoal.id); return u ? cellSubs(u) : null; })()}
             upperOn={ups.length > 0}
             upperName={`월간 계획의 ${index + 1}주차`}
             when={pop.row === -1 ? '이번 주' : `${labels[pop.row]} ${md(days[pop.row])}`}
@@ -292,7 +292,7 @@ function PracticeForm({ goal, tone, subs, highlight, upperOn, upperName, when, l
   goal: Goal;
   tone: Tone;
   subs: { id: string; name: string }[];
-  highlight?: string | null;
+  highlight?: string[] | null;
   upperOn: boolean;
   upperName: string;
   when: string;

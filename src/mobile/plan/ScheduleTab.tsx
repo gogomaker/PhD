@@ -5,7 +5,7 @@ import { byTime } from '../../lib/today';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useToday, type MonthCell, type Note, type Practice, type YearCell } from '../../account/AccountProvider';
 import { addDays, dayLabel, isDayKey, isYearKey, isYearMonth, type DayKey } from '../../lib/day';
-import { addMonths, fmtDays, md, monthOfWeek, monthWeeks, practiceDates, weekDays, weekStartOf, ymOf } from '../../lib/plan';
+import { addMonths, cellOutside, cellSubs, fmtDays, md, monthOfWeek, monthWeeks, practiceDates, weekDays, weekStartOf, ymOf, type CellSubs } from '../../lib/plan';
 
 const slotsOf = (zoom: Zoom, key: string, today: string) => unitsOf(zoom, key, today);
 import { NOTE, type Tone } from '../../desktop/plan/shared';
@@ -64,9 +64,11 @@ export default function ScheduleTab() {
   const shown = (goalId: string) => list.some(g => g.id === goalId) && (!filter || filter === goalId);
   const goalName = (id: string) => list.find(g => g.id === id)?.name ?? '';
   const toneById = (id: string) => { const g = list.find(x => x.id === id); return g ? toneOf(g) : NOTE; };
-  const cellItem = (goalId: string, sid: string, text: string, span: string, onTap: () => void): Item => ({
-    id: '', tone: toneById(goalId), meta: goalName(goalId) + (text ? ' · ' + subName(sid) : ''), name: text || subName(sid), span, onTap,
-  });
+  // 칸의 세부목표는 여러 개일 수 있다 (2026-10-05) — '기도 · 성경 · 묵상'
+  const cellItem = (c: CellSubs, text: string, span: string, onTap: () => void): Item => {
+    const subs = cellSubs(c).map(subName).join(' · ');
+    return { id: '', tone: toneById(c.goal_id), meta: goalName(c.goal_id) + (text ? ' · ' + subs : ''), name: text || subs, span, onTap };
+  };
 
   // ── 줄 만들기 ──
   // 여러 기간에 걸친 칸은 걸친 줄마다 보인다 (첫 줄 = 기간 표시, 다음 줄 = '이어짐', 2026-10-03 기획 결정)
@@ -99,7 +101,7 @@ export default function ScheduleTab() {
             const st = Number(c.start_month.slice(5, 7));
             const e = Number(c.end_month.slice(5, 7));
             const cont = st !== i + 1;
-            return { ...cellItem(c.goal_id, c.subgoal_id, c.memo, cont ? '이어짐' : e > st ? `${st}월–${e}월` : '', () => setSheet({ k: 'year', cell: c })), id: c.id + ':' + i, cont };
+            return { ...cellItem(c, c.memo, cont ? '이어짐' : e > st ? `${st}월–${e}월` : '', () => setSheet({ k: 'year', cell: c })), id: c.id + ':' + i, cont };
           }),
         onDrill: () => set('month', ym),
         go: ym === ymOf(today) ? { label: '이번 달 펼쳐 보기', onTap: () => set('month', ymOf(today)) } : weekHere ? { label: `이번 주(${Number(thisYm.slice(5))}월 ${monthOfWeek(thisWeek).index + 1}주차) 펼쳐 보기`, onTap: () => set('month', thisYm) } : undefined,
@@ -125,14 +127,14 @@ export default function ScheduleTab() {
         .filter(c => c.start_week <= i && i <= c.end_week)
         .map(c => {
           const cont = c.start_week !== i;
-          return { ...cellItem(c.goal_id, c.subgoal_id, c.comment, cont ? '이어짐' : c.end_week > i ? `~${c.end_week + 1}주` : '', () => setSheet({ k: 'month', cell: c })), id: c.id + ':' + i, cont, out: outside(ups, c.goal_id, c.subgoal_id) };
+          return { ...cellItem(c, c.comment, cont ? '이어짐' : c.end_week > i ? `~${c.end_week + 1}주` : '', () => setSheet({ k: 'month', cell: c })), id: c.id + ':' + i, cont, out: cellOutside(ups, c) };
         }),
       onDrill: () => set('week', w),
       go: w === thisWeek ? { label: '이번 주 펼쳐 보기', onTap: () => set('week', thisWeek) } : undefined,
     }));
     // R-P3: 연간 계획에서 이 달에 걸친 칸
     const yc = yearCells.filter(c => shown(c.goal_id) && c.start_month <= mk && mk <= c.end_month);
-    if (yc.length) upper = { label: '연간', sub: `${m}월`, items: yc.map(c => ({ ...cellItem(c.goal_id, c.subgoal_id, c.memo, '', () => {}), id: c.id })) };
+    if (yc.length) upper = { label: '연간', sub: `${m}월`, items: yc.map(c => ({ ...cellItem(c, c.memo, '', () => {}), id: c.id })) };
     // 달 초: 이번 주가 지난달 마지막 주이면 그 달로 가는 길
     if (key === ymOf(today) && thisYm !== key) {
       headNote = (
@@ -178,7 +180,7 @@ export default function ScheduleTab() {
     const mk = ym + '-01';
     const mc = monthCells.filter(c => shown(c.goal_id) && c.year_month === mk && c.start_week <= index && index <= c.end_week);
     const upNote = notes.find(n => n.scope === 'month' && n.period_key === mk && n.start_index <= index && index <= n.end_index);
-    const items = mc.map(c => ({ ...cellItem(c.goal_id, c.subgoal_id, c.comment, '', () => {}), id: c.id }));
+    const items = mc.map(c => ({ ...cellItem(c, c.comment, '', () => {}), id: c.id }));
     if (upNote?.text) items.unshift({ id: upNote.id, tone: NOTE, meta: '참고사항', name: upNote.text, onTap: () => {} });
     if (items.length) upper = { label: '월간', sub: `${index + 1}주차`, items };
   }

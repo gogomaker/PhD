@@ -237,7 +237,7 @@ export function RowLabel({ row, label, sub, today, tone }: { row: number; label:
 }
 
 // R-P3: 상위 계획 줄 (읽기 전용)
-export type RefCell = { col: number; chip?: string; text?: string; tone: Tone } | { col: number; empty: true };
+export type RefCell = { col: number; chips?: string[]; text?: string; tone: Tone } | { col: number; empty: true };
 export function RefRow({ label, cells, emptyText, lastCol }: { label: string; cells: RefCell[]; emptyText: string; lastCol: number }) {
   const allEmpty = cells.every(c => 'empty' in c);
   return (
@@ -254,7 +254,7 @@ export function RefRow({ label, cells, emptyText, lastCol }: { label: string; ce
             <div key={c.col} style={{ gridRow: 2, gridColumn: c.col, border: '2px dashed var(--color-neutral-300)', color: 'var(--color-neutral-500)', borderRadius: 16, display: 'grid', placeItems: 'center', fontSize: 12.5, fontWeight: 600 }}>—</div>
           ) : (
             <div key={c.col} data-testid="ref-cell" style={{ gridRow: 2, gridColumn: c.col, minWidth: 0, border: '2px dashed ' + c.tone.dot, color: c.tone.ink, borderRadius: 16, padding: '8px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, textAlign: 'center', fontSize: 12.5, fontWeight: 600, lineHeight: 1.35 }}>
-              {c.chip && <Chip tone={c.tone}>{c.chip}</Chip>}
+              {!!c.chips?.length && <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 4, maxWidth: '100%' }}>{c.chips.map((x, i) => <Chip key={i} tone={c.tone}>{x}</Chip>)}</div>}
               {c.text && <span>{c.text}</span>}
             </div>
           ),
@@ -312,17 +312,17 @@ export function OutTag() {
 }
 
 /**
- * 세부목표 목록 (팝오버). highlight = 위 계획에 있는 이 목표의 세부목표 (R-P5, R-P7)
+ * 세부목표 목록 (팝오버). highlight = 위 계획에 있는 이 목표의 세부목표 — 칸 하나에 여럿일 수 있다 (R-P5, R-P7)
  * R-P14: 위 계획이 있으면 그것부터 보여 주고, 나머지는 '계획 밖에서 고르기'를 한 번 더 눌러야 나온다.
  * upperOn = 이 기간에 위 계획이 (어느 목표든) 있음. 이 목표가 위 계획에 없으면 모두 '계획 밖'
  */
-export function SubgoalPicker({ subs, highlight, badge, selected, tone, onPick, upperOn, upperName }: { subs: { id: string; name: string }[]; highlight?: string | null; badge: string; selected?: string | null; tone: Tone; onPick: (id: string) => void; upperOn?: boolean; upperName?: string }) {
-  const hl = subs.find(s => s.id === highlight);
-  const rest = subs.filter(s => s !== hl);
-  const [more, setMore] = useState(() => !!selected && selected !== highlight);
+export function SubgoalPicker({ subs, highlight, badge, selected, tone, onPick, upperOn, upperName }: { subs: { id: string; name: string }[]; highlight?: string[] | null; badge: string; selected?: string | null; tone: Tone; onPick: (id: string) => void; upperOn?: boolean; upperName?: string }) {
+  const hls = subs.filter(s => highlight?.includes(s.id));
+  const rest = subs.filter(s => !hls.includes(s));
+  const [more, setMore] = useState(() => !!selected && !highlight?.includes(selected));
   const item = (s: { id: string; name: string }, tag: ReactNode) => {
     const on = s.id === selected;
-    const isHl = s === hl;
+    const isHl = hls.includes(s);
     return (
       <button key={s.id} type="button" className="btn menu-item" aria-pressed={on} onClick={() => onPick(s.id)} style={{ justifyContent: 'flex-start', gap: 8, fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14, padding: '9px 12px', textAlign: 'left', background: on || isHl ? tone.bg : 'transparent', boxShadow: on ? 'inset 0 0 0 2px ' + tone.dot : 'none' }}>
         {on ? '✓ ' : ''}{s.name}
@@ -335,14 +335,14 @@ export function SubgoalPicker({ subs, highlight, badge, selected, tone, onPick, 
   if (!upperOn) return <>{subs.map(s => item(s, null))}</>;
   return (
     <>
-      {hl && item(hl, badgeTag)}
-      {!hl && <span data-testid="picker-out-note" style={{ fontSize: 12, lineHeight: 1.45, color: 'var(--color-neutral-700)', padding: '2px 12px 6px', textWrap: 'pretty' }}>{upperName ?? '위 계획'}에 이 목표가 없어요. 넣으면 '계획 밖'으로 표시돼요.</span>}
-      {hl && rest.length > 0 && !more && (
+      {hls.map(s => item(s, badgeTag))}
+      {!hls.length && <span data-testid="picker-out-note" style={{ fontSize: 12, lineHeight: 1.45, color: 'var(--color-neutral-700)', padding: '2px 12px 6px', textWrap: 'pretty' }}>{upperName ?? '위 계획'}에 이 목표가 없어요. 넣으면 '계획 밖'으로 표시돼요.</span>}
+      {hls.length > 0 && rest.length > 0 && !more && (
         <button type="button" data-testid="picker-more" className="btn menu-item" onClick={() => setMore(true)} style={{ justifyContent: 'flex-start', fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, padding: '8px 12px', color: 'var(--color-neutral-700)' }}>
           + 계획 밖에서 고르기 ({rest.length})
         </button>
       )}
-      {(!hl || more) && rest.map(s => item(s, <OutTag />))}
+      {(!hls.length || more) && rest.map(s => item(s, <OutTag />))}
     </>
   );
 }
