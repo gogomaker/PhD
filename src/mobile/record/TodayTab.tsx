@@ -13,6 +13,7 @@ import { DRAFT, TimeTable, type BandView, type Cells, type PlanBoxView } from '.
 import { AddSheet, CalendarSheet, ConfirmSheet, JournalSheet, PickSheet, PlanSheet, TaskMenuSheet } from '../Sheets';
 import { ensurePush } from '../push';
 import { BODY, ICON as MI, Svg } from '../ui';
+import { swallowClickSoon, swallowNextClick } from '../../ui/swallowClick';
 
 type PlanInfo = { task_id?: string | null; keyword_id?: string | null; label?: string | null };
 type SheetState = null | { k: 'cal' } | { k: 'add' } | { k: 'journal' } | { k: 'plan'; key: string; isNew: boolean } | { k: 'del'; task: TaskRow; name: string } | { k: 'menu'; it: DayItem; name: string } | { k: 'pick'; snap: Cells; from: number; to: number };
@@ -27,13 +28,6 @@ const ICON = {
 };
 // 저장하지 못한 하루 기록 — 다른 화면으로 옮겨 이 화면이 사라져도 남게 바깥에 둔다 (2026-10-03 UT 2차)
 let unsavedJournal: { day: DayKey; j: Journal } | null = null;
-
-// 길게 누르면 손을 떼기 전에 메뉴가 뜬다. 손을 뗄 때 오는 클릭 한 번이 메뉴 뒤 배경에 닿아 메뉴가 바로 닫히지 않게 먹는다 (2026-10-03 UT 4차)
-function swallowNextClick() {
-  const eat = (e: Event) => { e.stopPropagation(); e.preventDefault(); };
-  window.addEventListener('click', eat, { capture: true, once: true });
-  window.addEventListener('pointerup', () => window.setTimeout(() => window.removeEventListener('click', eat, { capture: true }), 400), { once: true });
-}
 
 const SRC: Record<DayItem['source'], string> = { repeat: '반복', auto: '자동 배정', picked: '담은 일', direct: '직접 추가' };
 
@@ -430,14 +424,16 @@ export default function TodayTab({ base = '/record', weekPath = '/plan/schedule?
             bandView={bandView}
             hint={hint}
             onPreview={(layer, cells) => (layer === 'plan' ? setPlan(p => ({ ...p, cells })) : setActual(cells))}
-            onPlanTap={key => setSheet({ k: 'plan', key, isNew: false })}
+            // 손을 뗄 때 시트를 띄우므로 뒤따르는 클릭이 시트 배경을 눌러 닫지 않게 (2026-10-06)
+            onPlanTap={key => { swallowClickSoon(); setSheet({ k: 'plan', key, isNew: false }); }}
             onPlanDrawn={(cells, key) => {
               const info = { ...plan.info, [key]: {} };
               setPlan({ cells, info });
               savePlan(cells, info);
+              swallowClickSoon();
               setSheet({ k: 'plan', key, isNew: true });
             }}
-            onDraft={(snap, from, to) => setSheet({ k: 'pick', snap, from, to })}
+            onDraft={(snap, from, to) => { swallowClickSoon(); setSheet({ k: 'pick', snap, from, to }); }}
             // 실제는 지금까지 한 일만 — 앞으로 할 일은 계획으로 안내하고 바로 바꿀 수 있게 (2026-10-04 기획 요청)
             onFuture={() => toast("아직 오지 않은 시간은 칠할 수 없어요. 앞으로 할 일은 '계획 그리기'로 그려요", { label: '계획 그리기', run: () => setMode('plan') })}
             onCommit={(layer, cells) => {
