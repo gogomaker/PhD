@@ -8,6 +8,7 @@ import { MergeColumn, type MBlock } from './MergeColumn';
 import { offerUndo, typing } from './undo';
 import { byTime } from '../../lib/today';
 import { TimeToggle, badTime, type TimeValue } from '../../mobile/Sheets';
+import { CopyWeekDialog, useCopyPrevWeek } from '../../mobile/plan/CopyWeek';
 import { Chip, ColumnHeader, ICONS, LockNote, NOTE, NoColumns, OutTag, PlanHeader, PopHead, Popover, RefRow, RowLabel, SubgoalPicker, Svg, TableFrame, useSelection, useTableGoals, type RefCell, type Tone } from './shared';
 
 const MAX_SHOWN = 3; // R-P9
@@ -38,6 +39,9 @@ export default function WeekPlan() {
   const todayRow = days.indexOf(today);
   // R-P12: 지난 날은 잠금
   const lockedDays = days.filter(d => dayLocked(d, today)).length;
+  // 지난주 실천 가져오기 (2026-10-06 기획 결정)
+  const copyItems = useCopyPrevWeek(week);
+  const [copyOpen, setCopyOpen] = useState(false);
 
   const go = (w: DayKey) => { setSel(null); setPop(null); setParams(w === thisWeek ? {} : { w }); };
   const subName = (goalId: string, sid: string) => subsOf(goalId).find(s => s.id === sid)?.name ?? '';
@@ -118,6 +122,12 @@ export default function WeekPlan() {
         ))}
       </div>
       {cols.length > 0 && lockedDays > 0 && <LockNote all={lockedDays === 7} />}
+      {copyItems.length > 0 && (
+        <button data-testid="copy-prev-week" className="btn btn-secondary" onClick={() => setCopyOpen(true)} style={{ alignSelf: 'flex-start', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13, height: 36, padding: '0 16px' }}>
+          + 지난주 실천 {copyItems.length}개 가져오기
+        </button>
+      )}
+      {copyOpen && copyItems.length > 0 && <CopyWeekDialog week={week} items={copyItems} onClose={() => setCopyOpen(false)} />}
       {cols.length === 0 ? (
         <NoColumns />
       ) : (
