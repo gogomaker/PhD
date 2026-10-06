@@ -13,12 +13,13 @@ import { ScrollArea } from '../../ui/ScrollArea';
 import { BODY, Dot, ICON, Notice, Seg, Svg, chip } from '../ui';
 import { AddPlanSheet, EditCellSheet, EditNoteSheet, PracticeSheet, outside, useOpenGoals, useUpper, type Zoom } from './planSheets';
 import { unitsOf } from './units';
+import { CopyWeekSheet, useCopyPrevWeek } from './CopyWeek';
 
 const ZOOMS: [Zoom, string][] = [['year', '연간'], ['month', '월간'], ['week', '주간']];
 
 type Item = { id: string; tone: Tone; meta: string; name: string; span?: string; onTap: () => void; cont?: boolean; out?: boolean };
 type Row = { key: string; label: string; sub?: string; now?: boolean; past?: boolean; notes: { id: string; text: string; onTap: () => void }[]; items: Item[]; onDrill?: () => void; go?: { label: string; primary?: boolean; onTap: () => void } };
-type SheetState = null | { k: 'add'; start?: number } | { k: 'year'; cell: YearCell } | { k: 'month'; cell: MonthCell } | { k: 'note'; note: Note } | { k: 'practice'; practice: Practice };
+type SheetState = null | { k: 'add'; start?: number } | { k: 'year'; cell: YearCell } | { k: 'month'; cell: MonthCell } | { k: 'note'; note: Note } | { k: 'practice'; practice: Practice } | { k: 'copy' };
 
 export default function ScheduleTab() {
   const { yearCells, monthCells, notes, practices, profile } = useAccount();
@@ -188,6 +189,9 @@ export default function ScheduleTab() {
   const noSubs = list.length > 0 && list.every(g => subsOf(g.id).length === 0);
   const firstGoal = list[0];
   const weekEmpty = zoom === 'week' && !practices.some(p => p.week_start_date === key);
+  // 지난주 실천 가져오기 (2026-10-06 기획 결정)
+  const copyItems = useCopyPrevWeek(zoom === 'week' ? key : thisWeek);
+  const canCopy = zoom === 'week' && copyItems.length > 0;
   const msg: ReactNode =
     list.length === 0 ? (
       <Notice action={<button className="btn btn-primary" onClick={() => navigate('/plan')} style={{ height: 38, fontSize: 13 }}>목표 만들러 가기</button>}>목표를 먼저 만들면 여기에 계획을 넣을 수 있어요.</Notice>
@@ -232,6 +236,11 @@ export default function ScheduleTab() {
       <ScrollArea fade="var(--color-bg)" style={{ flex: 1, minHeight: 0 }} innerStyle={{ padding: '2px 12px 40px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         {msg && <div style={{ flex: 'none', margin: '0 4px 6px' }}>{msg}</div>}
         {headNote && <div data-testid="week-elsewhere" style={{ flex: 'none', margin: '0 4px 6px' }}>{headNote}</div>}
+        {canCopy && (
+          <button data-testid="copy-prev-week" onClick={() => setSheet({ k: 'copy' })} className="btn btn-secondary" style={{ flex: 'none', alignSelf: 'flex-start', height: 36, margin: '0 4px 6px', padding: '0 14px', gap: 6, ...BODY, fontSize: 13 }}>
+            <Svg d={ICON.plus} size={12} width={3} />지난주 실천 {copyItems.length}개 가져오기
+          </button>
+        )}
         {upper && (
           <div data-testid="sched-upper" style={{ flex: 'none', display: 'grid', gridTemplateColumns: '46px minmax(0,1fr)', gap: 10, padding: '6px 10px 10px', alignItems: 'start' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 1, paddingTop: 2 }}>
@@ -287,6 +296,7 @@ export default function ScheduleTab() {
       {sheet?.k === 'year' && <EditCellSheet zoom="year" cell={sheet.cell} onClose={() => setSheet(null)} />}
       {sheet?.k === 'month' && <EditCellSheet zoom="month" cell={sheet.cell} onClose={() => setSheet(null)} />}
       {sheet?.k === 'note' && <EditNoteSheet note={sheet.note} onClose={() => setSheet(null)} />}
+      {sheet?.k === 'copy' && <CopyWeekSheet week={key} items={copyItems} onClose={() => setSheet(null)} />}
       {sheet?.k === 'practice' && <PracticeSheet practice={sheet.practice} onClose={() => setSheet(null)} />}
     </div>
   );
