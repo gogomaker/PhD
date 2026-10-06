@@ -207,6 +207,10 @@
 - 화면: `lib/plan.ts` `cellSubs`·`picksOf`·`cellOutside`·`subsRow`. PC `MergeColumn` 칩마다 ×·'+ 세부목표', 상위 줄·팝오버 강조 여러 개. 휴대폰 `planSheets` 여러 개 고르기·칸 고치기에서 세부 목표 고치기, 일정은 '기도 · 성경 · 묵상'. 체험 모드 안내 문구도 '칸 하나, 세부목표 여러 개'로
 - DB 테스트 `supabase/tests/cell_multi_subgoals.sql`, E2E scratchpad `e2e-cell.mjs`(25개)
 
+## 시간표 한 번 톡 (2026-10-06 기획 TODO 1)
+- 기록 시간표 칸을 한 번 톡 누르면 계획·'무엇을 했나요?' 시트가 떴다가 바로 닫히던 것: 손을 뗄 때 시트를 띄우는데, 휴대폰이 그 뒤에 보내는 클릭이 새로 뜬 시트 배경을 눌렀다(꾹 누르면 클릭이 안 와서 괜찮았음). `ui/swallowClick.ts` `swallowClickSoon()`으로 그 클릭 하나만 먹는다(길게 누르기 메뉴의 `swallowNextClick`도 같은 곳으로)
+- E2E scratchpad `e2e-tap.mjs`(5개), `e2e-press.mjs`(3개), `e2e-tap-pc.mjs`
+
 ## 남은 일 / 알려진 제약
 - 이메일 변경: Supabase 기본 메일은 기획자 계정 이메일에만 보내져서 지금은 이메일을 읽기 전용으로 둠. 메일 서비스(SMTP) 붙일 때 같이 연다
 - 비밀번호 찾기 메일도 같은 제약(기획자 본인 이메일로는 옴)
